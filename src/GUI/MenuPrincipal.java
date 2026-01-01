@@ -57,12 +57,39 @@ public class MenuPrincipal extends JFrame {
         add(btnFacturas);
     }
     
-    private void configurarEventos() {       
+    private void configurarEventos() {
+        // Evento para botón Clientes
+        btnClientes.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                VentanaCliente();
+            }
+        });
+        
+        // Evento para botón Productos
+        btnProductos.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                VentanaProducto();
+            }
+        });
+        
+        // Evento para botón Facturas
         btnFacturas.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 VentanaFactura();
             }
         });
+    }
+    
+    private void VentanaCliente() {
+        VentanaCliente ventanaCliente = new VentanaCliente();
+        ventanaCliente.setVisible(true);
+        this.dispose();
+    }
+    
+    private void VentanaProducto() {
+        VentanaProducto ventanaProducto = new VentanaProducto();
+        ventanaProducto.setVisible(true);
+        this.dispose();
     }
     
     private void VentanaFactura() {
@@ -71,7 +98,7 @@ public class MenuPrincipal extends JFrame {
         this.dispose();
     }
     
-    // MÉTODO MAIN - AGREGA ESTO
+    // MÉTODO MAIN
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
