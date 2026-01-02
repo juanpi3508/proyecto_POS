@@ -10,6 +10,7 @@ public class CargadorProperties {
     private static Properties propiedadesFactura;
     private static Properties propiedadesProducto;
     private static Properties propiedadesBD;
+    private static Properties propiedadesComponentes;
     
     static {
         mensajes = cargar("resources/messages.properties");
@@ -17,6 +18,7 @@ public class CargadorProperties {
         propiedadesFactura = cargar("resources/configFactura.properties");
         propiedadesProducto = cargar("resources/configProducto.properties");
         propiedadesBD = cargar("resources/configBD.properties");
+        propiedadesComponentes = cargar("resources/componentes.properties");
     }
     
     private static Properties cargar(String archivo){
@@ -52,5 +54,9 @@ public class CargadorProperties {
     
     public static String obtenerConfigBD (String clave) {
         return propiedadesBD.getProperty(clave);
+    }
+    
+    public static String obtenerComponentes (String clave) {
+        return propiedadesComponentes.getProperty(clave);
     }
 }
