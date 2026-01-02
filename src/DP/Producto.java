@@ -207,16 +207,25 @@ public class Producto {
     
     public boolean grabarDP() {
         ProductoMD proMD = new ProductoMD();
-        Producto existe = proMD.verificarPorNombre(this.descripcion);
-        
-        if (existe == null) {
-            this.codigo = proMD.generarCodigo(this.idCategoria);
-            return proMD.insertar(this);
-        } else {
-            this.codigo = existe.getCodigo();
-            return proMD.modificar(this);
+
+        if (this.codigo != null && !this.codigo.trim().isEmpty()) {
+            Producto existePorCodigo = proMD.verificarPorCodigo(this.codigo);
+            if (existePorCodigo != null) {
+                return proMD.modificar(this);
+            } else {
+                Producto existePorNombre = proMD.verificarPorNombre(this.descripcion);
+                if (existePorNombre != null) return false;
+
+                return proMD.insertar(this);
+            }
         }
+        Producto existe = proMD.verificarPorNombre(this.descripcion);
+        if (existe != null) return false;
+
+        this.codigo = proMD.generarCodigo(this.idCategoria);
+        return proMD.insertar(this);
     }
+
     
     public ArrayList<Producto> consultarTodos() {
         ProductoMD proMD = new ProductoMD();
