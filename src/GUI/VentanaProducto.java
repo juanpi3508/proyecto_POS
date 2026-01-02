@@ -46,7 +46,7 @@ public class VentanaProducto extends JFrame {
     private JLabel lblImagenPreviewMod;
     private JLabel lblErrorCodigoMod, lblErrorDescripcionMod, lblErrorUmCompraMod;
     private JLabel lblErrorPrecioCompraMod, lblErrorUmVentaMod, lblErrorPrecioVentaMod;
-    private JButton btnBuscarMod, btnGuardarMod, btnSeleccionarImagenMod;
+    private JButton btnGuardarMod, btnSeleccionarImagenMod;
     private String rutaImagenSeleccionadaMod = "";
     private String codigoProductoActual = "";
     
@@ -54,7 +54,7 @@ public class VentanaProducto extends JFrame {
     private JTextField txtUmCompraElim, txtPrecioCompraElim, txtUmVentaElim;
     private JTextField txtPrecioVentaElim, txtSaldoIniElim, txtSaldoFinElim;
     private JLabel lblImagenPreviewElim;
-    private JButton btnBuscarElim, btnEliminar;
+    private JButton btnEliminar;
     
     private JComboBox<String> comboTipoConsulta;
     private JComboBox<ItemCombo> comboParametroBusqueda;
@@ -898,9 +898,11 @@ public class VentanaProducto extends JFrame {
                 break;
         }
     }
-    
+     
+    //Vuelve al panel vacío
     private void volverAlMenu() {
-        System.exit(0);
+        this.dispose();             
+        new MenuPrincipal().setVisible(true);
     }
     
     private JLabel crearLabelError() {
@@ -1671,6 +1673,8 @@ public class VentanaProducto extends JFrame {
         lblErrorPrecioVentaMod.setText(" ");
     }
     
+    
+    
     private void limpiarCamposEliminar() {
         txtCodigoElim.setText("");
         txtDescripcionElim.setText("");
@@ -1686,9 +1690,7 @@ public class VentanaProducto extends JFrame {
         
         btnEliminar.setEnabled(false);
     }
-    
-    
-    
+        
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             VentanaProducto ventana = new VentanaProducto();
