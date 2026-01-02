@@ -102,7 +102,6 @@ public class ClienteMD {
 
             if(rs.next()){
                 cli = clienteCompleto(rs);
-                cli.setIdCliente(rs.getString(9)); 
             }
 
             rs.close();
@@ -322,7 +321,8 @@ public class ClienteMD {
         cli.setIdCiudad(rs.getString(5));         
         cli.setDireccion(rs.getString(6));        
         cli.setEstado(rs.getString(7));           
-        cli.setCiudad(rs.getString(8));           
+        cli.setCiudad(rs.getString(8));
+        cli.setIdCliente(rs.getString(9));         
         return cli;
     }
     
@@ -365,5 +365,31 @@ public class ClienteMD {
         }
 
         return ciudades;
+    }
+    
+    //Adicional para consulta especifica factura
+    
+    //Verifica cliente por id_cliente (CLI0001)
+    public Cliente verificarPorIdMD(String idCliente) {
+        String sql = CargadorProperties.obtenerConfigCliente("cli.verificar.porId");
+        Cliente cli = null;
+
+        try {
+            PreparedStatement ps = conexion.prepareStatement(sql);
+            ps.setString(1, idCliente);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                cli = clienteCompleto(rs);
+            }
+
+            rs.close();
+            ps.close();
+        } catch (SQLException e) {
+            System.out.println(CargadorProperties.obtenerMessages("CL_E_003"));
+            e.printStackTrace();
+        }
+
+        return cli;
     }
 }
