@@ -20,41 +20,52 @@ public class MenuPrincipal extends JFrame {
     
     public void configurarVentana() {
         setTitle("KoKo Market - Sistema de Gestión");
-        setSize(400, 350);
+        setExtendedState(JFrame.MAXIMIZED_BOTH); // Pantalla completa
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setResizable(false);
     }
     
     private void cargarComponentes() {
         lblTitulo = new JLabel("KoKo Market");
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 20));
-        lblTitulo.setHorizontalAlignment(0);
+        lblTitulo.setFont(new Font("Arial", Font.BOLD, 32));
+        lblTitulo.setHorizontalAlignment(SwingConstants.CENTER);
         
         btnClientes = new JButton("Clientes");
-        btnClientes.setFont(new Font("Arial", Font.PLAIN, 14));
+        btnClientes.setFont(new Font("Arial", Font.PLAIN, 16));
+        btnClientes.setPreferredSize(new Dimension(250, 60));
         
         btnProductos = new JButton("Productos");
-        btnProductos.setFont(new Font("Arial", Font.PLAIN, 14));
+        btnProductos.setFont(new Font("Arial", Font.PLAIN, 16));
+        btnProductos.setPreferredSize(new Dimension(250, 60));
         
         btnFacturas = new JButton("Facturas");
-        btnFacturas.setFont(new Font("Arial", Font.PLAIN, 14));
+        btnFacturas.setFont(new Font("Arial", Font.PLAIN, 16));
+        btnFacturas.setPreferredSize(new Dimension(250, 60));
     }
     
     private void configurarLayout() {
-        setLayout(null);
+        setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
         
-        lblTitulo.setBounds(50, 30, 300, 30);
-        add(lblTitulo);
+        // Título
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 30, 0); // Espacio abajo del título
+        add(lblTitulo, gbc);
         
-        btnClientes.setBounds(50, 90, 300, 40);
-        add(btnClientes);
+        // Botón Clientes
+        gbc.gridy = 1;
+        gbc.insets = new Insets(10, 0, 10, 0); // Espacio entre botones
+        add(btnClientes, gbc);
         
-        btnProductos.setBounds(50, 150, 300, 40);
-        add(btnProductos);
+        // Botón Productos
+        gbc.gridy = 2;
+        add(btnProductos, gbc);
         
-        btnFacturas.setBounds(50, 210, 300, 40);
-        add(btnFacturas);
+        // Botón Facturas
+        gbc.gridy = 3;
+        gbc.insets = new Insets(10, 0, 0, 0);
+        add(btnFacturas, gbc);
     }
     
     private void configurarEventos() {
