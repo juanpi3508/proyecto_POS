@@ -24,9 +24,7 @@ public class ProxFacMD {
         this.conexion = ConexionBD.getConexion();
     }
     
-    /**
-     * Verifica si existe un producto en el detalle de una factura
-     */
+    //Verifica si existe un producto en el detalle de una factura
     private ProxFac verificar(String codigoFac, String codigoProd) {
         String sql = CargadorProperties.obtenerConfigFactura("pxf.verificar");
         ProxFac pxf = null;
@@ -58,9 +56,7 @@ public class ProxFacMD {
         return pxf;
     }
     
-    /**
-     * Inserta un nuevo producto en el detalle de factura
-     */
+    //Inserta un nuevo producto en el detalle de factura
     private boolean insertar(ProxFac pxf) {
         String sql = CargadorProperties.obtenerConfigFactura("pxf.insertar");
         
@@ -83,9 +79,7 @@ public class ProxFacMD {
         }
     }
     
-    /**
-     * Actualiza un producto existente en el detalle
-     */
+    //Actualiza un producto existente en el detalle
     private boolean actualizar(ProxFac pxf) {
         String sql = CargadorProperties.obtenerConfigFactura("pxf.actualizar");
         
@@ -107,9 +101,7 @@ public class ProxFacMD {
         }
     }
     
-    /**
-     * Actualiza si existe, inserta si no existe
-     */
+    //Actualiza si existe, inserta si no existe
     public boolean actualizarOInsertar(ProxFac pxf) {
         ProxFac existe = verificar(pxf.getCodigoFac(), pxf.getCodigoProd());
         
@@ -120,9 +112,7 @@ public class ProxFacMD {
         }
     }
     
-    /**
-     * Consulta todos los productos asociados a una factura
-     */
+    //Consulta todos los productos asociados a una factura
     public ArrayList<ProxFac> consultarPorFactura(ProxFac pxf) {
         String sql = CargadorProperties.obtenerConfigFactura("pxf.consultar.porFactura");
         ArrayList<ProxFac> lista = new ArrayList<>();
@@ -155,9 +145,7 @@ public class ProxFacMD {
         return lista;
     }
     
-    /**
-     * Elimina (inactiva) todos los productos de una factura
-     */
+    //Elimina logicamente todos los productos de una factura
     public boolean eliminarPorFactura(ProxFac pxf) {
         String sql = CargadorProperties.obtenerConfigFactura("pxf.eliminar.porFactura");
         
@@ -165,6 +153,25 @@ public class ProxFacMD {
             PreparedStatement ps = conexion.prepareStatement(sql);
             ps.setString(1, pxf.getCodigoFac());
             
+            int filas = ps.executeUpdate();
+            ps.close();
+            return filas > 0;
+        } catch (SQLException e) {
+            System.out.println(CargadorProperties.obtenerMessages("FC_E_005"));
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    //Elimina logicamente un solo producto específico de una factura
+     public boolean eliminarProducto(ProxFac pxf) {
+        String sql = CargadorProperties.obtenerConfigFactura("pxf.eliminar.porProducto");
+
+        try {
+            PreparedStatement ps = conexion.prepareStatement(sql);
+            ps.setString(1, pxf.getCodigoFac());   // id_factura
+            ps.setString(2, pxf.getCodigoProd());   // id_producto
+
             int filas = ps.executeUpdate();
             ps.close();
             return filas > 0;
