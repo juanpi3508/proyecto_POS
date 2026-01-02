@@ -1178,12 +1178,18 @@ public class VentanaProducto extends JFrame {
     
     private void cargarImagenDesdeRuta(String rutaRelativa, JLabel lblPreview) {
         try {
-            String rutaCompleta = "resources/" + rutaRelativa;
+            String base = CargadorProperties.obtenerConfigProducto("img.base");
+            String rutaCompleta = base + "/" + rutaRelativa;
+
             File archivoImagen = new File(rutaCompleta);
-            
+
             if (archivoImagen.exists()) {
                 BufferedImage img = ImageIO.read(archivoImagen);
-                Image imagenEscalada = img.getScaledInstance(200, 200, Image.SCALE_SMOOTH);
+
+                int w = Integer.parseInt(CargadorProperties.obtenerConfigProducto("img.preview.w"));
+                int h = Integer.parseInt(CargadorProperties.obtenerConfigProducto("img.preview.h"));
+
+                Image imagenEscalada = img.getScaledInstance(w, h, Image.SCALE_SMOOTH);
                 lblPreview.setIcon(new ImageIcon(imagenEscalada));
                 lblPreview.setText("");
             } else {
@@ -1196,14 +1202,15 @@ public class VentanaProducto extends JFrame {
             e.printStackTrace();
         }
     }
+
     
-    private String copiarImagenAProyecto(String rutaOrigen, String codigoProducto) {
+    private String copiarImagenAProyecto(String rutaOrigen) {
         try {
             File archivoOrigen = new File(rutaOrigen);
-            String extension = rutaOrigen.substring(rutaOrigen.lastIndexOf("."));
-            String nombreArchivo = codigoProducto + extension;
+            String nombreArchivo = archivoOrigen.getName();
             
-            File carpetaDestino = new File("resources/imagenes/productos");
+            String rutaCarpetaDestino = CargadorProperties.obtenerConfigProducto("img.dir.productos.full");
+            File carpetaDestino = new File(rutaCarpetaDestino);
             if (!carpetaDestino.exists()) {
                 carpetaDestino.mkdirs();
             }
@@ -1212,7 +1219,8 @@ public class VentanaProducto extends JFrame {
             
             Files.copy(archivoOrigen.toPath(), archivoDestino.toPath(), StandardCopyOption.REPLACE_EXISTING);
             
-            return "imagenes/productos/" + nombreArchivo;
+            String dirRelativo = CargadorProperties.obtenerConfigProducto("img.dir.productos");
+            return dirRelativo + "/" + nombreArchivo;
         } catch (IOException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
@@ -1252,7 +1260,7 @@ public class VentanaProducto extends JFrame {
             return;
         }
         
-        String rutaImagenGuardada = copiarImagenAProyecto(rutaImagenSeleccionadaIng, codigo);
+        String rutaImagenGuardada = copiarImagenAProyecto(rutaImagenSeleccionadaIng);
         
         if (rutaImagenGuardada == null) {
             return;
@@ -1369,7 +1377,7 @@ public class VentanaProducto extends JFrame {
         
         String rutaImagen;
         if (!rutaImagenSeleccionadaMod.isEmpty()) {
-            rutaImagen = copiarImagenAProyecto(rutaImagenSeleccionadaMod, codigoProductoActual);
+            rutaImagen = copiarImagenAProyecto(rutaImagenSeleccionadaMod);
             if (rutaImagen == null) {
                 return;
             }
@@ -1568,14 +1576,16 @@ public class VentanaProducto extends JFrame {
             dialog.setLayout(new BorderLayout(10, 10));
             
             try {
-                String rutaCompleta = "resources/" + encontrado.getImagen();
+                String base = CargadorProperties.obtenerConfigProducto("img.base");
+                String rutaCompleta = base + "/" + encontrado.getImagen();
                 File archivoImagen = new File(rutaCompleta);
                 
                 if (archivoImagen.exists()) {
                     BufferedImage img = ImageIO.read(archivoImagen);
                     
-                    int maxWidth = 400;
-                    int maxHeight = 400;
+                    int max = Integer.parseInt(CargadorProperties.obtenerConfigProducto("img.popup.max"));
+                    int maxWidth = max;
+                    int maxHeight = max;
                     
                     double scale = Math.min(
                         (double) maxWidth / img.getWidth(),
@@ -1673,8 +1683,6 @@ public class VentanaProducto extends JFrame {
         lblErrorPrecioVentaMod.setText(" ");
     }
     
-    
-    
     private void limpiarCamposEliminar() {
         txtCodigoElim.setText("");
         txtDescripcionElim.setText("");
@@ -1690,12 +1698,4 @@ public class VentanaProducto extends JFrame {
         
         btnEliminar.setEnabled(false);
     }
-        
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            VentanaProducto ventana = new VentanaProducto();
-            ventana.setVisible(true);
-        });
-    }
-    
 }
