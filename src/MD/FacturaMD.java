@@ -7,7 +7,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import util.CargadorProperties;
@@ -21,10 +20,7 @@ public class FacturaMD {
         this.conexion = ConexionBD.getConexion();
     }
     
-    /**
-     * Inserta solo la cabecera de la factura (sin productos)
-     * Retorna el código generado por la BD
-     */
+    //Inserta la cabecera en la base de datos, devuelve el codigo de la factura generada
     public String insertar(Factura fac) {
         String sql = CargadorProperties.obtenerConfigFactura("fac.insertar");
         String codigoGenerado = null;
@@ -33,23 +29,21 @@ public class FacturaMD {
             codigoGenerado = generarCodigoFactura();
 
             if (codigoGenerado == null) {
-                System.out.println("Error: No se pudo generar código de factura");
+                System.out.println(CargadorProperties.obtenerMessages("FC_E_007"));
                 return null;
             }
 
             PreparedStatement ps = conexion.prepareStatement(sql);
 
-            ps.setString(1, codigoGenerado);  // id_Factura
-            ps.setString(2, fac.getCedRucCliente());  // id_cliente ← USA getCedRucCliente()
-            ps.setString(3, fac.getNombreEmpresa());  // fac_Nombre_Empresa
-            ps.setString(4, fac.getEmailEmpresa());  // fac_Email_Empresa
-            ps.setString(5, fac.getTelefonoEmpresa());  // fac_Telefono_Empresa
-            ps.setTimestamp(6, Timestamp.valueOf(fac.getFechaHora()));  // fac_Fecha_Hora
-            ps.setDouble(7, fac.getSubtotal());  // fac_Subtotal
-            ps.setDouble(8, fac.getIva());  // fac_IVA
-            ps.setDouble(9, fac.getTotal());  // fac_Total
-            ps.setString(10, fac.getTipo());  // fac_Tipo
-            ps.setString(11, fac.getEstado());  // ESTADO_FAC
+            // 8 parámetros (SIN datos de empresa)
+            ps.setString(1, codigoGenerado);                              //id_Factura
+            ps.setString(2, fac.getCodigoCliente());                      //id_cliente
+            ps.setTimestamp(3, Timestamp.valueOf(fac.getFechaHora()));    //fac_Fecha_Hora
+            ps.setDouble(4, fac.getSubtotal());                           //fac_Subtotal
+            ps.setDouble(5, fac.getIva());                                //fac_IVA
+            ps.setDouble(6, fac.getTotal());                              //fac_Total
+            ps.setString(7, fac.getTipo());                               //fac_Tipo
+            ps.setString(8, fac.getEstado());                             //ESTADO_FAC
 
             int filas = ps.executeUpdate();
             ps.close();
@@ -67,9 +61,7 @@ public class FacturaMD {
         }
     }
     
-    /**
-     * Modifica la cabecera de una factura existente
-     */
+    //Modifica
     public boolean modificar(Factura fac) {
         String sql = CargadorProperties.obtenerConfigFactura("fac.modificar");
         
@@ -91,9 +83,7 @@ public class FacturaMD {
         }
     }
     
-    /**
-     * Elimina (inactiva) una factura
-     */
+    //Elimina
     public boolean eliminar(Factura fac) {
         String sql = CargadorProperties.obtenerConfigFactura("fac.eliminar");
         
@@ -111,18 +101,14 @@ public class FacturaMD {
         }
     }
     
-    /**
-     * Inserta la factura completa (cabecera + detalle de productos)
-     * Usa transacción y retorna el código generado
-     */
+    //Inserta la factura completa (cabecera y detalle)
+    //Devuelce el codigo de la factura
     public String insertarFacturaCompleta(Factura fac) {
         String codigoGenerado = null;
         
         try {
-            // Desactivar auto-commit para manejar transacción
             conexion.setAutoCommit(false);
             
-            // 1. Insertar cabecera de factura y obtener código generado
             codigoGenerado = insertar(fac);
             
             if (codigoGenerado == null) {
@@ -130,11 +116,9 @@ public class FacturaMD {
                 conexion.setAutoCommit(true);
                 return null;
             }
-            
-            // Actualizar el código en el objeto Factura
+
             fac.setCodigo(codigoGenerado);
             
-            // 2. Insertar detalle de productos
             String sqlProducto = CargadorProperties.obtenerConfigFactura("pxf.insertar");
             
             for (ProxFac producto : fac.getProductos()) {
@@ -157,7 +141,6 @@ public class FacturaMD {
                 }
             }
             
-            // 3. Si todo salió bien, confirmar transacción
             conexion.commit();
             conexion.setAutoCommit(true);
             return codigoGenerado;
@@ -175,70 +158,60 @@ public class FacturaMD {
         }
     }
     
-    /**
-     * Consulta todas las facturas activas
-     */
+    //Consulta todas las facturas activas
     public ArrayList<Factura> consultarTodos() {
-     String sql = CargadorProperties.obtenerConfigFactura("fac.consultar.todos");
-     ArrayList<Factura> lista = new ArrayList<>();
+        String sql = CargadorProperties.obtenerConfigFactura("fac.consultar.todos");
+        ArrayList<Factura> lista = new ArrayList<>();
 
-     try {
-         PreparedStatement ps = conexion.prepareStatement(sql);
-         ResultSet rs = ps.executeQuery();
+        try {
+            PreparedStatement ps = conexion.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery();
 
-         while (rs.next()) {
-             Factura fac = new Factura();
-             fac.setCodigo(rs.getString(CargadorProperties.obtenerConfigFactura("fac.1")));
-             fac.setCedRucCliente(rs.getString(CargadorProperties.obtenerConfigFactura("fac.2")));  // ← id_cliente
-             fac.setNombreEmpresa(rs.getString(CargadorProperties.obtenerConfigFactura("fac.3")));
-             fac.setEmailEmpresa(rs.getString(CargadorProperties.obtenerConfigFactura("fac.4")));
-             fac.setTelefonoEmpresa(rs.getString(CargadorProperties.obtenerConfigFactura("fac.5")));
-             fac.setFechaHora(rs.getTimestamp(CargadorProperties.obtenerConfigFactura("fac.6")).toLocalDateTime());
-             fac.setSubtotal(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.7")));
-             fac.setIva(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.8")));
-             fac.setTotal(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.9")));
-             fac.setTipo(rs.getString(CargadorProperties.obtenerConfigFactura("fac.10")));
-             fac.setEstado(rs.getString(CargadorProperties.obtenerConfigFactura("fac.11")));
+            while (rs.next()) {
+                Factura fac = new Factura();
+                fac.setCodigo(rs.getString(CargadorProperties.obtenerConfigFactura("fac.1")));           //id_Factura
+                fac.setCodigoCliente(rs.getString(CargadorProperties.obtenerConfigFactura("fac.2")));    //id_cliente
+                fac.setFechaHora(rs.getTimestamp(CargadorProperties.obtenerConfigFactura("fac.3")).toLocalDateTime()); //fac_Fecha_Hora
+                fac.setSubtotal(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.4")));         //fac_Subtotal
+                fac.setIva(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.5")));              //fac_IVA
+                fac.setTotal(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.6")));            //fac_Total
+                fac.setTipo(rs.getString(CargadorProperties.obtenerConfigFactura("fac.7")));             //fac_Tipo
+                fac.setEstado(rs.getString(CargadorProperties.obtenerConfigFactura("fac.8")));           //ESTADO_FAC
 
-             lista.add(fac);
-         }
+                lista.add(fac);
+            }
 
-         rs.close();
-         ps.close();
-     } catch (SQLException e) {
-         System.out.println(CargadorProperties.obtenerMessages("FC_E_006"));
-         e.printStackTrace();
-     }
+            rs.close();
+            ps.close();
+        } catch (SQLException e) {
+            System.out.println(CargadorProperties.obtenerMessages("FC_E_006"));
+            e.printStackTrace();
+        }
 
-     return lista;
- }
+        return lista;
+    }
 
-    /**
-     * Consulta facturas por cédula de cliente
-     */
+    //Consulta factura asociadas a un cliente
     public ArrayList<Factura> consultarPorParametro(Cliente cli) {
         String sql = CargadorProperties.obtenerConfigFactura("fac.consultar.porCliente");
         ArrayList<Factura> lista = new ArrayList<>();
 
         try {
             PreparedStatement ps = conexion.prepareStatement(sql);
-            ps.setString(1, cli.getCedRuc());  // ← Busca por cédula en JOIN
+            ps.setString(1, cli.getCedRuc());  //Busca por cédula en JOIN
 
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
                 Factura fac = new Factura();
-                fac.setCodigo(rs.getString(CargadorProperties.obtenerConfigFactura("fac.1")));
-                fac.setCedRucCliente(rs.getString(CargadorProperties.obtenerConfigFactura("fac.2")));  // ← id_cliente
-                fac.setNombreEmpresa(rs.getString(CargadorProperties.obtenerConfigFactura("fac.3")));
-                fac.setEmailEmpresa(rs.getString(CargadorProperties.obtenerConfigFactura("fac.4")));
-                fac.setTelefonoEmpresa(rs.getString(CargadorProperties.obtenerConfigFactura("fac.5")));
-                fac.setFechaHora(rs.getTimestamp(CargadorProperties.obtenerConfigFactura("fac.6")).toLocalDateTime());
-                fac.setSubtotal(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.7")));
-                fac.setIva(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.8")));
-                fac.setTotal(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.9")));
-                fac.setTipo(rs.getString(CargadorProperties.obtenerConfigFactura("fac.10")));
-                fac.setEstado(rs.getString(CargadorProperties.obtenerConfigFactura("fac.11")));
+                fac.setCodigo(rs.getString(CargadorProperties.obtenerConfigFactura("fac.1")));           //id_Factura
+                fac.setCodigoCliente(rs.getString(CargadorProperties.obtenerConfigFactura("fac.2")));    //id_cliente
+                fac.setFechaHora(rs.getTimestamp(CargadorProperties.obtenerConfigFactura("fac.3")).toLocalDateTime()); //fac_Fecha_Hora
+                fac.setSubtotal(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.4")));         //fac_Subtotal
+                fac.setIva(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.5")));              //fac_IVA
+                fac.setTotal(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.6")));            //fac_Total
+                fac.setTipo(rs.getString(CargadorProperties.obtenerConfigFactura("fac.7")));             //fac_Tipo
+                fac.setEstado(rs.getString(CargadorProperties.obtenerConfigFactura("fac.8")));           //ESTADO_FAC
 
                 lista.add(fac);
             }
@@ -253,25 +226,93 @@ public class FacturaMD {
         return lista;
     }
     
+    //Consulta una factura en especifico
+    public Factura consultarPorCodigo(Factura facParam) {
+        String sql = CargadorProperties.obtenerConfigFactura("fac.consultar.porCodigo");
+        Factura fac = null;
+
+        try {
+            PreparedStatement ps = conexion.prepareStatement(sql);
+            ps.setString(1, facParam.getCodigo());
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                fac = new Factura();
+                fac.setCodigo(rs.getString(CargadorProperties.obtenerConfigFactura("fac.1")));
+                fac.setCodigoCliente(rs.getString(CargadorProperties.obtenerConfigFactura("fac.2")));
+                fac.setFechaHora(rs.getTimestamp(CargadorProperties.obtenerConfigFactura("fac.3")).toLocalDateTime());
+                fac.setSubtotal(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.4")));
+                fac.setIva(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.5")));
+                fac.setTotal(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.6")));
+                fac.setTipo(rs.getString(CargadorProperties.obtenerConfigFactura("fac.7")));
+                fac.setEstado(rs.getString(CargadorProperties.obtenerConfigFactura("fac.8")));
+            }
+
+            rs.close();
+            ps.close();
+        } catch (SQLException e) {
+            System.out.println(CargadorProperties.obtenerMessages("FC_E_003"));
+            e.printStackTrace();
+        }
+
+        return fac;
+    }
+
+    //Utiliza procedure de la BD para generar el codigo de la factura
     public String generarCodigoFactura() {
         String codigo = null;
 
         try {
             CallableStatement cs = conexion.prepareCall("{? = call GenerarCodigoFactura()}");
-            cs.registerOutParameter(1, Types.CHAR); // ← CAMBIAR A Types.CHAR
+            cs.registerOutParameter(1, Types.CHAR);
             cs.execute();
             codigo = cs.getString(1);
 
             if (codigo != null) {
-                codigo = codigo.trim(); // ← AGREGAR .trim() para eliminar espacios
+                codigo = codigo.trim();
             }
 
             cs.close();
         } catch (SQLException e) {
-            System.out.println("Error al generar código de factura");
+            System.out.println(CargadorProperties.obtenerMessages("FC_E_007"));
             e.printStackTrace();
         }
 
         return codigo;
+    }
+    
+    //Consulta TODAS las facturas (APR y ANU) asociadas a un cliente
+    public ArrayList<Factura> consultarTodasPorParametro(Cliente cli) {
+        String sql = CargadorProperties.obtenerConfigFactura("fac.consultar.porCliente.todas");
+        ArrayList<Factura> lista = new ArrayList<>();
+
+        try {
+            PreparedStatement ps = conexion.prepareStatement(sql);
+            ps.setString(1, cli.getCedRuc());  //Busca por cédula en JOIN
+
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                Factura fac = new Factura();
+                fac.setCodigo(rs.getString(CargadorProperties.obtenerConfigFactura("fac.1")));
+                fac.setCodigoCliente(rs.getString(CargadorProperties.obtenerConfigFactura("fac.2")));
+                fac.setFechaHora(rs.getTimestamp(CargadorProperties.obtenerConfigFactura("fac.3")).toLocalDateTime());
+                fac.setSubtotal(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.4")));
+                fac.setIva(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.5")));
+                fac.setTotal(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.6")));
+                fac.setTipo(rs.getString(CargadorProperties.obtenerConfigFactura("fac.7")));
+                fac.setEstado(rs.getString(CargadorProperties.obtenerConfigFactura("fac.8")));
+
+                lista.add(fac);
+            }
+
+            rs.close();
+            ps.close();
+        } catch (SQLException e) {
+            System.out.println(CargadorProperties.obtenerMessages("FC_E_003"));
+            e.printStackTrace();
+        }
+
+        return lista;
     }
 }
