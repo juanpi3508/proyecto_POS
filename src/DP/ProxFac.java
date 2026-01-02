@@ -58,8 +58,20 @@ public class ProxFac {
     /**
     * Consulta todos los productos asociados a esta factura
     */
-   public ArrayList<ProxFac> consultarPorFactura(ProxFac pxf) {
+    public ArrayList<ProxFac> consultarPorFactura(ProxFac pxf) {
        ProxFacMD pxfMD = new ProxFacMD();
        return pxfMD.consultarPorFactura(pxf);
-   }
+    }
+   
+    //Elimina un producto en especifico
+    public boolean eliminar() {
+        ProxFacMD pxfMD = new ProxFacMD();
+        return pxfMD.eliminarProducto(this);
+    }
+    
+    //Elimina todos los productos de la factura
+    public boolean eliminarPorFactura() {
+        ProxFacMD pxfMD = new ProxFacMD();
+        return pxfMD.eliminarPorFactura(this);
+    }
 }
