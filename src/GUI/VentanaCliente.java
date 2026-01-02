@@ -1041,11 +1041,11 @@ public class VentanaCliente extends JFrame {
 
         lblTituloSuperior.setText(titulo);
     }
-    
+        
+    //Vuelve al panel vacío
     private void volverAlMenu() {
-        comboOpciones.setSelectedIndex(0);
-        actualizarTituloSuperior("Seleccione una opción...");
-        cardLayout.show(panelContenedor, PANEL_VACIO);
+        this.dispose();             
+        new MenuPrincipal().setVisible(true);
     }
     
     private void guardarCliente() {
