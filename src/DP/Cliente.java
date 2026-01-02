@@ -153,4 +153,10 @@ public class Cliente {
         ClienteMD cliMD = new ClienteMD();
         return cliMD.obtenerCiudades();
     }
+    
+    //Adicional para consulta especifica factura
+    public Cliente verificarPorIdDP(String idCliente){
+        ClienteMD cliMD = new ClienteMD();
+        return cliMD.verificarPorIdMD(idCliente);
+    }
 }
