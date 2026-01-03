@@ -72,7 +72,7 @@ public class VentanaProducto extends JFrame {
     }
     
     private void configurarVentana() {
-        setTitle("Gestión de Productos");
+        setTitle(CargadorProperties.obtenerComponentes("ventana.productos.titulo"));
         setExtendedState(JFrame.MAXIMIZED_BOTH); 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -83,11 +83,11 @@ public class VentanaProducto extends JFrame {
         panelContenedor = new JPanel(cardLayout);
         
         comboOpciones = new JComboBox<>(new String[]{
-            "Seleccione una opción...",
-            "Ingresar",
-            "Modificar",
-            "Eliminar",
-            "Consultar"
+            CargadorProperties.obtenerComponentes("combo.opciones.seleccione"),
+            CargadorProperties.obtenerComponentes("combo.opciones.ingresar"),
+            CargadorProperties.obtenerComponentes("combo.opciones.modificar"),
+            CargadorProperties.obtenerComponentes("combo.opciones.eliminar"),
+            CargadorProperties.obtenerComponentes("combo.opciones.consultar")
         });
         
         comboOpciones.addActionListener(e -> cambiarPanel());
@@ -102,32 +102,39 @@ public class VentanaProducto extends JFrame {
     private void configurarLayout() {
         setLayout(new BorderLayout(10, 10));
 
-        JPanel panelSuperior = new JPanel(new BorderLayout(15, 0));
+        JPanel panelSuperior = new JPanel(new BorderLayout());
         panelSuperior.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
-        lblTituloSuperior = new JLabel("Gestión de Productos");
-        lblTituloSuperior.setFont(new Font("Arial", Font.BOLD, 22));
-        lblTituloSuperior.setForeground(Color.DARK_GRAY);
+
+        JPanel panelFilaCombo = new JPanel(new BorderLayout());
         JPanel panelDerecha = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
         comboOpciones.setPreferredSize(new Dimension(260, 30));
         panelDerecha.add(comboOpciones);
-        panelSuperior.add(lblTituloSuperior, BorderLayout.WEST);
-        panelSuperior.add(panelDerecha, BorderLayout.EAST);
+        panelFilaCombo.add(panelDerecha, BorderLayout.EAST);
+
+        JPanel panelFilaTitulo = new JPanel(new BorderLayout());
+        lblTituloSuperior = new JLabel("", SwingConstants.CENTER);
+        lblTituloSuperior.setFont(new Font("Arial", Font.BOLD, 42));
+        lblTituloSuperior.setForeground(Color.DARK_GRAY);
+        panelFilaTitulo.add(lblTituloSuperior, BorderLayout.CENTER);
+
+        panelSuperior.add(panelFilaCombo, BorderLayout.NORTH);
+        panelSuperior.add(panelFilaTitulo, BorderLayout.CENTER);
+
         add(panelSuperior, BorderLayout.NORTH);
-        
         add(panelContenedor, BorderLayout.CENTER);
-        
+
         JPanel panelInferior = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
-        JButton btnVolver = new JButton("Volver");
+        JButton btnVolver = new JButton(CargadorProperties.obtenerComponentes("boton.volver"));
         btnVolver.addActionListener(e -> volverAlMenu());
         panelInferior.add(btnVolver);
         add(panelInferior, BorderLayout.SOUTH);
     }
-    
+ 
     private JPanel crearPanelVacio() {
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         
-        JLabel lblTitulo = new JLabel("Gestión de Productos");
+        JLabel lblTitulo = new JLabel(CargadorProperties.obtenerComponentes("ventana.productos.titulo.vacio"));
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 48));
         lblTitulo.setForeground(Color.DARK_GRAY);
         
@@ -182,11 +189,11 @@ public class VentanaProducto extends JFrame {
         txtPrecioVentaIng = new JTextField();
         txtPrecioVentaIng.setPreferredSize(new Dimension(350, 28));
 
-        lblImagenPreviewIng = new JLabel("Sin imagen", SwingConstants.CENTER);
+        lblImagenPreviewIng = new JLabel(CargadorProperties.obtenerComponentes("imagen.sin.imagen"), SwingConstants.CENTER);
         lblImagenPreviewIng.setPreferredSize(new Dimension(200, 234));
         lblImagenPreviewIng.setBorder(BorderFactory.createLineBorder(Color.GRAY));
 
-        btnSeleccionarImagenIng = new JButton("Seleccionar Imagen");
+        btnSeleccionarImagenIng = new JButton(CargadorProperties.obtenerComponentes("boton.seleccionar.imagen"));
         btnSeleccionarImagenIng.addActionListener(e -> seleccionarImagenIngresar());
 
         //Labels error
@@ -227,7 +234,7 @@ public class VentanaProducto extends JFrame {
 
         //Categoría
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Categoría:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.categoria")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(comboCategoriaIng, gbc);
@@ -241,7 +248,7 @@ public class VentanaProducto extends JFrame {
         //Codigo
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Código:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.codigo")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(txtCodigoIng, gbc);
@@ -255,7 +262,7 @@ public class VentanaProducto extends JFrame {
         //Descripcion
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Descripción:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.descripcion")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(txtDescripcionIng, gbc);
@@ -269,7 +276,7 @@ public class VentanaProducto extends JFrame {
         //Unidad compra
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Unidad de Compra:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.um.compra")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(comboUmCompraIng, gbc);
@@ -283,7 +290,7 @@ public class VentanaProducto extends JFrame {
         //Precio compra
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Precio de Compra:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.precio.compra")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(txtPrecioCompraIng, gbc);
@@ -297,7 +304,7 @@ public class VentanaProducto extends JFrame {
         //Unidad venta
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Unidad de Venta:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.um.venta")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(comboUmVentaIng, gbc);
@@ -311,7 +318,7 @@ public class VentanaProducto extends JFrame {
         //Precio venta
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Precio de Venta:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.precio.venta")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(txtPrecioVentaIng, gbc);
@@ -330,7 +337,7 @@ public class VentanaProducto extends JFrame {
 
         //Imagen
         gi.gridx = 0; gi.gridy = 0;
-        panelImagen.add(new JLabel("Imagen:"), gi);
+        panelImagen.add(new JLabel(CargadorProperties.obtenerComponentes("label.imagen")), gi);
 
         gi.gridx = 1; gi.gridy = 0;
         panelImagen.add(btnSeleccionarImagenIng, gi);
@@ -344,7 +351,7 @@ public class VentanaProducto extends JFrame {
         panelImagen.add(lblImagenPreviewIng, gi);
 
         //Guardar
-        JButton btnGuardar = new JButton("Guardar");
+        JButton btnGuardar = new JButton(CargadorProperties.obtenerComponentes("boton.guardar"));
         btnGuardar.addActionListener(e -> guardarProducto());
 
         gi.gridx = 1; gi.gridy = 3;
@@ -413,11 +420,11 @@ public class VentanaProducto extends JFrame {
         txtPrecioVentaMod.setPreferredSize(new Dimension(350, 28));
         txtPrecioVentaMod.setEnabled(false);
 
-        lblImagenPreviewMod = new JLabel("Sin imagen", SwingConstants.CENTER);
+        lblImagenPreviewMod = new JLabel(CargadorProperties.obtenerComponentes("imagen.sin.imagen"), SwingConstants.CENTER);
         lblImagenPreviewMod.setPreferredSize(new Dimension(200, 245));
         lblImagenPreviewMod.setBorder(BorderFactory.createLineBorder(Color.GRAY));
 
-        btnSeleccionarImagenMod = new JButton("Cambiar Imagen");
+        btnSeleccionarImagenMod = new JButton(CargadorProperties.obtenerComponentes("boton.cambiar.imagen"));
         btnSeleccionarImagenMod.setEnabled(false);
         btnSeleccionarImagenMod.addActionListener(e -> seleccionarImagenModificar());
 
@@ -450,14 +457,14 @@ public class VentanaProducto extends JFrame {
 
         //Código con botón Buscar
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Código:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.codigo")), gbc);
 
         gbc.gridx = 1;
         gbc.gridwidth = 3;
         JPanel panelCodigo = new JPanel(new BorderLayout(5, 0));
         panelCodigo.add(txtCodigoMod, BorderLayout.CENTER);
 
-        JLabel lblLupa = new JLabel("🔍");
+        JLabel lblLupa = new JLabel(CargadorProperties.obtenerComponentes("emoji.lupa"));
         lblLupa.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
         lblLupa.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         lblLupa.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 0));
@@ -481,7 +488,7 @@ public class VentanaProducto extends JFrame {
         //Descripción
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Descripción:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.descripcion")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(txtDescripcionMod, gbc);
@@ -495,7 +502,8 @@ public class VentanaProducto extends JFrame {
         //Unidad compra
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Unidad de Compra:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.um.compra")
+), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(comboUmCompraMod, gbc);
@@ -509,7 +517,7 @@ public class VentanaProducto extends JFrame {
         //Precio compra
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Precio de Compra:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.precio.compra")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(txtPrecioCompraMod, gbc);
@@ -523,7 +531,7 @@ public class VentanaProducto extends JFrame {
         //Unidad venta
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Unidad de Venta:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.um.venta")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(comboUmVentaMod, gbc);
@@ -537,7 +545,7 @@ public class VentanaProducto extends JFrame {
         //Precio venta
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Precio de Venta:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.precio.venta")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(txtPrecioVentaMod, gbc);
@@ -556,7 +564,7 @@ public class VentanaProducto extends JFrame {
 
         //Imagen
         gi.gridx = 0; gi.gridy = 0;
-        panelImagen.add(new JLabel("Imagen:"), gi);
+        panelImagen.add(new JLabel(CargadorProperties.obtenerComponentes("label.imagen")), gi);
 
         gi.gridx = 1; gi.gridy = 0;
         panelImagen.add(btnSeleccionarImagenMod, gi);
@@ -566,7 +574,7 @@ public class VentanaProducto extends JFrame {
         panelImagen.add(lblImagenPreviewMod, gi);
 
         //Guardar
-        btnGuardarMod = new JButton("Guardar");
+        btnGuardarMod = new JButton(CargadorProperties.obtenerComponentes("boton.guardar"));
         btnGuardarMod.setEnabled(false);
         btnGuardarMod.addActionListener(e -> modificarProducto());
 
@@ -648,7 +656,7 @@ public class VentanaProducto extends JFrame {
         txtSaldoFinElim.setPreferredSize(new Dimension(350, 28));
         txtSaldoFinElim.setEnabled(false);
 
-        lblImagenPreviewElim = new JLabel("Sin imagen", SwingConstants.CENTER);
+        lblImagenPreviewElim = new JLabel(CargadorProperties.obtenerComponentes("imagen.sin.imagen"), SwingConstants.CENTER);
         lblImagenPreviewElim.setPreferredSize(new Dimension(230, 290));
         lblImagenPreviewElim.setBorder(BorderFactory.createLineBorder(Color.GRAY));
 
@@ -658,14 +666,14 @@ public class VentanaProducto extends JFrame {
         // Código con lupa
         gbc.gridx = 0; gbc.gridy = fila;
         gbc.gridwidth = 1;
-        panelCampos.add(new JLabel("Código:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.codigo")), gbc);
 
         gbc.gridx = 1;
         gbc.gridwidth = 3;
         JPanel panelCodigo = new JPanel(new BorderLayout(5, 0));
         panelCodigo.add(txtCodigoElim, BorderLayout.CENTER);
 
-        JLabel lblLupa = new JLabel("🔍");
+        JLabel lblLupa = new JLabel(CargadorProperties.obtenerComponentes("emoji.lupa"));
         lblLupa.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
         lblLupa.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         lblLupa.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 0));
@@ -683,7 +691,7 @@ public class VentanaProducto extends JFrame {
         // Descripción
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Descripción:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.descripcion")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(txtDescripcionElim, gbc);
@@ -691,7 +699,7 @@ public class VentanaProducto extends JFrame {
         // Categoría
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Categoría:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.categoria")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(txtCategoriaElim, gbc);
@@ -699,7 +707,7 @@ public class VentanaProducto extends JFrame {
         // Unidad compra
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Unidad de Compra:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.um.compra")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(txtUmCompraElim, gbc);
@@ -707,7 +715,7 @@ public class VentanaProducto extends JFrame {
         // Precio compra
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Precio de Compra:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.precio.compra")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(txtPrecioCompraElim, gbc);
@@ -715,7 +723,7 @@ public class VentanaProducto extends JFrame {
         // Unidad venta
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Unidad de Venta:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.um.venta")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(txtUmVentaElim, gbc);
@@ -723,7 +731,7 @@ public class VentanaProducto extends JFrame {
         // Precio venta
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Precio de Venta:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.precio.venta")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(txtPrecioVentaElim, gbc);
@@ -731,7 +739,7 @@ public class VentanaProducto extends JFrame {
         // Saldo Inicial
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Saldo Inicial:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.saldo.inicial")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(txtSaldoIniElim, gbc);
@@ -739,7 +747,7 @@ public class VentanaProducto extends JFrame {
         // Saldo Final
         fila++;
         gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel("Saldo Final:"), gbc);
+        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.saldo.final")), gbc);
 
         gbc.gridx = 1;
         panelCampos.add(txtSaldoFinElim, gbc);
@@ -752,14 +760,14 @@ public class VentanaProducto extends JFrame {
 
         // Imagen
         gi.gridx = 0; gi.gridy = 0;
-        panelImagen.add(new JLabel("Imagen:"), gi);
+        panelImagen.add(new JLabel(CargadorProperties.obtenerComponentes("label.imagen")), gi);
 
         gi.gridx = 0; gi.gridy = 1;
         gi.insets = new Insets(10, 10, 0, 10);
         panelImagen.add(lblImagenPreviewElim, gi);
 
         // Eliminar
-        btnEliminar = new JButton("Eliminar");
+        btnEliminar = new JButton(CargadorProperties.obtenerComponentes("boton.eliminar"));
         btnEliminar.setEnabled(false);
         btnEliminar.addActionListener(e -> eliminarProducto());
 
@@ -791,9 +799,9 @@ public class VentanaProducto extends JFrame {
         // Panel superior con combo tipo de consulta CENTRADO
         JPanel panelTipo = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         comboTipoConsulta = new JComboBox<>(new String[]{
-            "Seleccione tipo de consulta...",
-            "Consulta General",
-            "Consulta por Parámetro"
+            CargadorProperties.obtenerComponentes("combo.consulta.seleccione"),
+            CargadorProperties.obtenerComponentes("combo.consulta.general"),
+            CargadorProperties.obtenerComponentes("combo.consulta.parametro")
         });
         comboTipoConsulta.setPreferredSize(new Dimension(250, 30));
         comboTipoConsulta.addActionListener(e -> cambiarTipoConsulta());
@@ -807,12 +815,12 @@ public class VentanaProducto extends JFrame {
         panelBusqueda = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         txtBusqueda = new JTextField(20);
         txtBusqueda.setPreferredSize(new Dimension(250, 25));
-        txtBusqueda.setToolTipText("Ingrese texto para buscar...");
+        txtBusqueda.setToolTipText(CargadorProperties.obtenerComponentes("tooltip.busqueda"));
 
         comboParametroBusqueda = new JComboBox<>();
         comboParametroBusqueda.setPreferredSize(new Dimension(200, 25));
 
-        panelBusqueda.add(new JLabel("Buscar:"));
+        panelBusqueda.add(new JLabel(CargadorProperties.obtenerComponentes("label.buscar")));
         panelBusqueda.add(txtBusqueda);
         panelBusqueda.add(comboParametroBusqueda);
         panelBusqueda.setVisible(false);
@@ -821,15 +829,15 @@ public class VentanaProducto extends JFrame {
 
         // Tabla de resultados
         String[] columnas = {
-            "Código", 
-            "Descripción", 
-            "Categoría", 
-            "Unidad Compra", 
-            "Precio Compra", 
-            "Unidad Venta", 
-            "Precio Venta", 
-            "Saldo Inicial",
-            "Saldo Final"
+            CargadorProperties.obtenerComponentes("tabla.col.codigo"), 
+            CargadorProperties.obtenerComponentes("tabla.col.descripcion"), 
+            CargadorProperties.obtenerComponentes("tabla.col.categoria"), 
+            CargadorProperties.obtenerComponentes("tabla.col.um.compra"), 
+            CargadorProperties.obtenerComponentes("tabla.col.precio.compra"), 
+            CargadorProperties.obtenerComponentes("tabla.col.um.venta"), 
+            CargadorProperties.obtenerComponentes("tabla.col.precio.venta"), 
+            CargadorProperties.obtenerComponentes("tabla.col.saldo.inicial"),
+            CargadorProperties.obtenerComponentes("tabla.col.saldo.final")
         };
 
         modeloTabla = new DefaultTableModel(columnas, 0) {
@@ -869,32 +877,32 @@ public class VentanaProducto extends JFrame {
     }
     
     private void cambiarPanel() {
-        String seleccion = (String) comboOpciones.getSelectedItem();
-        
+        int seleccion = comboOpciones.getSelectedIndex();
+
         switch (seleccion) {
-            case "Ingresar":
+            case 1: //Ingresar
                 cardLayout.show(panelContenedor, PANEL_INGRESAR);
-                lblTituloSuperior.setText("Ingresar Producto");
+                lblTituloSuperior.setText(CargadorProperties.obtenerComponentes("ventana.productos.titulo.ingresar"));
                 limpiarCamposIngresar();
                 break;
-            case "Modificar":
+            case 2: //Modificar
                 cardLayout.show(panelContenedor, PANEL_MODIFICAR);
-                lblTituloSuperior.setText("Modificar Producto");
+                lblTituloSuperior.setText(CargadorProperties.obtenerComponentes("ventana.productos.titulo.modificar"));
                 limpiarCamposModificar();
                 break;
-            case "Eliminar":
+            case 3: //Eliminar
                 cardLayout.show(panelContenedor, PANEL_ELIMINAR);
-                lblTituloSuperior.setText("Eliminar Producto");
+                lblTituloSuperior.setText(CargadorProperties.obtenerComponentes("ventana.productos.titulo.eliminar"));
                 limpiarCamposEliminar();
                 break;
-            case "Consultar":
+            case 4: //Consultar
                 cardLayout.show(panelContenedor, PANEL_CONSULTAR);
-                lblTituloSuperior.setText("Consultar Productos");
+                lblTituloSuperior.setText(CargadorProperties.obtenerComponentes("ventana.productos.titulo.consultar"));
                 comboTipoConsulta.setSelectedIndex(0);
                 break;
-            default:
+            default: 
                 cardLayout.show(panelContenedor, PANEL_VACIO);
-                lblTituloSuperior.setText("Gestión de Productos");
+                lblTituloSuperior.setText(CargadorProperties.obtenerComponentes("ventana.productos.titulo"));
                 break;
         }
     }
@@ -938,11 +946,11 @@ public class VentanaProducto extends JFrame {
     
     private void cargarParametrosBusqueda() {
         comboParametroBusqueda.removeAllItems();
-        comboParametroBusqueda.addItem(new ItemCombo("codigo", "Código"));
-        comboParametroBusqueda.addItem(new ItemCombo("descripcion", "Descripción"));
-        comboParametroBusqueda.addItem(new ItemCombo("categoria", "Categoría"));
-        comboParametroBusqueda.addItem(new ItemCombo("um_compra", "UM Compra"));
-        comboParametroBusqueda.addItem(new ItemCombo("um_venta", "UM Venta"));
+        comboParametroBusqueda.addItem(new ItemCombo("codigo", CargadorProperties.obtenerComponentes("combo.param.codigo")));
+        comboParametroBusqueda.addItem(new ItemCombo("descripcion", CargadorProperties.obtenerComponentes("combo.param.descripcion")));
+        comboParametroBusqueda.addItem(new ItemCombo("categoria", CargadorProperties.obtenerComponentes("combo.param.categoria")));
+        comboParametroBusqueda.addItem(new ItemCombo("um_compra", CargadorProperties.obtenerComponentes("combo.param.um.compra")));
+        comboParametroBusqueda.addItem(new ItemCombo("um_venta", CargadorProperties.obtenerComponentes("combo.param.um.venta")));
     }
     
     private void generarCodigoAutomatico() {
@@ -1132,7 +1140,7 @@ public class VentanaProducto extends JFrame {
     private void seleccionarImagenIngresar() {
         JFileChooser fileChooser = new JFileChooser();
         FileNameExtensionFilter filter = new FileNameExtensionFilter(
-            "Imágenes (JPG, PNG, GIF)", "jpg", "jpeg", "png", "gif"
+            CargadorProperties.obtenerComponentes("file.chooser.filtro.imagenes"), "jpg", "jpeg", "png", "gif"
         );
         fileChooser.setFileFilter(filter);
         
@@ -1150,7 +1158,7 @@ public class VentanaProducto extends JFrame {
     private void seleccionarImagenModificar() {
         JFileChooser fileChooser = new JFileChooser();
         FileNameExtensionFilter filter = new FileNameExtensionFilter(
-            "Imágenes (JPG, PNG, GIF)", "jpg", "jpeg", "png", "gif"
+            CargadorProperties.obtenerComponentes("file.chooser.filtro.imagenes"), "jpg", "jpeg", "png", "gif"
         );
         fileChooser.setFileFilter(filter);
         
@@ -1171,7 +1179,7 @@ public class VentanaProducto extends JFrame {
             lblPreview.setIcon(new ImageIcon(imagenEscalada));
             lblPreview.setText("");
         } catch (IOException e) {
-            lblPreview.setText("Error al cargar");
+            lblPreview.setText(CargadorProperties.obtenerComponentes("imagen.error.cargar"));
             e.printStackTrace();
         }
     }
@@ -1194,11 +1202,11 @@ public class VentanaProducto extends JFrame {
                 lblPreview.setText("");
             } else {
                 lblPreview.setIcon(null);
-                lblPreview.setText("Sin imagen");
+                lblPreview.setText(CargadorProperties.obtenerComponentes("imagen.sin.imagen"));
             }
         } catch (IOException e) {
             lblPreview.setIcon(null);
-            lblPreview.setText("Error al cargar");
+            lblPreview.setText(CargadorProperties.obtenerComponentes("imagen.error.cargar"));
             e.printStackTrace();
         }
     }
@@ -1224,8 +1232,8 @@ public class VentanaProducto extends JFrame {
         } catch (IOException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                "Error al copiar la imagen",
-                "Error",
+                CargadorProperties.obtenerMessages("PD_A_016"), 
+                CargadorProperties.obtenerMessages("FC_C_004"),
                 JOptionPane.ERROR_MESSAGE);
             return null;
         }
@@ -1245,7 +1253,7 @@ public class VentanaProducto extends JFrame {
         String precioVenta = txtPrecioVentaIng.getText().trim();
         
         if (rutaImagenSeleccionadaIng.isEmpty()) {
-            lblErrorImagenIng.setText("Debe seleccionar una imagen");
+            lblErrorImagenIng.setText(CargadorProperties.obtenerMessages("PD_A_012"));
             return;
         }
         
@@ -1254,8 +1262,8 @@ public class VentanaProducto extends JFrame {
                                                        idUmVenta, precioVenta, 
                                                        rutaImagenSeleccionadaIng)) {
             JOptionPane.showMessageDialog(this,
-                "Por favor corrija los errores antes de guardar",
-                "Validación",
+                CargadorProperties.obtenerMessages("PD_A_013"),
+                CargadorProperties.obtenerMessages("FC_C_005"),
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -1279,13 +1287,13 @@ public class VentanaProducto extends JFrame {
         if (pro.grabarDP()) {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("PD_I_001"),
-                "Éxito",
+                CargadorProperties.obtenerMessages("FC_C_003"),
                 JOptionPane.INFORMATION_MESSAGE);
             limpiarCamposIngresar();
         } else {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("PD_E_001"),
-                "Error",
+                CargadorProperties.obtenerMessages("FC_C_004"),
                 JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -1295,8 +1303,8 @@ public class VentanaProducto extends JFrame {
         
         if (codigo.isEmpty()) {
             JOptionPane.showMessageDialog(this,
-                "Ingrese un código para buscar",
-                "Advertencia",
+                CargadorProperties.obtenerMessages("PD_A_014"),
+                CargadorProperties.obtenerMessages("FC_C_005"),
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -1341,8 +1349,8 @@ public class VentanaProducto extends JFrame {
             btnGuardarMod.setEnabled(true);
         } else {
             JOptionPane.showMessageDialog(this,
-                "Producto no encontrado",
-                "Búsqueda",
+                CargadorProperties.obtenerMessages("PD_A_015"),
+                CargadorProperties.obtenerMessages("FC_C_006"),
                 JOptionPane.INFORMATION_MESSAGE);
         }
     }
@@ -1361,8 +1369,8 @@ public class VentanaProducto extends JFrame {
                                                         precioCompra, idUmVenta, 
                                                         precioVenta)) {
             JOptionPane.showMessageDialog(this,
-                "Por favor corrija los errores antes de guardar",
-                "Validación",
+                CargadorProperties.obtenerMessages("PD_A_013"),
+                CargadorProperties.obtenerMessages("FC_C_005"),
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -1391,13 +1399,13 @@ public class VentanaProducto extends JFrame {
         if (pro.grabarDP()) {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("PD_I_002"),
-                "Éxito",
+                CargadorProperties.obtenerMessages("FC_C_003"),
                 JOptionPane.INFORMATION_MESSAGE);
             limpiarCamposModificar();
         } else {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("PD_E_003"),
-                "Error",
+                CargadorProperties.obtenerMessages("FC_C_004"),
                 JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -1407,8 +1415,8 @@ public class VentanaProducto extends JFrame {
         
         if (codigo.isEmpty()) {
             JOptionPane.showMessageDialog(this,
-                "Ingrese un código para buscar",
-                "Advertencia",
+                CargadorProperties.obtenerMessages("PD_A_014"),
+                CargadorProperties.obtenerMessages("FC_C_005"),
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -1431,16 +1439,16 @@ public class VentanaProducto extends JFrame {
             btnEliminar.setEnabled(true);
         } else {
             JOptionPane.showMessageDialog(this,
-                "Producto no encontrado",
-                "Búsqueda",
+                CargadorProperties.obtenerMessages("PD_A_015"),
+                CargadorProperties.obtenerMessages("FC_C_006"),
                 JOptionPane.INFORMATION_MESSAGE);
         }
     }
     
     private void eliminarProducto() {
         int confirm = JOptionPane.showConfirmDialog(this,
-            "¿Está seguro de eliminar el producto " + txtDescripcionElim.getText() + "?",
-            "Confirmar eliminación",
+            CargadorProperties.obtenerMessages("PD_C_001") + txtDescripcionElim.getText() + CargadorProperties.obtenerMessages("PD_C_002"), 
+            CargadorProperties.obtenerMessages("FC_A_008"),
             JOptionPane.YES_NO_OPTION);
         
         if (confirm == JOptionPane.YES_OPTION) {
@@ -1450,13 +1458,13 @@ public class VentanaProducto extends JFrame {
             if (pro.eliminarDP()) {
                 JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("PD_I_003"),
-                    "Éxito",
+                    CargadorProperties.obtenerMessages("FC_C_003"),
                     JOptionPane.INFORMATION_MESSAGE);
                 limpiarCamposEliminar();
             } else {
                 JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("PD_E_004"),
-                    "Error",
+                    CargadorProperties.obtenerMessages("FC_C_004"),
                     JOptionPane.ERROR_MESSAGE);
             }
         }
@@ -1465,11 +1473,11 @@ public class VentanaProducto extends JFrame {
     private void cambiarTipoConsulta() {
         String tipo = (String) comboTipoConsulta.getSelectedItem();
         
-        if ("Consulta General".equals(tipo)) {
+        if (CargadorProperties.obtenerComponentes("combo.consulta.general").equals(tipo)) {
             panelBusqueda.setVisible(false);
             scrollTabla.setVisible(true);
             consultarGeneral();
-        } else if ("Consulta por Parámetro".equals(tipo)) {
+        } else if (CargadorProperties.obtenerComponentes("combo.consulta.parametro").equals(tipo)) {
             panelBusqueda.setVisible(true);
             scrollTabla.setVisible(true);
             modeloTabla.setRowCount(0);
@@ -1572,7 +1580,7 @@ public class VentanaProducto extends JFrame {
         Producto encontrado = pro.verificarPorCodigoDP(codigo);
         
         if (encontrado != null && encontrado.getImagen() != null && !encontrado.getImagen().isEmpty()) {
-            JDialog dialog = new JDialog(this, "Imagen del Producto " + codigo, true);
+            JDialog dialog = new JDialog(this, CargadorProperties.obtenerComponentes("popup.imagen.titulo") + codigo, true);
             dialog.setLayout(new BorderLayout(10, 10));
             
             try {
@@ -1602,7 +1610,7 @@ public class VentanaProducto extends JFrame {
                     dialog.add(lblImagen, BorderLayout.CENTER);
                     
                     JPanel panelBoton = new JPanel(new FlowLayout(FlowLayout.CENTER));
-                    JButton btnCerrar = new JButton("Cerrar");
+                    JButton btnCerrar = new JButton(CargadorProperties.obtenerComponentes("boton.cerrar"));
                     btnCerrar.addActionListener(e -> dialog.dispose());
                     panelBoton.add(btnCerrar);
                     dialog.add(panelBoton, BorderLayout.SOUTH);
@@ -1612,21 +1620,21 @@ public class VentanaProducto extends JFrame {
                     dialog.setVisible(true);
                 } else {
                     JOptionPane.showMessageDialog(this,
-                        "Archivo de imagen no encontrado",
-                        "Error",
+                        CargadorProperties.obtenerMessages("PD_A_018"), 
+                        CargadorProperties.obtenerMessages("FC_C_004"),
                         JOptionPane.ERROR_MESSAGE);
                 }
             } catch (IOException e) {
                 JOptionPane.showMessageDialog(this,
-                    "Error al cargar la imagen",
-                    "Error",
+                    CargadorProperties.obtenerMessages("PD_A_017"), 
+                    CargadorProperties.obtenerMessages("FC_C_004"),
                     JOptionPane.ERROR_MESSAGE);
                 e.printStackTrace();
             }
         } else {
             JOptionPane.showMessageDialog(this,
-                "Este producto no tiene imagen asociada",
-                "Información",
+                CargadorProperties.obtenerMessages("PD_A_019"),
+                CargadorProperties.obtenerMessages("FC_C_006"),
                 JOptionPane.INFORMATION_MESSAGE);
         }
     }
@@ -1640,7 +1648,7 @@ public class VentanaProducto extends JFrame {
         comboUmVentaIng.setSelectedIndex(0);
         txtPrecioVentaIng.setText("");
         lblImagenPreviewIng.setIcon(null);
-        lblImagenPreviewIng.setText("Sin imagen");
+        lblImagenPreviewIng.setText(CargadorProperties.obtenerComponentes("imagen.sin.imagen"));
         rutaImagenSeleccionadaIng = "";
         
         lblErrorCategoriaIng.setText(" ");
@@ -1661,7 +1669,7 @@ public class VentanaProducto extends JFrame {
         comboUmVentaMod.setSelectedIndex(0);
         txtPrecioVentaMod.setText("");
         lblImagenPreviewMod.setIcon(null);
-        lblImagenPreviewMod.setText("Sin imagen");
+        lblImagenPreviewMod.setText(CargadorProperties.obtenerComponentes("imagen.sin.imagen"));
         rutaImagenSeleccionadaMod = "";
         codigoProductoActual = "";
         
@@ -1694,7 +1702,7 @@ public class VentanaProducto extends JFrame {
         txtSaldoIniElim.setText("");
         txtSaldoFinElim.setText("");
         lblImagenPreviewElim.setIcon(null);
-        lblImagenPreviewElim.setText("Sin imagen");
+        lblImagenPreviewElim.setText(CargadorProperties.obtenerComponentes("imagen.sin.imagen"));
         
         btnEliminar.setEnabled(false);
     }
