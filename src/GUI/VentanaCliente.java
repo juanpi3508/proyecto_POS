@@ -26,6 +26,12 @@ public class VentanaCliente extends JFrame {
     private static final String PANEL_ELIMINAR = "ELIMINAR";
     private static final String PANEL_CONSULTAR = "CONSULTAR";
     
+    private static final int OPCION_SELECCIONE = 0;
+    private static final int OPCION_INGRESAR = 1;
+    private static final int OPCION_MODIFICAR = 2;
+    private static final int OPCION_ELIMINAR = 3;
+    private static final int OPCION_CONSULTAR = 4;
+    
     private JTextField txtCedulaIng, txtNombreIng, txtTelefonoIng, txtEmailIng, txtDireccionIng;
     private JComboBox<ItemCombo> comboCiudadIng;
     private JLabel lblErrorCedulaIng, lblErrorNombreIng, lblErrorTelefonoIng;
@@ -58,7 +64,7 @@ public class VentanaCliente extends JFrame {
     }
     
     private void configurarVentana() {
-        setTitle("Gestión de Clientes");
+        setTitle(CargadorProperties.obtenerComponentes("ventana.clientes.titulo"));
         setExtendedState(JFrame.MAXIMIZED_BOTH); 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -69,11 +75,11 @@ public class VentanaCliente extends JFrame {
         panelContenedor = new JPanel(cardLayout);
         
         comboOpciones = new JComboBox<>(new String[]{
-            "Seleccione una opción...",
-            "Ingresar",
-            "Modificar",
-            "Eliminar",
-            "Consultar"
+            CargadorProperties.obtenerComponentes("combo.opciones.seleccione"),
+            CargadorProperties.obtenerComponentes("combo.opciones.ingresar"),
+            CargadorProperties.obtenerComponentes("combo.opciones.modificar"),
+            CargadorProperties.obtenerComponentes("combo.opciones.eliminar"),
+            CargadorProperties.obtenerComponentes("combo.opciones.consultar")
         });
         
         comboOpciones.addActionListener(e -> cambiarPanel());
@@ -88,22 +94,29 @@ public class VentanaCliente extends JFrame {
     private void configurarLayout() {
         setLayout(new BorderLayout(10, 10));
 
-        JPanel panelSuperior = new JPanel(new BorderLayout(15, 0));
+        JPanel panelSuperior = new JPanel(new BorderLayout());
         panelSuperior.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
-        lblTituloSuperior = new JLabel("Gestión de Clientes");
-        lblTituloSuperior.setFont(new Font("Arial", Font.BOLD, 22));
-        lblTituloSuperior.setForeground(Color.DARK_GRAY);
+
+        JPanel panelFilaCombo = new JPanel(new BorderLayout());
         JPanel panelDerecha = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
         comboOpciones.setPreferredSize(new Dimension(260, 30));
         panelDerecha.add(comboOpciones);
-        panelSuperior.add(lblTituloSuperior, BorderLayout.WEST);
-        panelSuperior.add(panelDerecha, BorderLayout.EAST);
+        panelFilaCombo.add(panelDerecha, BorderLayout.EAST);
+
+        JPanel panelFilaTitulo = new JPanel(new BorderLayout());
+        lblTituloSuperior = new JLabel("", SwingConstants.CENTER);
+        lblTituloSuperior.setFont(new Font("Arial", Font.BOLD, 42));
+        lblTituloSuperior.setForeground(Color.DARK_GRAY);
+        panelFilaTitulo.add(lblTituloSuperior, BorderLayout.CENTER);
+
+        panelSuperior.add(panelFilaCombo, BorderLayout.NORTH);
+        panelSuperior.add(panelFilaTitulo, BorderLayout.CENTER);
+
         add(panelSuperior, BorderLayout.NORTH);
-        
         add(panelContenedor, BorderLayout.CENTER);
-        
+
         JPanel panelInferior = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
-        JButton btnVolver = new JButton("Volver");
+        JButton btnVolver = new JButton(CargadorProperties.obtenerComponentes("boton.volver"));
         btnVolver.addActionListener(e -> volverAlMenu());
         panelInferior.add(btnVolver);
         add(panelInferior, BorderLayout.SOUTH);
@@ -113,7 +126,7 @@ public class VentanaCliente extends JFrame {
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         
-        JLabel lblTitulo = new JLabel("Gestión de Clientes");
+        JLabel lblTitulo = new JLabel(CargadorProperties.obtenerComponentes("ventana.clientes.titulo.vacio"));
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 48));
         lblTitulo.setForeground(Color.DARK_GRAY);
         
@@ -192,7 +205,7 @@ public class VentanaCliente extends JFrame {
         //Cedula o RUC
         gbc.gridx = 0;
         gbc.gridy = fila;
-        panel.add(new JLabel("Cédula o RUC:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.cedula.ruc")), gbc);
         
         gbc.gridx = 1;
         panel.add(txtCedulaIng, gbc);
@@ -209,7 +222,7 @@ public class VentanaCliente extends JFrame {
         //Nombre
         gbc.gridx = 0;
         gbc.gridy = fila;
-        panel.add(new JLabel("Nombre:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.nombre")), gbc);
         
         gbc.gridx = 1;
         panel.add(txtNombreIng, gbc);
@@ -226,7 +239,7 @@ public class VentanaCliente extends JFrame {
         //Telefono
         gbc.gridx = 0;
         gbc.gridy = fila;
-        panel.add(new JLabel("Teléfono:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.telefono")), gbc);
         
         gbc.gridx = 1;
         panel.add(txtTelefonoIng, gbc);
@@ -243,7 +256,7 @@ public class VentanaCliente extends JFrame {
         //Email
         gbc.gridx = 0;
         gbc.gridy = fila;
-        panel.add(new JLabel("Email:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.email")), gbc);
         
         gbc.gridx = 1;
         panel.add(txtEmailIng, gbc);
@@ -263,7 +276,7 @@ public class VentanaCliente extends JFrame {
         gbc.gridx = 2;
         gbc.gridy = fila;
         gbc.insets = new Insets(5, 10, 0, 10); 
-        panel.add(new JLabel("Ciudad:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.ciudad")), gbc);
         
         gbc.gridx = 3;
         panel.add(comboCiudadIng, gbc);
@@ -280,7 +293,7 @@ public class VentanaCliente extends JFrame {
         //Direccion
         gbc.gridx = 2;
         gbc.gridy = fila;
-        panel.add(new JLabel("Dirección:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.direccion")), gbc);
         
         gbc.gridx = 3;
         panel.add(txtDireccionIng, gbc);
@@ -297,7 +310,7 @@ public class VentanaCliente extends JFrame {
         gbc.gridy = fila;
         gbc.anchor = GridBagConstraints.EAST;
         gbc.insets = new Insets(0, 10, 0, 10);
-        JButton btnGuardar = new JButton("Guardar");
+        JButton btnGuardar = new JButton(CargadorProperties.obtenerComponentes("boton.guardar"));
         btnGuardar.setPreferredSize(new Dimension(100, 25));
         btnGuardar.addActionListener(e -> guardarCliente());
         panel.add(btnGuardar, gbc);
@@ -383,13 +396,13 @@ public class VentanaCliente extends JFrame {
         gbc.gridx = 0;
         gbc.gridy = fila;
         gbc.gridwidth = 1;
-        panel.add(new JLabel("Cédula o RUC:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.cedula.ruc")), gbc);
         
         gbc.gridx = 1;
         gbc.gridwidth = 3;
         JPanel panelCedula = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         panelCedula.add(txtCedulaMod);
-        JLabel lblLupa = new JLabel("🔍");
+        JLabel lblLupa = new JLabel(CargadorProperties.obtenerComponentes("emoji.lupa"));
         lblLupa.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
         lblLupa.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         lblLupa.addMouseListener(new MouseAdapter() {
@@ -416,7 +429,7 @@ public class VentanaCliente extends JFrame {
         //Nombre
         gbc.gridx = 0;
         gbc.gridy = fila;
-        panel.add(new JLabel("Nombre:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.nombre")), gbc);
         
         gbc.gridx = 1;
         panel.add(txtNombreMod, gbc);
@@ -433,7 +446,7 @@ public class VentanaCliente extends JFrame {
         //Telefono
         gbc.gridx = 0;
         gbc.gridy = fila;
-        panel.add(new JLabel("Teléfono:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.telefono")), gbc);
         
         gbc.gridx = 1;
         panel.add(txtTelefonoMod, gbc);
@@ -450,7 +463,7 @@ public class VentanaCliente extends JFrame {
         //Email
         gbc.gridx = 0;
         gbc.gridy = fila;
-        panel.add(new JLabel("Email:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.email")), gbc);
         
         gbc.gridx = 1;
         panel.add(txtEmailMod, gbc);
@@ -469,7 +482,7 @@ public class VentanaCliente extends JFrame {
         gbc.gridx = 2;
         gbc.gridy = fila;
         gbc.insets = new Insets(5, 10, 0, 10);
-        panel.add(new JLabel("Ciudad:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.ciudad")), gbc);
         
         gbc.gridx = 3;
         panel.add(comboCiudadMod, gbc);
@@ -486,7 +499,7 @@ public class VentanaCliente extends JFrame {
         //Direccion
         gbc.gridx = 2;
         gbc.gridy = fila;
-        panel.add(new JLabel("Dirección:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.direccion")), gbc);
         
         gbc.gridx = 3;
         panel.add(txtDireccionMod, gbc);
@@ -503,7 +516,7 @@ public class VentanaCliente extends JFrame {
         gbc.gridy = fila;
         gbc.anchor = GridBagConstraints.EAST;
         gbc.insets = new Insets(0, 10, 10, 10);
-        btnGuardarMod = new JButton("Guardar");
+        btnGuardarMod = new JButton(CargadorProperties.obtenerComponentes("boton.guardar"));
         btnGuardarMod.setPreferredSize(new Dimension(100, 25));
         btnGuardarMod.setEnabled(false);
         btnGuardarMod.addActionListener(e -> modificarCliente());
@@ -567,13 +580,13 @@ public class VentanaCliente extends JFrame {
         gbc.gridx = 0;
         gbc.gridy = fila;
         gbc.gridwidth = 1;
-        panel.add(new JLabel("Cédula o RUC:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.cedula.ruc")), gbc);
         
         gbc.gridx = 1;
         gbc.gridwidth = 3;
         JPanel panelCedula = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         panelCedula.add(txtCedulaElim);
-        JLabel lblLupa = new JLabel("🔍");
+        JLabel lblLupa = new JLabel(CargadorProperties.obtenerComponentes("emoji.lupa"));
         lblLupa.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
         lblLupa.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         lblLupa.addMouseListener(new MouseAdapter() {
@@ -592,7 +605,7 @@ public class VentanaCliente extends JFrame {
         //Nombre
         gbc.gridx = 0;
         gbc.gridy = fila;
-        panel.add(new JLabel("Nombre:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.nombre")), gbc);
         
         gbc.gridx = 1;
         panel.add(txtNombreElim, gbc);
@@ -602,7 +615,7 @@ public class VentanaCliente extends JFrame {
         //Telefono
         gbc.gridx = 0;
         gbc.gridy = fila;
-        panel.add(new JLabel("Teléfono:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.telefono")), gbc);
         
         gbc.gridx = 1;
         panel.add(txtTelefonoElim, gbc);
@@ -612,7 +625,7 @@ public class VentanaCliente extends JFrame {
         //email
         gbc.gridx = 0;
         gbc.gridy = fila;
-        panel.add(new JLabel("Email:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.email")), gbc);
         
         gbc.gridx = 1;
         panel.add(txtEmailElim, gbc);
@@ -624,7 +637,7 @@ public class VentanaCliente extends JFrame {
         gbc.gridx = 2;
         gbc.gridy = fila;
         gbc.insets = new Insets(5, 10, 0, 10);
-        panel.add(new JLabel("Ciudad:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.ciudad")), gbc);
         
         gbc.gridx = 3;
         panel.add(comboCiudadElim, gbc);
@@ -634,7 +647,7 @@ public class VentanaCliente extends JFrame {
         //Direccion
         gbc.gridx = 2;
         gbc.gridy = fila;
-        panel.add(new JLabel("Dirección:"), gbc);
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("label.direccion")), gbc);
         
         gbc.gridx = 3;
         panel.add(txtDireccionElim, gbc);
@@ -645,7 +658,7 @@ public class VentanaCliente extends JFrame {
         gbc.gridy = fila;
         gbc.anchor = GridBagConstraints.EAST;
         gbc.insets = new Insets(0, 10, 0, 10);
-        btnEliminar = new JButton("Eliminar");
+        btnEliminar = new JButton(CargadorProperties.obtenerComponentes("boton.eliminar"));
         btnEliminar.setPreferredSize(new Dimension(100, 25));
         btnEliminar.setEnabled(false);
         btnEliminar.addActionListener(e -> eliminarCliente());
@@ -661,9 +674,9 @@ public class VentanaCliente extends JFrame {
         
         JPanel panelTipo = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         comboTipoConsulta = new JComboBox<>(new String[]{
-            "Seleccione tipo de consulta...",
-            "Consulta General",
-            "Consulta por Parámetro"
+            CargadorProperties.obtenerComponentes("combo.consulta.seleccione"),
+            CargadorProperties.obtenerComponentes("combo.consulta.general"),
+            CargadorProperties.obtenerComponentes("combo.consulta.parametro")
         });
         comboTipoConsulta.setPreferredSize(new Dimension(250, 30));
         comboTipoConsulta.addActionListener(e -> cambiarTipoConsulta());
@@ -675,27 +688,34 @@ public class VentanaCliente extends JFrame {
         panelBusqueda = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         txtBusqueda = new JTextField(20);
         txtBusqueda.setPreferredSize(new Dimension(250, 25));
-        txtBusqueda.setToolTipText("Ingrese texto para buscar...");
+        txtBusqueda.setToolTipText(CargadorProperties.obtenerComponentes("tooltip.busqueda"));
         comboParametroBusqueda = new JComboBox<>(new String[]{
-            "Nombre",
-            "Cédula/RUC",
-            "Teléfono",
-            "Email",
-            "Ciudad",
-            "Dirección"
+            CargadorProperties.obtenerComponentes("combo.param.nombre"),
+            CargadorProperties.obtenerComponentes("combo.param.cedula.ruc"),
+            CargadorProperties.obtenerComponentes("combo.param.telefono"),     
+            CargadorProperties.obtenerComponentes("combo.param.email"),
+            CargadorProperties.obtenerComponentes("combo.param.ciudad.desc"),
+            CargadorProperties.obtenerComponentes("combo.param.direccion")
         });
         comboParametroBusqueda.setPreferredSize(new Dimension(150, 25));
         
-        panelBusqueda.add(new JLabel("Buscar:"));
+        panelBusqueda.add(new JLabel(CargadorProperties.obtenerComponentes("label.buscar")));
         panelBusqueda.add(txtBusqueda);
         panelBusqueda.add(comboParametroBusqueda);
-        JLabel lblLupaBusq = new JLabel("🔍");
+        JLabel lblLupaBusq = new JLabel(CargadorProperties.obtenerComponentes("emoji.lupa"));
         panelBusqueda.add(lblLupaBusq);
         panelBusqueda.setVisible(false);
         
         panelCentral.add(panelBusqueda, BorderLayout.NORTH);
         
-        String[] columnas = {"Cédula/RUC", "Nombre", "Teléfono", "Email", "Ciudad", "Dirección"};
+        String[] columnas = {
+            CargadorProperties.obtenerComponentes("tabla.col.cedula.ruc"),
+            CargadorProperties.obtenerComponentes("label.nombre"),
+            CargadorProperties.obtenerComponentes("label.telefono"),
+            CargadorProperties.obtenerComponentes("label.email"),
+            CargadorProperties.obtenerComponentes("label.ciudad"),
+            CargadorProperties.obtenerComponentes("label.direccion")
+        };
         modeloTabla = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -816,8 +836,6 @@ public class VentanaCliente extends JFrame {
         panel.add(campo, gbc);
         gbc.gridwidth = 1;
     }
-    
-    // ==================== VALIDACIONES EN TIEMPO REAL ====================
     
     private void configurarValidacionesIngresar() {
         txtCedulaIng.getDocument().addDocumentListener(new DocumentListener() {
@@ -981,7 +999,7 @@ public class VentanaCliente extends JFrame {
     
     private void cargarCiudades(JComboBox<ItemCombo> combo) {
         combo.removeAllItems();
-        combo.addItem(new ItemCombo("", "Seleccione una ciudad..."));
+        combo.addItem(new ItemCombo("", CargadorProperties.obtenerComponentes("combo.ciudad.seleccione")));
         
         Cliente cli = new Cliente();
         ArrayList<ItemCombo> ciudades = cli.obtenerCiudadesDP();
@@ -992,56 +1010,35 @@ public class VentanaCliente extends JFrame {
     }
     
     private void cambiarPanel() {
-        String opcion = (String) comboOpciones.getSelectedItem();
+        int seleccion = comboOpciones.getSelectedIndex();
 
-        actualizarTituloSuperior(opcion); 
-
-        switch (opcion) {
-            case "Ingresar":
+        switch (seleccion) {
+            case OPCION_INGRESAR:
+                lblTituloSuperior.setText(CargadorProperties.obtenerComponentes("ventana.clientes.titulo.ingresar"));
                 limpiarCamposIngresar();
                 cardLayout.show(panelContenedor, PANEL_INGRESAR);
                 break;
-            case "Modificar":
+            case OPCION_MODIFICAR:
+                lblTituloSuperior.setText(CargadorProperties.obtenerComponentes("ventana.clientes.titulo.modificar"));
                 limpiarCamposModificar();
                 cardLayout.show(panelContenedor, PANEL_MODIFICAR);
                 break;
-            case "Eliminar":
+            case OPCION_ELIMINAR:
+                lblTituloSuperior.setText(CargadorProperties.obtenerComponentes("ventana.clientes.titulo.eliminar"));
                 limpiarCamposEliminar();
                 cardLayout.show(panelContenedor, PANEL_ELIMINAR);
                 break;
-            case "Consultar":
+            case OPCION_CONSULTAR:
+                lblTituloSuperior.setText(CargadorProperties.obtenerComponentes("ventana.clientes.titulo.consultar"));
                 cardLayout.show(panelContenedor, PANEL_CONSULTAR);
                 break;
             default:
+                lblTituloSuperior.setText(CargadorProperties.obtenerComponentes(""));
                 cardLayout.show(panelContenedor, PANEL_VACIO);
                 break;
         }
     }
     
-    private void actualizarTituloSuperior(String opcion) {
-        String titulo;
-
-        switch (opcion) {
-            case "Ingresar":
-                titulo = "Ingresar Cliente";
-                break;
-            case "Modificar":
-                titulo = "Modificar Cliente";
-                break;
-            case "Eliminar":
-                titulo = "Eliminar Cliente";
-                break;
-            case "Consultar":
-                titulo = "Consultar Clientes";
-                break;
-            default:
-                titulo = "Gestión de Clientes";
-                break;
-        }
-
-        lblTituloSuperior.setText(titulo);
-    }
-        
     //Vuelve al panel vacío
     private void volverAlMenu() {
         this.dispose();             
@@ -1064,8 +1061,8 @@ public class VentanaCliente extends JFrame {
         
         if (!valido) {
             JOptionPane.showMessageDialog(this,
-                "Por favor corrija los errores antes de guardar",
-                "Validación",
+                CargadorProperties.obtenerMessages("CL_A_015"),
+                CargadorProperties.obtenerMessages("FC_C_005"),
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -1081,13 +1078,13 @@ public class VentanaCliente extends JFrame {
         if (cli.grabarDP()) {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("CL_I_001"),
-                "Éxito",
+                CargadorProperties.obtenerMessages("FC_C_003"),
                 JOptionPane.INFORMATION_MESSAGE);
             limpiarCamposIngresar();
         } else {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("CL_E_002"),
-                "Error",
+                CargadorProperties.obtenerMessages("FC_C_004"),
                 JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -1097,8 +1094,8 @@ public class VentanaCliente extends JFrame {
         
         if (cedula.isEmpty()) {
             JOptionPane.showMessageDialog(this,
-                "Ingrese una cédula para buscar",
-                "Advertencia",
+                CargadorProperties.obtenerMessages("CL_A_013"),
+                CargadorProperties.obtenerMessages("FC_C_005"),
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -1133,8 +1130,8 @@ public class VentanaCliente extends JFrame {
             lblErrorCedulaMod.setText(" "); 
         } else {
             JOptionPane.showMessageDialog(this,
-                "Cliente no encontrado",
-                "Búsqueda",
+                CargadorProperties.obtenerMessages("CL_A_014"),
+                CargadorProperties.obtenerMessages("FC_C_006"),
                 JOptionPane.INFORMATION_MESSAGE);
         }
     }
@@ -1155,8 +1152,8 @@ public class VentanaCliente extends JFrame {
         
         if (!valido) {
             JOptionPane.showMessageDialog(this,
-                "Por favor corrija los errores antes de guardar",
-                "Validación",
+                CargadorProperties.obtenerMessages("CL_A_015"),
+                CargadorProperties.obtenerMessages("FC_C_005"),
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -1172,13 +1169,13 @@ public class VentanaCliente extends JFrame {
         if (cli.grabarDP()) {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("CL_I_002"),
-                "Éxito",
+                CargadorProperties.obtenerMessages("FC_C_003"),
                 JOptionPane.INFORMATION_MESSAGE);
             limpiarCamposModificar();
         } else {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("CL_E_004"),
-                "Error",
+                CargadorProperties.obtenerMessages("FC_C_004"),
                 JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -1188,8 +1185,8 @@ public class VentanaCliente extends JFrame {
         
         if (cedula.isEmpty()) {
             JOptionPane.showMessageDialog(this,
-                "Ingrese una cédula para buscar",
-                "Advertencia",
+                CargadorProperties.obtenerMessages("CL_A_013"),
+                CargadorProperties.obtenerMessages("FC_C_005"),
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -1214,16 +1211,16 @@ public class VentanaCliente extends JFrame {
             btnEliminar.setEnabled(true);
         } else {
             JOptionPane.showMessageDialog(this,
-                "Cliente no encontrado",
-                "Búsqueda",
+                CargadorProperties.obtenerMessages("CL_A_014"),
+                CargadorProperties.obtenerMessages("FC_C_006"),
                 JOptionPane.INFORMATION_MESSAGE);
         }
     }
     
     private void eliminarCliente() {
         int confirm = JOptionPane.showConfirmDialog(this,
-            "¿Está seguro de eliminar al cliente " + txtNombreElim.getText() + "?",
-            "Confirmar eliminación",
+            CargadorProperties.obtenerMessages("CL_C_001") + txtNombreElim.getText() + CargadorProperties.obtenerMessages("CL_C_002"),
+            CargadorProperties.obtenerMessages("FC_A_008"),
             JOptionPane.YES_NO_OPTION);
         
         if (confirm == JOptionPane.YES_OPTION) {
@@ -1233,13 +1230,13 @@ public class VentanaCliente extends JFrame {
             if (cli.eliminarDP()) {
                 JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("CL_I_003"),
-                    "Éxito",
+                    CargadorProperties.obtenerMessages("FC_C_003"),
                     JOptionPane.INFORMATION_MESSAGE);
                 limpiarCamposEliminar();
             } else {
                 JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("CL_E_005"),
-                    "Error",
+                    CargadorProperties.obtenerMessages("FC_C_004"),
                     JOptionPane.ERROR_MESSAGE);
             }
         }
@@ -1248,11 +1245,11 @@ public class VentanaCliente extends JFrame {
     private void cambiarTipoConsulta() {
         String tipo = (String) comboTipoConsulta.getSelectedItem();
         
-        if ("Consulta General".equals(tipo)) {
+        if (CargadorProperties.obtenerComponentes("combo.consulta.general").equals(tipo)) {
             panelBusqueda.setVisible(false);
             scrollTabla.setVisible(true);
             consultarGeneral();
-        } else if ("Consulta por Parámetro".equals(tipo)) {
+        } else if (CargadorProperties.obtenerComponentes("combo.consulta.parametro").equals(tipo)) {
             panelBusqueda.setVisible(true);
             scrollTabla.setVisible(true);
             modeloTabla.setRowCount(0);
@@ -1309,25 +1306,18 @@ public class VentanaCliente extends JFrame {
         Cliente cli = new Cliente();
         ArrayList<Cliente> resultados = new ArrayList<>();
         
-        switch (parametro) {
-            case "Nombre":
-                resultados = cli.buscarPorNombreDP(texto);
-                break;
-            case "Cédula/RUC":
-                resultados = cli.buscarPorCedulaDP(texto);
-                break;
-            case "Teléfono":
-                resultados = cli.buscarPorTelefonoDP(texto);
-                break;
-            case "Email":
-                resultados = cli.buscarPorEmailDP(texto);
-                break;
-            case "Ciudad":
-                resultados = cli.buscarPorCiudadDP(texto);
-                break;
-            case "Dirección":
-                resultados = cli.buscarPorDireccionDP(texto);
-                break;
+        if (parametro.equals(CargadorProperties.obtenerComponentes("combo.param.nombre"))) {
+            resultados = cli.buscarPorNombreDP(texto);
+        } else if (parametro.equals(CargadorProperties.obtenerComponentes("combo.param.cedula.ruc"))) {
+            resultados = cli.buscarPorCedulaDP(texto);
+        } else if (parametro.equals(CargadorProperties.obtenerComponentes("combo.param.telefono"))) {  // ✅
+            resultados = cli.buscarPorTelefonoDP(texto);
+        } else if (parametro.equals(CargadorProperties.obtenerComponentes("combo.param.email"))) {     // ✅
+            resultados = cli.buscarPorEmailDP(texto);
+        } else if (parametro.equals(CargadorProperties.obtenerComponentes("combo.param.ciudad.desc"))) {
+            resultados = cli.buscarPorCiudadDP(texto);
+        } else if (parametro.equals(CargadorProperties.obtenerComponentes("combo.param.direccion"))) {
+            resultados = cli.buscarPorDireccionDP(texto);
         }
         
         modeloTabla.setRowCount(0);
@@ -1343,7 +1333,6 @@ public class VentanaCliente extends JFrame {
             });
         }
     }
-   
     
     private void limpiarCamposIngresar() {
         txtCedulaIng.setText("");
@@ -1391,16 +1380,4 @@ public class VentanaCliente extends JFrame {
         
         btnEliminar.setEnabled(false); 
     }
-    
-    
-    
-    
-    /*
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            VentanaCliente ventana = new VentanaCliente();
-            ventana.setVisible(true);
-        });
-    }
-    */
-}
+}   
