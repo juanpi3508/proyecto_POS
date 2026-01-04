@@ -4,16 +4,11 @@ import DP.Producto;
 
 public class ValidacionesProducto {
     
-    /**
-     * Valida el código del producto
-     * Formato: XXX-#### (ejemplo: CON-0001)
-     */
     public static String validarCodigo(String codigo) {
         if (codigo == null || codigo.trim().isEmpty()) {
             return CargadorProperties.obtenerMessages("PD_A_004");
         }
         
-        // Formato: XXX-#### (3 letras mayúsculas, guión, 4 dígitos)
         if (!codigo.matches("^[A-Z]{3}-\\d{4}$")) {
             return CargadorProperties.obtenerMessages("PD_A_005");
         }
@@ -21,10 +16,6 @@ public class ValidacionesProducto {
         return null;
     }
     
-    /**
-     * Valida la descripción del producto
-     * 2-60 caracteres, no vacío, único en BD
-     */
     public static String validarDescripcion(String descripcion, boolean esModificar) {
         if (descripcion == null || descripcion.trim().isEmpty()) {
             return CargadorProperties.obtenerMessages("PD_A_006");
@@ -46,9 +37,6 @@ public class ValidacionesProducto {
         return null;
     }
     
-    /**
-     * Valida la categoría
-     */
     public static String validarCategoria(String idCategoria) {
         if (idCategoria == null || idCategoria.trim().isEmpty()) {
             return CargadorProperties.obtenerMessages("PD_A_007");
@@ -57,9 +45,6 @@ public class ValidacionesProducto {
         return null;
     }
     
-    /**
-     * Valida la unidad de medida (compra o venta)
-     */
     public static String validarUnidadMedida(String idUnidad, String tipo) {
         if (idUnidad == null || idUnidad.trim().isEmpty()) {
             return CargadorProperties.obtenerMessages("PD_A_008");
@@ -68,10 +53,6 @@ public class ValidacionesProducto {
         return null;
     }
     
-    /**
-     * Valida el precio de compra
-     * Debe ser >= 0, decimal con máximo 2 decimales
-     */
     public static String validarPrecioCompra(String precioStr) {
         if (precioStr == null || precioStr.trim().isEmpty()) {
             return CargadorProperties.obtenerMessages("PD_A_009");
@@ -84,7 +65,6 @@ public class ValidacionesProducto {
                 return CargadorProperties.obtenerMessages("PD_A_009");
             }
             
-            // Validar máximo 2 decimales
             String[] partes = precioStr.trim().split("\\.");
             if (partes.length > 1 && partes[1].length() > 2) {
                 return CargadorProperties.obtenerMessages("PD_A_009");
@@ -97,10 +77,6 @@ public class ValidacionesProducto {
         return null;
     }
     
-    /**
-     * Valida el precio de venta
-     * Debe ser >= precio de compra, decimal con máximo 2 decimales
-     */
     public static String validarPrecioVenta(String precioVentaStr, String precioCompraStr) {
         if (precioVentaStr == null || precioVentaStr.trim().isEmpty()) {
             return CargadorProperties.obtenerMessages("PD_A_009");
@@ -113,13 +89,11 @@ public class ValidacionesProducto {
                 return CargadorProperties.obtenerMessages("PD_A_009");
             }
             
-            // Validar máximo 2 decimales
             String[] partes = precioVentaStr.trim().split("\\.");
             if (partes.length > 1 && partes[1].length() > 2) {
                 return CargadorProperties.obtenerMessages("PD_A_009");
             }
             
-            // Validar que sea >= precio de compra
             if (precioCompraStr != null && !precioCompraStr.trim().isEmpty()) {
                 double precioCompra = Double.parseDouble(precioCompraStr.trim());
                 if (precioVenta < precioCompra) {
@@ -134,10 +108,6 @@ public class ValidacionesProducto {
         return null;
     }
     
-    /**
-     * Valida la ruta de la imagen
-     * 2-260 caracteres, no vacío
-     */
     public static String validarImagen(String imagen) {
         if (imagen == null || imagen.trim().isEmpty()) {
             return "La imagen es obligatoria.";
@@ -150,9 +120,6 @@ public class ValidacionesProducto {
         return null;
     }
     
-    /**
-     * Validación completa para insertar un producto
-     */
     public static boolean validarTodoInsertar(String codigo, String descripcion, 
                                               String idCategoria, String idUmCompra, 
                                               String precioCompra, String idUmVenta, 
@@ -167,9 +134,6 @@ public class ValidacionesProducto {
                validarImagen(imagen) == null;
     }
     
-    /**
-     * Validación completa para modificar un producto
-     */
     public static boolean validarTodoModificar(String descripcion, 
                                                String idUmCompra, String precioCompra, 
                                                String idUmVenta, String precioVenta) {
