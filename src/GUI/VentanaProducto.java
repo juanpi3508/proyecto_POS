@@ -18,6 +18,10 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import javax.imageio.ImageIO;
 import javax.swing.Timer;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import javax.swing.SwingWorker;
 
 public class VentanaProducto extends JFrame {
     
@@ -1185,55 +1189,166 @@ public class VentanaProducto extends JFrame {
     }
     
     private void cargarImagenDesdeRuta(String rutaRelativa, JLabel lblPreview) {
-        try {
-            String base = CargadorProperties.obtenerConfigProducto("img.base");
-            String rutaCompleta = base + "/" + rutaRelativa;
+        //Obtener Properties
+        String textoSinImagen = CargadorProperties.obtenerComponentes("imagen.sin.imagen");
+        String textoCargando = CargadorProperties.obtenerComponentes("imagen.cargando");
+        String textoError = CargadorProperties.obtenerComponentes("imagen.error.cargar");
+        
+        if (rutaRelativa == null || rutaRelativa.trim().isEmpty()) {
+            lblPreview.setIcon(null);
+            lblPreview.setText(textoSinImagen);
+            return;
+        }
 
-            File archivoImagen = new File(rutaCompleta);
+        lblPreview.setText(textoCargando);
+        lblPreview.setIcon(null);
 
-            if (archivoImagen.exists()) {
-                BufferedImage img = ImageIO.read(archivoImagen);
+        new SwingWorker<ImageIcon, Void>() {
+            @Override
+            protected ImageIcon doInBackground() throws Exception {
+                String baseStorage = CargadorProperties.obtenerConfigProducto("img.server.base");
+                String separator = CargadorProperties.obtenerConfigProducto("img.url.separator");
+                String urlCompleta = baseStorage + separator + rutaRelativa;
+
+                //Leer imagen desde URL del servidor
+                BufferedImage img = ImageIO.read(new URL(urlCompleta));
+                if (img == null) return null;
 
                 int w = Integer.parseInt(CargadorProperties.obtenerConfigProducto("img.preview.w"));
                 int h = Integer.parseInt(CargadorProperties.obtenerConfigProducto("img.preview.h"));
 
                 Image imagenEscalada = img.getScaledInstance(w, h, Image.SCALE_SMOOTH);
-                lblPreview.setIcon(new ImageIcon(imagenEscalada));
-                lblPreview.setText("");
-            } else {
-                lblPreview.setIcon(null);
-                lblPreview.setText(CargadorProperties.obtenerComponentes("imagen.sin.imagen"));
+                return new ImageIcon(imagenEscalada);
             }
-        } catch (IOException e) {
-            lblPreview.setIcon(null);
-            lblPreview.setText(CargadorProperties.obtenerComponentes("imagen.error.cargar"));
-            e.printStackTrace();
-        }
-    }
 
+            @Override
+            protected void done() {
+                try {
+                    ImageIcon icon = get();
+
+                    if (icon != null) {
+                        lblPreview.setIcon(icon);
+                        lblPreview.setText("");
+                    } else {
+                        lblPreview.setIcon(null);
+                        lblPreview.setText(textoSinImagen);
+                    }
+
+                } catch (Exception e) {
+                    lblPreview.setIcon(null);
+                    lblPreview.setText(textoError);
+                    e.printStackTrace();
+                }
+            }
+        }.execute();
+    }
     
     private String copiarImagenAProyecto(String rutaOrigen) {
+        return subirImagenAServidor(rutaOrigen);
+    }
+
+    private String subirImagenAServidor(String rutaOrigen) {
+        //Obtener properties 
+        String urlServidor = CargadorProperties.obtenerConfigBD("server.upload.url");
+        String token = CargadorProperties.obtenerConfigBD("server.upload.token");
+        String boundaryPrefix = CargadorProperties.obtenerConfigBD("server.upload.boundary.prefix");
+        String boundary = boundaryPrefix + System.currentTimeMillis() + boundaryPrefix;
+        String lineEnd = CargadorProperties.obtenerConfigBD("server.upload.line.end");
+        String twoHyphens = CargadorProperties.obtenerConfigBD("server.upload.two.hyphens");
+        String mimeDefault = CargadorProperties.obtenerConfigBD("server.upload.mime.default");
+        String userAgent = CargadorProperties.obtenerConfigBD("server.upload.user.agent");
+        String fieldName = CargadorProperties.obtenerConfigBD("server.upload.field.name");
+        String responseKey = CargadorProperties.obtenerConfigBD("server.upload.response.key");
+
+        int connectTimeout = Integer.parseInt(CargadorProperties.obtenerConfigBD("server.upload.connect.timeout"));
+        int readTimeout = Integer.parseInt(CargadorProperties.obtenerConfigBD("server.upload.read.timeout"));
+
+        String errorTitulo = CargadorProperties.obtenerComponentes("FC_C_004");
+        String errorArchivoNoExiste = CargadorProperties.obtenerMessages("PD_E_006");
+        String errorRespuestaInvalida = CargadorProperties.obtenerMessages("PD_E_007");
+        String errorSubiendo = CargadorProperties.obtenerMessages("PD_E_008");
+        String errorGeneral = CargadorProperties.obtenerMessages("PD_E_009");
+
         try {
-            File archivoOrigen = new File(rutaOrigen);
-            String nombreArchivo = archivoOrigen.getName();
-            
-            String rutaCarpetaDestino = CargadorProperties.obtenerConfigProducto("img.dir.productos.full");
-            File carpetaDestino = new File(rutaCarpetaDestino);
-            if (!carpetaDestino.exists()) {
-                carpetaDestino.mkdirs();
+            File archivo = new File(rutaOrigen);
+
+            if (!archivo.exists()) {
+                JOptionPane.showMessageDialog(this,
+                    errorArchivoNoExiste + rutaOrigen,
+                    errorTitulo,
+                    JOptionPane.ERROR_MESSAGE);
+                return null;
             }
-            
-            File archivoDestino = new File(carpetaDestino, nombreArchivo);
-            
-            Files.copy(archivoOrigen.toPath(), archivoDestino.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            
-            String dirRelativo = CargadorProperties.obtenerConfigProducto("img.dir.productos");
-            return dirRelativo + "/" + nombreArchivo;
-        } catch (IOException e) {
+
+            String fileName = archivo.getName();
+            String mimeType = Files.probeContentType(archivo.toPath());
+            if (mimeType == null) mimeType = mimeDefault;
+
+            HttpURLConnection conn = (HttpURLConnection) new URL(urlServidor).openConnection();
+            conn.setDoOutput(true);
+            conn.setDoInput(true);
+            conn.setUseCaches(false);
+            conn.setRequestMethod("POST");
+
+            conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+            conn.setRequestProperty("X-JAVA-TOKEN", token);
+            conn.setRequestProperty("User-Agent", userAgent);
+
+            conn.setConnectTimeout(connectTimeout);
+            conn.setReadTimeout(readTimeout);
+
+            try (DataOutputStream request = new DataOutputStream(conn.getOutputStream())) {
+                request.writeBytes(twoHyphens + boundary + lineEnd);
+                request.writeBytes("Content-Disposition: form-data; name=\"" + fieldName + "\"; filename=\"" + fileName + "\"" + lineEnd);
+                request.writeBytes("Content-Type: " + mimeType + lineEnd);
+                request.writeBytes(lineEnd);
+
+                Files.copy(archivo.toPath(), request);
+
+                request.writeBytes(lineEnd);
+                request.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+                request.flush();
+            }
+
+            int responseCode = conn.getResponseCode();
+            InputStream is = (responseCode >= 200 && responseCode < 300) ? conn.getInputStream() : conn.getErrorStream();
+
+            String response = new BufferedReader(new InputStreamReader(is))
+                    .lines()
+                    .reduce("", (acc, line) -> acc + line);
+
+            System.out.println("UPLOAD HTTP " + responseCode + " -> " + response);
+
+            if (responseCode >= 200 && responseCode < 300) {
+                int idx = response.indexOf(responseKey);
+                if (idx != -1) {
+                    int start = idx + responseKey.length();
+                    int end = response.indexOf("\"", start);
+
+                    String ruta = response.substring(start, end);
+                    ruta = ruta.replace("\\/", "/");
+
+                    return ruta;
+                } else {
+                    JOptionPane.showMessageDialog(this,
+                        errorRespuestaInvalida + response,
+                        errorTitulo,
+                        JOptionPane.ERROR_MESSAGE);
+                    return null;
+                }
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    errorSubiendo + responseCode + "\n" + response,
+                    errorTitulo,
+                    JOptionPane.ERROR_MESSAGE);
+                return null;
+            }
+
+        } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                CargadorProperties.obtenerMessages("PD_A_016"), 
-                CargadorProperties.obtenerMessages("FC_C_004"),
+                errorGeneral + e.getMessage(),
+                errorTitulo,
                 JOptionPane.ERROR_MESSAGE);
             return null;
         }
@@ -1578,66 +1693,107 @@ public class VentanaProducto extends JFrame {
     private void mostrarPopupImagen(String codigo) {
         Producto pro = new Producto();
         Producto encontrado = pro.verificarPorCodigoDP(codigo);
-        
-        if (encontrado != null && encontrado.getImagen() != null && !encontrado.getImagen().isEmpty()) {
-            JDialog dialog = new JDialog(this, CargadorProperties.obtenerComponentes("popup.imagen.titulo") + codigo, true);
-            dialog.setLayout(new BorderLayout(10, 10));
-            
-            try {
-                String base = CargadorProperties.obtenerConfigProducto("img.base");
-                String rutaCompleta = base + "/" + encontrado.getImagen();
-                File archivoImagen = new File(rutaCompleta);
-                
-                if (archivoImagen.exists()) {
-                    BufferedImage img = ImageIO.read(archivoImagen);
-                    
-                    int max = Integer.parseInt(CargadorProperties.obtenerConfigProducto("img.popup.max"));
-                    int maxWidth = max;
-                    int maxHeight = max;
-                    
-                    double scale = Math.min(
-                        (double) maxWidth / img.getWidth(),
-                        (double) maxHeight / img.getHeight()
-                    );
-                    
-                    int newWidth = (int) (img.getWidth() * scale);
-                    int newHeight = (int) (img.getHeight() * scale);
-                    
-                    Image imagenEscalada = img.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
-                    
-                    JLabel lblImagen = new JLabel(new ImageIcon(imagenEscalada));
-                    lblImagen.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-                    dialog.add(lblImagen, BorderLayout.CENTER);
-                    
-                    JPanel panelBoton = new JPanel(new FlowLayout(FlowLayout.CENTER));
-                    JButton btnCerrar = new JButton(CargadorProperties.obtenerComponentes("boton.cerrar"));
-                    btnCerrar.addActionListener(e -> dialog.dispose());
-                    panelBoton.add(btnCerrar);
-                    dialog.add(panelBoton, BorderLayout.SOUTH);
-                    
-                    dialog.pack();
-                    dialog.setLocationRelativeTo(this);
-                    dialog.setVisible(true);
-                } else {
-                    JOptionPane.showMessageDialog(this,
-                        CargadorProperties.obtenerMessages("PD_A_018"), 
-                        CargadorProperties.obtenerMessages("FC_C_004"),
-                        JOptionPane.ERROR_MESSAGE);
-                }
-            } catch (IOException e) {
-                JOptionPane.showMessageDialog(this,
-                    CargadorProperties.obtenerMessages("PD_A_017"), 
-                    CargadorProperties.obtenerMessages("FC_C_004"),
-                    JOptionPane.ERROR_MESSAGE);
-                e.printStackTrace();
-            }
-        } else {
+
+        if (encontrado == null || encontrado.getImagen() == null || encontrado.getImagen().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("PD_A_019"),
                 CargadorProperties.obtenerMessages("FC_C_006"),
                 JOptionPane.INFORMATION_MESSAGE);
+            return;
         }
+
+        String tituloPopup = CargadorProperties.obtenerComponentes("popup.imagen.titulo");
+        String textoCargando = CargadorProperties.obtenerComponentes("popup.imagen.cargando");
+        String textoError = CargadorProperties.obtenerComponentes("popup.imagen.error.cargar");
+        String textoCerrar = CargadorProperties.obtenerComponentes("boton.cerrar");
+
+        int dialogWidth = Integer.parseInt(CargadorProperties.obtenerConfigProducto("popup.dialog.width"));
+        int dialogHeight = Integer.parseInt(CargadorProperties.obtenerConfigProducto("popup.dialog.height"));
+        int borderTop = Integer.parseInt(CargadorProperties.obtenerConfigProducto("popup.dialog.border.top"));
+        int borderLeft = Integer.parseInt(CargadorProperties.obtenerConfigProducto("popup.dialog.border.left"));
+        int borderBottom = Integer.parseInt(CargadorProperties.obtenerConfigProducto("popup.dialog.border.bottom"));
+        int borderRight = Integer.parseInt(CargadorProperties.obtenerConfigProducto("popup.dialog.border.right"));
+        int labelPadding = Integer.parseInt(CargadorProperties.obtenerConfigProducto("popup.label.border.padding"));
+
+        JDialog dialog = new JDialog(this, tituloPopup + codigo, true);
+        dialog.setLayout(new BorderLayout(borderTop, borderTop));
+
+        JLabel lblCargando = new JLabel(textoCargando, SwingConstants.CENTER);
+        lblCargando.setBorder(BorderFactory.createEmptyBorder(labelPadding, labelPadding, labelPadding, labelPadding));
+        dialog.add(lblCargando, BorderLayout.CENTER);
+
+        JPanel panelBoton = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton btnCerrar = new JButton(textoCerrar);
+        btnCerrar.addActionListener(e -> dialog.dispose());
+        panelBoton.add(btnCerrar);
+        dialog.add(panelBoton, BorderLayout.SOUTH);
+
+        dialog.setSize(dialogWidth, dialogHeight);
+        dialog.setLocationRelativeTo(this);
+
+        //Cargar imagen en segundo plano
+        new SwingWorker<ImageIcon, Void>() {
+
+            @Override
+            protected ImageIcon doInBackground() throws Exception {
+                String baseStorage = CargadorProperties.obtenerConfigProducto("img.server.base");
+                String separator = CargadorProperties.obtenerConfigProducto("img.url.separator");
+                String urlCompleta = baseStorage + separator + encontrado.getImagen();
+
+                BufferedImage img = ImageIO.read(new URL(urlCompleta));
+                if (img == null) return null;
+
+                int max = Integer.parseInt(CargadorProperties.obtenerConfigProducto("img.popup.max"));
+                int maxWidth = max;
+                int maxHeight = max;
+
+                double scale = Math.min(
+                    (double) maxWidth / img.getWidth(),
+                    (double) maxHeight / img.getHeight()
+                );
+
+                int newWidth = (int) (img.getWidth() * scale);
+                int newHeight = (int) (img.getHeight() * scale);
+
+                Image imagenEscalada = img.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+                return new ImageIcon(imagenEscalada);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    ImageIcon icon = get();
+
+                    dialog.getContentPane().remove(lblCargando);
+
+                    if (icon != null) {
+                        JLabel lblImagen = new JLabel(icon);
+                        lblImagen.setBorder(BorderFactory.createEmptyBorder(borderTop, borderLeft, borderBottom, borderRight));
+                        dialog.add(lblImagen, BorderLayout.CENTER);
+                    } else {
+                        JLabel lblError = new JLabel(textoError, SwingConstants.CENTER);
+                        lblError.setBorder(BorderFactory.createEmptyBorder(labelPadding, labelPadding, labelPadding, labelPadding));
+                        dialog.add(lblError, BorderLayout.CENTER);
+                    }
+
+                    dialog.revalidate();
+                    dialog.repaint();
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    JOptionPane.showMessageDialog(dialog,
+                        CargadorProperties.obtenerMessages("PD_A_017"),
+                        CargadorProperties.obtenerMessages("FC_C_004"),
+                        JOptionPane.ERROR_MESSAGE);
+                    dialog.dispose();
+                }
+            }
+
+        }.execute();
+
+        dialog.setVisible(true);
     }
+    
     
     private void limpiarCamposIngresar() {
         comboCategoriaIng.setSelectedIndex(0);
