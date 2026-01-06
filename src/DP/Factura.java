@@ -198,4 +198,9 @@ public class Factura {
         FacturaMD facMD = new FacturaMD();
         return facMD.consultarTodasPorParametro(cli);
     }
+    
+    public Factura consultarPorCodigoDetalle(Factura facParam) {
+        FacturaMD facMD = new FacturaMD();
+        return facMD.consultarPorCodigoDetalle(facParam);
+    }
 }
