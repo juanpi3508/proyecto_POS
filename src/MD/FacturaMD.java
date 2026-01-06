@@ -315,4 +315,35 @@ public class FacturaMD {
 
         return lista;
     }
+    //Consulta factura SIN filtro de estado (para mostrar detalle en consulta específica)
+    public Factura consultarPorCodigoDetalle(Factura facParam) {
+        String sql = CargadorProperties.obtenerConfigFactura("fac.consultar.porCodigo.detalle");
+        Factura fac = null;
+
+        try {
+            PreparedStatement ps = conexion.prepareStatement(sql);
+            ps.setString(1, facParam.getCodigo());
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                fac = new Factura();
+                fac.setCodigo(rs.getString(CargadorProperties.obtenerConfigFactura("fac.1")));
+                fac.setCodigoCliente(rs.getString(CargadorProperties.obtenerConfigFactura("fac.2")));
+                fac.setFechaHora(rs.getTimestamp(CargadorProperties.obtenerConfigFactura("fac.3")).toLocalDateTime());
+                fac.setSubtotal(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.4")));
+                fac.setIva(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.5")));
+                fac.setTotal(rs.getDouble(CargadorProperties.obtenerConfigFactura("fac.6")));
+                fac.setTipo(rs.getString(CargadorProperties.obtenerConfigFactura("fac.7")));
+                fac.setEstado(rs.getString(CargadorProperties.obtenerConfigFactura("fac.8")));
+            }
+
+            rs.close();
+            ps.close();
+        } catch (SQLException e) {
+            System.out.println(CargadorProperties.obtenerMessages("FC_E_003"));
+            e.printStackTrace();
+        }
+
+        return fac;
+    }
 }
