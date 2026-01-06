@@ -23,12 +23,12 @@ import javax.swing.event.TableModelListener;
 public class VentanaFactura extends JFrame {
     
     //**CONSTANTES**
-    private static final String PANEL_VACIO = "VACIO";
-    private static final String PANEL_CREAR = "CREAR";
-    private static final String PANEL_MODIFICAR = "MODIFICAR";
-    private static final String PANEL_ELIMINAR = "ELIMINAR";
-    private static final String PANEL_CONSULTAR = "CONSULTAR";
-    private static final DateTimeFormatter FMT_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private static final String PANEL_VACIO = CargadorProperties.obtenerComponentes("PANEL_VACIO");
+    private static final String PANEL_CREAR = CargadorProperties.obtenerComponentes("PANEL_CREAR");
+    private static final String PANEL_MODIFICAR = CargadorProperties.obtenerComponentes("PANEL_MODIFICAR");
+    private static final String PANEL_ELIMINAR = CargadorProperties.obtenerComponentes("PANEL_ELIMINAR");
+    private static final String PANEL_CONSULTAR = CargadorProperties.obtenerComponentes("PANEL_CONSULTAR");
+    private static final DateTimeFormatter FMT_FECHA = DateTimeFormatter.ofPattern( CargadorProperties.obtenerComponentes("FORMATO_FECHA"));
     
     //**VARIABLES CARDLAYOUT**
     private CardLayout cardLayout;
@@ -48,6 +48,7 @@ public class VentanaFactura extends JFrame {
     //**VARIABLES PANEL MODIFICAR**
     private JTextField txtCedulaMod;
     private JTable tablaFacturasMod;
+    private JLabel lblErrorCedulaMod; 
     private DefaultTableModel modeloFacturasMod;
     private JTable tablaProductosMod;
     private DefaultTableModel modeloProductosMod;
@@ -68,10 +69,20 @@ public class VentanaFactura extends JFrame {
     //**VARIABLES PANEL CONSULTAR**
     private JComboBox<String> comboTipoConsulta;
     private JTextField txtCedulaConsulta;
+    private JLabel lblErrorCedulaConsulta; 
     private JTable tablaResultados;
     private DefaultTableModel modeloTablaResultados;
     private JPanel panelBusqueda;
-    
+
+    // NUEVAS para consulta con detalle
+    private JPanel panelDetalleConsulta;
+    private JLabel lblCodigoConsulta, lblFechaConsulta;
+    private JLabel lblNombreClienteConsulta, lblCedulaClienteConsulta;
+    private JLabel lblEmailClienteConsulta, lblTelefonoClienteConsulta;
+    private JTable tablaProductosConsulta;
+    private DefaultTableModel modeloProductosConsulta;
+    private JTextField txtSubtotalConsulta, txtIVAConsulta, txtTotalConsulta;
+
     //**VARIABLES DATOS**
     private Cliente clienteSeleccionado;
     private ArrayList<ProxFac> productosFactura;
@@ -93,20 +104,20 @@ public class VentanaFactura extends JFrame {
         setLocationRelativeTo(null);
     }
     
-    //Inicializa CardLayout y crea todos los paneles
     private void inicializarComponentes() {
         cardLayout = new CardLayout();
         panelContenedor = new JPanel(cardLayout);
-        
+
         String[] opciones = CargadorProperties.obtenerComponentes("CMB_OPERACION").split(",");
         comboOpciones = new JComboBox<>(opciones);
-        comboOpciones.addActionListener(e -> cambiarPanel());
-        
+
         panelContenedor.add(crearPanelVacio(), PANEL_VACIO);
         panelContenedor.add(crearPanelCrear(), PANEL_CREAR);
         panelContenedor.add(crearPanelModificar(), PANEL_MODIFICAR);
         panelContenedor.add(crearPanelEliminar(), PANEL_ELIMINAR);
         panelContenedor.add(crearPanelConsultar(), PANEL_CONSULTAR);
+
+        comboOpciones.addActionListener(e -> cambiarPanel());
     }
     
     //Configura el layout principal de la ventana
@@ -124,17 +135,14 @@ public class VentanaFactura extends JFrame {
         btnVolver.addActionListener(e -> volverAlMenu());
         panelInferior.add(btnVolver);
         add(panelInferior, BorderLayout.SOUTH);
-    }
+    }    
     
-    //**CREACION DE PANELES**
-    //Crea panel vacío con título centrado
+    //Panel vacío
     private JPanel crearPanelVacio() {
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         
-        JLabel lblTitulo = new JLabel(CargadorProperties.obtenerComponentes("TITULO_PANEL_VACIO"));
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 48));
-        lblTitulo.setForeground(Color.DARK_GRAY);
+        JLabel lblTitulo = crearTituloCentrado("TITULO_PANEL_VACIO");
         
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -143,236 +151,77 @@ public class VentanaFactura extends JFrame {
         return panel;
     }
     
-    //Crea panel para ingresar nueva factura
+    //**CREACIÓN DE PANELES**    
+    //Panel Ingresar
     private JPanel crearPanelCrear() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 0, 10);
         gbc.anchor = GridBagConstraints.WEST;
-        
+
+        // Inicializar componentes
         txtCedulaCrear = new JTextField();
         txtCedulaCrear.setPreferredSize(new Dimension(200, 25));
-        
+
         lblNombreClienteCrear = new JLabel("");
         lblCedulaClienteCrear = new JLabel("");
         lblEmailClienteCrear = new JLabel("");
         lblTelefonoClienteCrear = new JLabel("");
-        
+
         cmbProductoCrear = new JComboBox<>();
         cmbProductoCrear.setPreferredSize(new Dimension(400, 25));
-        
+        cmbProductoCrear.setEnabled(false); 
+
         txtCantidadCrear = new JTextField();
         txtCantidadCrear.setPreferredSize(new Dimension(80, 25));
-        
-        txtSubtotalCrear = new JTextField(CargadorProperties.obtenerComponentes("TOTAL_INICIAL"));
-        txtSubtotalCrear.setEditable(false);
-        txtSubtotalCrear.setPreferredSize(new Dimension(120, 25));
-        
-        txtIVACrear = new JTextField(CargadorProperties.obtenerComponentes("TOTAL_INICIAL"));
-        txtIVACrear.setEditable(false);
-        txtIVACrear.setPreferredSize(new Dimension(120, 25));
-        
-        txtTotalCrear = new JTextField(CargadorProperties.obtenerComponentes("TOTAL_INICIAL"));
-        txtTotalCrear.setEditable(false);
-        txtTotalCrear.setFont(new Font("Arial", Font.BOLD, 12));
-        txtTotalCrear.setPreferredSize(new Dimension(120, 25));
-        
+
+        txtSubtotalCrear = crearCampoTotal(false);
+        txtIVACrear = crearCampoTotal(false);
+        txtTotalCrear = crearCampoTotal(true);
+
         lblErrorCedulaCrear = crearLabelError();
         lblErrorCantidadCrear = crearLabelError();
-        
-        lblCodigoGenerado = new JLabel(CargadorProperties.obtenerComponentes("LBL_CODIGO") + " " + CargadorProperties.obtenerComponentes("CODIGO_GENERANDO"));
+
+        lblCodigoGenerado = new JLabel(CargadorProperties.obtenerComponentes("LBL_CODIGO") + " " + 
+                                       CargadorProperties.obtenerComponentes("CODIGO_GENERANDO"));
         lblCodigoGenerado.setFont(new Font("Arial", Font.BOLD, 12));
-        
+
         generarYMostrarCodigo();
         configurarValidacionesCrear();
-        
+
         int fila = 0;
-                
+
+        // Título
         gbc.gridx = 0;
-        gbc.gridy = fila;
+        gbc.gridy = fila++;
         gbc.gridwidth = 8;
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.insets = new Insets(10, 10, 15, 10);
-        JLabel lblTitulo = new JLabel(CargadorProperties.obtenerComponentes("TITULO_CREAR_FACTURA"));
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 42));
-        panel.add(lblTitulo, gbc);
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(5, 10, 0, 10);
-        
-        fila++;
-
-        // PANEL IZQUIERDO (Código y Fecha)
-        gbc.gridx = 0;
-        gbc.gridy = fila;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        gbc.insets = new Insets(10, 10, 0, 10);
-
-        JPanel panelIzq = new JPanel();
-        panelIzq.setLayout(new BoxLayout(panelIzq, BoxLayout.Y_AXIS));
-
-        lblCodigoGenerado.setFont(new Font("Arial", Font.BOLD, 14));
-        lblCodigoGenerado.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panelIzq.add(lblCodigoGenerado);
-        panelIzq.add(Box.createVerticalStrut(8));
-
-        JLabel lblFechaTit = new JLabel(CargadorProperties.obtenerComponentes("LBL_FECHA_HORA"));
-        lblFechaTit.setFont(new Font("Arial", Font.BOLD, 13));
-        lblFechaTit.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panelIzq.add(lblFechaTit);
-
-        LocalDateTime ahora = LocalDateTime.now();
-        String fechaHora = ahora.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
-        JLabel lblFechaVal = new JLabel(fechaHora);
-        lblFechaVal.setFont(new Font("Arial", Font.PLAIN, 13));
-        lblFechaVal.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panelIzq.add(lblFechaVal);
-
-        panel.add(panelIzq, gbc);
-
-        // PANEL EMPRESA (Centro)
-        gbc.gridx = 6;
-        gbc.gridy = fila;
-        gbc.gridwidth = 4;
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-
-        JPanel panelEmpresa = new JPanel();
-        panelEmpresa.setLayout(new BoxLayout(panelEmpresa, BoxLayout.Y_AXIS));
-
-        JLabel lblEmpNom = new JLabel(CargadorProperties.obtenerComponentes("EMPRESA_NOMBRE"));
-        lblEmpNom.setFont(new Font("Arial", Font.BOLD, 16));
-        lblEmpNom.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panelEmpresa.add(lblEmpNom);
-        panelEmpresa.add(Box.createVerticalStrut(3));
-
-        JLabel lblEmpEmail = new JLabel(CargadorProperties.obtenerComponentes("EMPRESA_EMAIL"));
-        lblEmpEmail.setFont(new Font("Arial", Font.PLAIN, 14));
-        lblEmpEmail.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panelEmpresa.add(lblEmpEmail);
-        panelEmpresa.add(Box.createVerticalStrut(3));
-
-        JLabel lblEmpTel = new JLabel(CargadorProperties.obtenerComponentes("EMPRESA_TELEFONO"));
-        lblEmpTel.setFont(new Font("Arial", Font.PLAIN, 14));
-        lblEmpTel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panelEmpresa.add(lblEmpTel);
-
-        panel.add(panelEmpresa, gbc);
-
-        // PANEL CLIENTE (Derecha)
-        gbc.gridx = 6;
-        gbc.gridy = fila;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.NORTHEAST;
-
-        JPanel panelCliente = new JPanel(new GridBagLayout());
-        GridBagConstraints gbcCli = new GridBagConstraints();
-        gbcCli.anchor = GridBagConstraints.WEST;
-        gbcCli.insets = new Insets(2, 5, 2, 5);
-
-       int filaC = 0;
-        
-        gbcCli.gridx = 0;
-        gbcCli.gridy = filaC;
-        gbcCli.gridwidth = 3;
-        JLabel lblTitCliente = new JLabel(CargadorProperties.obtenerComponentes("LBL_INFO_CLIENTE"));
-        lblTitCliente.setFont(new Font("Arial", Font.BOLD, 16));
-        panelCliente.add(lblTitCliente, gbcCli);
-        gbcCli.gridwidth = 1;
-        
-        filaC++;
-        gbcCli.gridx = 0;
-        gbcCli.gridy = filaC;
-        JLabel lblCedRuc = new JLabel(CargadorProperties.obtenerComponentes("LBL_CEDULA_RUC"));
-        lblCedRuc.setFont(new Font("Arial", Font.BOLD, 12));
-        panelCliente.add(lblCedRuc, gbcCli);
-        
-        gbcCli.gridx = 1;
-        panelCliente.add(txtCedulaCrear, gbcCli);
-        
-        //AQUI
-        gbcCli.gridx = 2;
-        JLabel btnLupa = new JLabel(CargadorProperties.obtenerComponentes("BTN_LUPA"));
-        btnLupa.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
-        btnLupa.setPreferredSize(new Dimension(35, 25));
-        btnLupa.setHorizontalAlignment(SwingConstants.CENTER); // Centra el texto
-        btnLupa.setOpaque(true); // Permite que se vea el fondo
-        btnLupa.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                buscarClienteCrear();
-            }
-        });
-        panelCliente.add(btnLupa, gbcCli);
-        
-        
-        filaC++;
-        gbcCli.gridx = 1;
-        gbcCli.gridy = filaC;
-        gbcCli.gridwidth = 2;
-        panelCliente.add(lblErrorCedulaCrear, gbcCli);
-        gbcCli.gridwidth = 1;
-        
-        filaC++;
-        gbcCli.gridx = 0;
-        gbcCli.gridy = filaC;
-        JLabel lblNomTit = new JLabel(CargadorProperties.obtenerComponentes("LBL_NOMBRE"));
-        lblNomTit.setFont(new Font("Arial", Font.BOLD, 12));
-        panelCliente.add(lblNomTit, gbcCli);
-        
-        gbcCli.gridx = 1;
-        gbcCli.gridwidth = 2;
-        lblNombreClienteCrear.setFont(new Font("Arial", Font.PLAIN, 12));
-        panelCliente.add(lblNombreClienteCrear, gbcCli);
-        gbcCli.gridwidth = 1;
-        
-        filaC++;
-        gbcCli.gridx = 0;
-        gbcCli.gridy = filaC;
-        JLabel lblCedTit = new JLabel(CargadorProperties.obtenerComponentes("FC_UI_019"));
-        lblCedTit.setFont(new Font("Arial", Font.BOLD, 12));
-        panelCliente.add(lblCedTit, gbcCli);
-        
-        gbcCli.gridx = 1;
-        gbcCli.gridwidth = 2;
-        lblCedulaClienteCrear.setFont(new Font("Arial", Font.PLAIN, 12));
-        panelCliente.add(lblCedulaClienteCrear, gbcCli);
-        gbcCli.gridwidth = 1;
-        
-        filaC++;
-        gbcCli.gridx = 0;
-        gbcCli.gridy = filaC;
-        JLabel lblEmailTit = new JLabel(CargadorProperties.obtenerComponentes("LBL_EMAIL"));
-        lblEmailTit.setFont(new Font("Arial", Font.BOLD, 12));
-        panelCliente.add(lblEmailTit, gbcCli);
-        
-        gbcCli.gridx = 1;
-        gbcCli.gridwidth = 2;
-        lblEmailClienteCrear.setFont(new Font("Arial", Font.PLAIN, 12));
-        panelCliente.add(lblEmailClienteCrear, gbcCli);
-        gbcCli.gridwidth = 1;
-        
-        filaC++;
-        gbcCli.gridx = 0;
-        gbcCli.gridy = filaC;
-        JLabel lblTelTit = new JLabel(CargadorProperties.obtenerComponentes("LBL_TELEFONO"));
-        lblTelTit.setFont(new Font("Arial", Font.BOLD, 12));
-        panelCliente.add(lblTelTit, gbcCli);
-        
-        gbcCli.gridx = 1;
-        gbcCli.gridwidth = 2;
-        lblTelefonoClienteCrear.setFont(new Font("Arial", Font.PLAIN, 12));
-        panelCliente.add(lblTelefonoClienteCrear, gbcCli);
-        
-        panel.add(panelCliente, gbc);
+        panel.add(crearTituloCentrado("TITULO_CREAR_FACTURA"), gbc);
         gbc.gridwidth = 1;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(5, 10, 0, 10);
-        
-        fila++;
+
+        // Cabecera completa (Código/Fecha + Empresa + Cliente)
         gbc.gridx = 0;
-        gbc.gridy = fila;
+        gbc.gridy = fila++;
+        gbc.gridwidth = 8;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(10, 10, 0, 10);
+        panel.add(crearCabeceraFactura(
+            lblCodigoGenerado, null,  // lblCodigo, lblFecha (null = genera fecha automática)
+            lblNombreClienteCrear, lblCedulaClienteCrear, lblEmailClienteCrear, lblTelefonoClienteCrear,
+            true, txtCedulaCrear, lblErrorCedulaCrear, () -> buscarClienteCrear()  // con búsqueda
+        ), gbc);
+        gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.insets = new Insets(5, 10, 0, 10);
+
+        // Separador
+        gbc.gridx = 0;
+        gbc.gridy = fila++;
         gbc.gridwidth = 8;
         gbc.insets = new Insets(15, 10, 15, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -380,84 +229,85 @@ public class VentanaFactura extends JFrame {
         gbc.fill = GridBagConstraints.NONE;
         gbc.gridwidth = 1;
         gbc.insets = new Insets(5, 10, 0, 10);
-        
-        fila++;
+
+        // Título productos
         gbc.gridx = 0;
-        gbc.gridy = fila;
+        gbc.gridy = fila++;
         gbc.gridwidth = 8;
+        gbc.anchor = GridBagConstraints.WEST;
         JLabel lblTitProd = new JLabel(CargadorProperties.obtenerComponentes("TITULO_PRODUCTOS_FACTURA"));
         lblTitProd.setFont(new Font("Arial", Font.BOLD, 18));
         panel.add(lblTitProd, gbc);
         gbc.gridwidth = 1;
-        
-        fila++;
+
+        // Fila: Producto | Cantidad | Agregar
+        gbc.gridy = fila++;
+
         gbc.gridx = 0;
-        gbc.gridy = fila;
         JLabel lblProd = new JLabel(CargadorProperties.obtenerComponentes("LBL_PRODUCTO"));
         lblProd.setFont(new Font("Arial", Font.BOLD, 12));
         panel.add(lblProd, gbc);
-        
+
         gbc.gridx = 1;
         gbc.gridwidth = 4;
         panel.add(cmbProductoCrear, gbc);
         gbc.gridwidth = 1;
-        
+
         gbc.gridx = 5;
         JLabel lblCant = new JLabel(CargadorProperties.obtenerComponentes("LBL_CANTIDAD"));
         lblCant.setFont(new Font("Arial", Font.BOLD, 12));
         panel.add(lblCant, gbc);
-        
+
         gbc.gridx = 6;
         panel.add(txtCantidadCrear, gbc);
-        
+
         gbc.gridx = 7;
         JButton btnAgregar = new JButton(CargadorProperties.obtenerComponentes("FC_UI_027"));
         btnAgregar.setPreferredSize(new Dimension(90, 25));
-        btnAgregar.addActionListener(e -> agregarProducto());
+        btnAgregar.addActionListener(e -> agregarProducto(
+            cmbProductoCrear,
+            txtCantidadCrear,
+            lblErrorCantidadCrear,
+            modeloProductosCrear,
+            txtSubtotalCrear,
+            txtIVACrear,
+            txtTotalCrear
+        ));
         panel.add(btnAgregar, gbc);
-        
-        fila++;
+
+        // Error cantidad
         gbc.gridx = 6;
-        gbc.gridy = fila;
+        gbc.gridy = fila++;
         gbc.insets = new Insets(0, 10, 0, 10);
         panel.add(lblErrorCantidadCrear, gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
-        
-        fila++;
-        gbc.gridx = 0;
-        gbc.gridy = fila;
-        gbc.gridwidth = 8;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-        gbc.insets = new Insets(10, 10, 10, 10);
-        
-        String[] cols = CargadorProperties.obtenerComponentes("TABLA_PRODUCTOS_COLS").split(",");
-        modeloProductosCrear = new DefaultTableModel(cols, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 2;  // Solo columna Cantidad editable
-            }
 
-            @Override
-            public Class<?> getColumnClass(int column) {
-                if (column == 2) return Integer.class;
-                return String.class;
-            }
-        };
+        // Tabla productos (EDITABLE)
+        modeloProductosCrear = crearModeloTablaProductos(true);  // ← USA MÉTODO AUXILIAR
         tablaProductosCrear = new JTable(modeloProductosCrear);
-        modeloProductosCrear.addTableModelListener(new TableModelListener() {
-            @Override
-            public void tableChanged(TableModelEvent e) {
-                if (e.getType() == TableModelEvent.UPDATE && e.getColumn() == 2) {
-                    validarYActualizarCantidad(modeloProductosCrear, txtSubtotalCrear, txtIVACrear, txtTotalCrear, e.getFirstRow());
-                }
-            }
-        });
+        configurarTablaProductos(modeloProductosCrear, tablaProductosCrear, true, 
+                        txtSubtotalCrear, txtIVACrear, txtTotalCrear);
+
+        gbc.gridx = 0;
+        gbc.gridy = fila++;
+        gbc.gridwidth = 8;
+        gbc.fill = GridBagConstraints.BOTH;  
+        gbc.weightx = 1.0; 
+        gbc.weighty = 1.0; 
+        gbc.insets = new Insets(10, 10, 10, 10);
+
         JScrollPane scrollTabla = new JScrollPane(tablaProductosCrear);
-        scrollTabla.setPreferredSize(new Dimension(800, 180));
+        scrollTabla.setPreferredSize(new Dimension(0, 180)); 
         panel.add(scrollTabla, gbc);
-        
+
+        // Resetear para siguientes componentes
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        gbc.weighty = 0;
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(5, 10, 0, 10);
+
+        // Botón Quitar
         fila++;
         gbc.gridy = fila;
         gbc.gridx = 7;
@@ -467,43 +317,24 @@ public class VentanaFactura extends JFrame {
         gbc.weightx = 0;
         gbc.weighty = 0;
         gbc.insets = new Insets(5, 10, 10, 10);
+
         JButton btnQuitar = new JButton(CargadorProperties.obtenerComponentes("FC_UI_028"));
         btnQuitar.setPreferredSize(new Dimension(90, 25));
-        btnQuitar.addActionListener(e -> quitarProducto(tablaProductosCrear, modeloProductosCrear));
+        btnQuitar.addActionListener(e -> quitarProducto(
+            tablaProductosCrear,
+            modeloProductosCrear,
+            txtSubtotalCrear,
+            txtIVACrear,
+            txtTotalCrear
+        ));
         panel.add(btnQuitar, gbc);
-        
+
+        // Totales
         fila++;
-        gbc.gridx = 6;
-        gbc.gridy = fila;
-        gbc.anchor = GridBagConstraints.EAST;
-        JLabel lblSub = new JLabel(CargadorProperties.obtenerComponentes("LBL_SUBTOTAL"));
-        lblSub.setFont(new Font("Arial", Font.BOLD, 12));
-        panel.add(lblSub, gbc);
-        
-        gbc.gridx = 7;
-        panel.add(txtSubtotalCrear, gbc);
-        
-        fila++;
-        gbc.gridx = 6;
-        gbc.gridy = fila;
-        JLabel lblIva = new JLabel(CargadorProperties.obtenerComponentes("LBL_IVA"));
-        lblIva.setFont(new Font("Arial", Font.BOLD, 12));
-        panel.add(lblIva, gbc);
-        
-        gbc.gridx = 7;
-        panel.add(txtIVACrear, gbc);
-        
-        fila++;
-        gbc.gridx = 6;
-        gbc.gridy = fila;
-        JLabel lblTot = new JLabel(CargadorProperties.obtenerComponentes("LBL_TOTAL"));
-        lblTot.setFont(new Font("Arial", Font.BOLD, 14));
-        panel.add(lblTot, gbc);
-        
-        gbc.gridx = 7;
-        panel.add(txtTotalCrear, gbc);
-        
-        fila++;
+        agregarSeccionTotales(panel, gbc, fila, txtSubtotalCrear, txtIVACrear, txtTotalCrear);
+        fila += 3;
+
+        // Botón Guardar
         gbc.gridx = 7;
         gbc.gridy = fila;
         gbc.insets = new Insets(15, 10, 10, 10);
@@ -512,221 +343,142 @@ public class VentanaFactura extends JFrame {
         btnGuardar.setFont(new Font("Arial", Font.BOLD, 12));
         btnGuardar.addActionListener(e -> crearFactura());
         panel.add(btnGuardar, gbc);
-        
+
         cargarProductosActivos(cmbProductoCrear);
-        
+
         JPanel panelConScroll = new JPanel(new BorderLayout());
         JScrollPane scrollPane = new JScrollPane(panel);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         scrollPane.setBorder(null);
         panelConScroll.add(scrollPane, BorderLayout.CENTER);
-        
+
         return panelConScroll;
     }
-    
-    //Crea cabecera de factura para panel modificar
-    private JPanel crearCabeceraMod() {
-        panelCabeceraMod = new JPanel(new BorderLayout(20, 10));
-        panelCabeceraMod.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        
-        JPanel panelIzq = new JPanel();
-        panelIzq.setLayout(new BoxLayout(panelIzq, BoxLayout.Y_AXIS));
-        
-        lblCodigoMod = new JLabel(CargadorProperties.obtenerComponentes("LBL_CODIGO") + " ");
-        lblCodigoMod.setFont(new Font("Arial", Font.BOLD, 14));
-        lblCodigoMod.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panelIzq.add(lblCodigoMod);
-        panelIzq.add(Box.createVerticalStrut(8));
-        
-        JLabel lblFechaTit = new JLabel(CargadorProperties.obtenerComponentes("LBL_FECHA_HORA"));
-        lblFechaTit.setFont(new Font("Arial", Font.BOLD, 13));
-        lblFechaTit.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panelIzq.add(lblFechaTit);
-        
-        lblFechaMod = new JLabel("");
-        lblFechaMod.setFont(new Font("Arial", Font.PLAIN, 13));
-        lblFechaMod.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panelIzq.add(lblFechaMod);
-        
-        JPanel panelEmpresa = new JPanel();
-        panelEmpresa.setLayout(new BoxLayout(panelEmpresa, BoxLayout.Y_AXIS));
-        
-        JLabel lblEmpNom = new JLabel(CargadorProperties.obtenerComponentes("EMPRESA_NOMBRE"));
-        lblEmpNom.setFont(new Font("Arial", Font.BOLD, 16));
-        lblEmpNom.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panelEmpresa.add(lblEmpNom);
-        panelEmpresa.add(Box.createVerticalStrut(3));
-        
-        JLabel lblEmpEmail = new JLabel(CargadorProperties.obtenerComponentes("EMPRESA_EMAIL"));
-        lblEmpEmail.setFont(new Font("Arial", Font.PLAIN, 14));
-        lblEmpEmail.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panelEmpresa.add(lblEmpEmail);
-        panelEmpresa.add(Box.createVerticalStrut(3));
-        
-        JLabel lblEmpTel = new JLabel(CargadorProperties.obtenerComponentes("EMPRESA_TELEFONO"));
-        lblEmpTel.setFont(new Font("Arial", Font.PLAIN, 14));
-        lblEmpTel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panelEmpresa.add(lblEmpTel);
-        
-        JPanel panelCliente = new JPanel();
-        panelCliente.setLayout(new BoxLayout(panelCliente, BoxLayout.Y_AXIS));
-        
-        JLabel lblTitCliente = new JLabel(CargadorProperties.obtenerComponentes("LBL_INFO_CLIENTE"));
-        lblTitCliente.setFont(new Font("Arial", Font.BOLD, 16));
-        lblTitCliente.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panelCliente.add(lblTitCliente);
-        panelCliente.add(Box.createVerticalStrut(5));
-        
-        JPanel pNom = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
-        JLabel lblNomTit = new JLabel(CargadorProperties.obtenerComponentes("LBL_NOMBRE"));
-        lblNomTit.setFont(new Font("Arial", Font.BOLD, 12));
-        pNom.add(lblNomTit);
-        lblNombreClienteMod = new JLabel("");
-        lblNombreClienteMod.setFont(new Font("Arial", Font.PLAIN, 12));
-        pNom.add(lblNombreClienteMod);
-        panelCliente.add(pNom);
-        
-        JPanel pCed = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
-        JLabel lblCedTit = new JLabel(CargadorProperties.obtenerComponentes("FC_UI_019"));
-        lblCedTit.setFont(new Font("Arial", Font.BOLD, 12));
-        pCed.add(lblCedTit);
-        lblCedulaClienteMod = new JLabel("");
-        lblCedulaClienteMod.setFont(new Font("Arial", Font.PLAIN, 12));
-        pCed.add(lblCedulaClienteMod);
-        panelCliente.add(pCed);
-        
-        JPanel pEmail = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
-        JLabel lblEmailTit = new JLabel(CargadorProperties.obtenerComponentes("LBL_EMAIL"));
-        lblEmailTit.setFont(new Font("Arial", Font.BOLD, 12));
-        pEmail.add(lblEmailTit);
-        lblEmailClienteMod = new JLabel("");
-        lblEmailClienteMod.setFont(new Font("Arial", Font.PLAIN, 12));
-        pEmail.add(lblEmailClienteMod);
-        panelCliente.add(pEmail);
-        
-        JPanel pTel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
-        JLabel lblTelTit = new JLabel(CargadorProperties.obtenerComponentes("LBL_TELEFONO"));
-        lblTelTit.setFont(new Font("Arial", Font.BOLD, 12));
-        pTel.add(lblTelTit);
-        lblTelefonoClienteMod = new JLabel("");
-        lblTelefonoClienteMod.setFont(new Font("Arial", Font.PLAIN, 12));
-        pTel.add(lblTelefonoClienteMod);
-        panelCliente.add(pTel);
-        
-        panelCabeceraMod.add(panelIzq, BorderLayout.WEST);
-        panelCabeceraMod.add(panelEmpresa, BorderLayout.CENTER);
-        panelCabeceraMod.add(panelCliente, BorderLayout.EAST);
-        
-        return panelCabeceraMod;
-    }
-    
     //Crea panel para modificar facturas existentes
     private JPanel crearPanelModificar() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 0, 10);
         gbc.anchor = GridBagConstraints.WEST;
-        
+
+        // Inicializar componentes MODIFICAR
         txtCedulaMod = new JTextField();
         txtCedulaMod.setPreferredSize(new Dimension(200, 25));
-        
+
+        lblCodigoMod = new JLabel("");
+        lblFechaMod = new JLabel("");
+        lblNombreClienteMod = new JLabel("");
+        lblCedulaClienteMod = new JLabel("");
+        lblEmailClienteMod = new JLabel("");
+        lblTelefonoClienteMod = new JLabel("");
+
         cmbProductoMod = new JComboBox<>();
         cmbProductoMod.setPreferredSize(new Dimension(400, 25));
-        
+
         txtCantidadMod = new JTextField();
         txtCantidadMod.setPreferredSize(new Dimension(80, 25));
         lblErrorCantidadMod = crearLabelError();
-        
-        txtSubtotalMod = new JTextField(CargadorProperties.obtenerComponentes("TOTAL_INICIAL"));
-        txtSubtotalMod.setEditable(false);
-        txtSubtotalMod.setPreferredSize(new Dimension(120, 25));
-        
-        txtIVAMod = new JTextField(CargadorProperties.obtenerComponentes("TOTAL_INICIAL"));
-        txtIVAMod.setEditable(false);
-        txtIVAMod.setPreferredSize(new Dimension(120, 25));
-        
-        txtTotalMod = new JTextField(CargadorProperties.obtenerComponentes("TOTAL_INICIAL"));
-        txtTotalMod.setEditable(false);
-        txtTotalMod.setFont(new Font("Arial", Font.BOLD, 12));
-        txtTotalMod.setPreferredSize(new Dimension(120, 25));
-        
+
+        txtSubtotalMod = crearCampoTotal(false);
+        txtIVAMod = crearCampoTotal(false);
+        txtTotalMod = crearCampoTotal(true);
+
         int fila = 0;
-        
+
+        // Título
         gbc.gridx = 0;
-        gbc.gridy = fila;
+        gbc.gridy = fila++;
         gbc.gridwidth = 8;
         gbc.anchor = GridBagConstraints.CENTER;
-        JLabel lblTitulo = new JLabel(CargadorProperties.obtenerComponentes("TITULO_MODIFICAR_FACTURA"));
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 32));
-        panel.add(lblTitulo, gbc);
+        gbc.insets = new Insets(10, 10, 15, 10);
+        panel.add(crearTituloCentrado("TITULO_MODIFICAR_FACTURA"), gbc);
         gbc.gridwidth = 1;
         gbc.anchor = GridBagConstraints.WEST;
-        
-        fila++;
+        gbc.insets = new Insets(5, 10, 0, 10);
+
+        // Buscar cliente por cédula
         gbc.gridx = 0;
         gbc.gridy = fila;
         gbc.insets = new Insets(20, 10, 5, 10);
         JLabel lblCed = new JLabel(CargadorProperties.obtenerComponentes("LBL_CEDULA"));
         lblCed.setFont(new Font("Arial", Font.BOLD, 12));
         panel.add(lblCed, gbc);
-        
+
         gbc.gridx = 1;
         gbc.gridwidth = 2;
-        gbc.insets = new Insets(20, 10, 5, 10);  
         panel.add(txtCedulaMod, gbc);
-        
+
         gbc.gridx = 3;
         gbc.gridwidth = 1;
         gbc.insets = new Insets(20, 5, 5, 10);
-        JLabel lblLupa = new JLabel(CargadorProperties.obtenerComponentes("BTN_LUPA"));
-        lblLupa.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
-        lblLupa.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        lblLupa.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                buscarFacturasCliente(txtCedulaMod, modeloFacturasMod);
-            }
-        });
-        panel.add(lblLupa, gbc);
-        gbc.gridwidth = 1;
+        panel.add(crearBotonLupa(() -> buscarYCargarFacturas(txtCedulaMod, modeloFacturasMod, false)), gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
         
         fila++;
-        gbc.gridx = 0;
+        gbc.gridx = 1;
         gbc.gridy = fila;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(0, 10, 5, 10);
+        lblErrorCedulaMod = crearLabelError();  // ← INICIALIZAR
+        panel.add(lblErrorCedulaMod, gbc);
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(5, 10, 0, 10);
+        
+        // Tabla de facturas del cliente (3 columnas)
+        fila++;
+        gbc.gridx = 0;
+        gbc.gridy = fila++;
         gbc.gridwidth = 8;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weightx = 1.0;
         gbc.weighty = 0.3;
         gbc.insets = new Insets(10, 10, 10, 10);
-        
-        String[] colsFacturas = CargadorProperties.obtenerComponentes("TABLA_FACTURAS_MOD_COLS").split(",");
-        modeloFacturasMod = new DefaultTableModel(colsFacturas, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) { return false; }
-        };
+
+        modeloFacturasMod = crearModeloTablaFacturas("modificar");  // ← USA MÉTODO AUXILIAR
         tablaFacturasMod = new JTable(modeloFacturasMod);
+        tablaFacturasMod.setRowHeight(25);
+
+        // Listener para seleccionar factura
         tablaFacturasMod.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                seleccionarFacturaModificar();
+                seleccionarYMostrarFactura(
+                    tablaFacturasMod,
+                    modeloFacturasMod,
+                    modeloProductosMod,
+                    panelCabeceraMod,
+                    lblCodigoMod,
+                    lblFechaMod,
+                    lblNombreClienteMod,
+                    lblCedulaClienteMod,
+                    lblEmailClienteMod,
+                    lblTelefonoClienteMod,
+                    txtSubtotalMod,
+                    txtIVAMod,
+                    txtTotalMod,
+                    true,  // ← EDITABLE
+                    cmbProductoMod,
+                    txtCantidadMod,
+                    btnGuardarMod
+                );
             }
         });
+
         JScrollPane scrollFacturas = new JScrollPane(tablaFacturasMod);
         scrollFacturas.setPreferredSize(new Dimension(900, 120));
         panel.add(scrollFacturas, gbc);
-        
+
         gbc.fill = GridBagConstraints.NONE;
         gbc.weightx = 0;
         gbc.weighty = 0;
         gbc.gridwidth = 1;
         gbc.insets = new Insets(5, 10, 0, 10);
-        
-        fila++;
+
+        // Separador
         gbc.gridx = 0;
-        gbc.gridy = fila;
+        gbc.gridy = fila++;
         gbc.gridwidth = 8;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(15, 10, 15, 10);
@@ -734,152 +486,114 @@ public class VentanaFactura extends JFrame {
         gbc.fill = GridBagConstraints.NONE;
         gbc.gridwidth = 1;
         gbc.insets = new Insets(5, 10, 0, 10);
-        
-        fila++;
-        gbc.gridx = 0;
-        gbc.gridy = fila;
-        gbc.gridwidth = 8;
-        
-        JPanel cabecera = crearCabeceraMod();
-        cabecera.setVisible(false);
 
-        JPanel wrapper = new JPanel(new GridBagLayout());
-        wrapper.add(cabecera);
+        // Cabecera de la factura seleccionada (oculta inicialmente)
+        gbc.gridx = 0;
+        gbc.gridy = fila++;
+        gbc.gridwidth = 8;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        panelCabeceraMod = crearCabeceraFactura(
+            lblCodigoMod, lblFechaMod,
+            lblNombreClienteMod, lblCedulaClienteMod, lblEmailClienteMod, lblTelefonoClienteMod,
+            false, null, null, null  // sin búsqueda
+        );
+        panelCabeceraMod.setVisible(false);
+
+        panel.add(panelCabeceraMod, gbc); 
 
         gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.CENTER;
-
-        panel.add(wrapper, gbc);
         gbc.gridwidth = 1;
+        gbc.insets = new Insets(5, 10, 0, 10);
 
-        fila++;
+        // Título productos
         gbc.gridx = 0;
-        gbc.gridy = fila;
+        gbc.gridy = fila++;
         gbc.gridwidth = 8;
-        gbc.anchor = GridBagConstraints.WEST; 
+        gbc.anchor = GridBagConstraints.WEST;
         JLabel lblTitProd = new JLabel(CargadorProperties.obtenerComponentes("TITULO_PRODUCTOS_FACTURA"));
         lblTitProd.setFont(new Font("Arial", Font.BOLD, 18));
         panel.add(lblTitProd, gbc);
         gbc.gridwidth = 1;
-        
-        fila++;
+
+        // Fila: Producto | Cantidad | Agregar
+        gbc.gridy = fila++;
+
         gbc.gridx = 0;
-        gbc.gridy = fila;
         JLabel lblProd = new JLabel(CargadorProperties.obtenerComponentes("LBL_PRODUCTO"));
         lblProd.setFont(new Font("Arial", Font.BOLD, 12));
-        
         panel.add(lblProd, gbc);
-        
+
         gbc.gridx = 1;
         gbc.gridwidth = 4;
         panel.add(cmbProductoMod, gbc);
         gbc.gridwidth = 1;
-        
+
         gbc.gridx = 5;
         JLabel lblCant = new JLabel(CargadorProperties.obtenerComponentes("LBL_CANTIDAD"));
         lblCant.setFont(new Font("Arial", Font.BOLD, 12));
         panel.add(lblCant, gbc);
-        
+
         gbc.gridx = 6;
         panel.add(txtCantidadMod, gbc);
-        
+
         gbc.gridx = 7;
         JButton btnAgregar = new JButton(CargadorProperties.obtenerComponentes("FC_UI_027"));
         btnAgregar.setPreferredSize(new Dimension(90, 25));
-        btnAgregar.addActionListener(e -> agregarProductoMod());
+        btnAgregar.addActionListener(e -> agregarProducto(
+            cmbProductoMod, txtCantidadMod, lblErrorCantidadMod,
+            modeloProductosMod, txtSubtotalMod, txtIVAMod, txtTotalMod
+        ));
         panel.add(btnAgregar, gbc);
-        
-        fila++;
+
+        // Error cantidad
         gbc.gridx = 6;
-        gbc.gridy = fila;
+        gbc.gridy = fila++;
         gbc.insets = new Insets(0, 10, 0, 10);
         panel.add(lblErrorCantidadMod, gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
 
-        fila++;
+        // Tabla productos (EDITABLE)
         gbc.gridx = 0;
-        gbc.gridy = fila;
+        gbc.gridy = fila++;
         gbc.gridwidth = 8;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weightx = 1.0;
         gbc.weighty = 0.7;
         gbc.insets = new Insets(10, 10, 10, 10);
-        
-        String[] colsProductos = CargadorProperties.obtenerComponentes("TABLA_PRODUCTOS_COLS").split(",");
-        modeloProductosMod = new DefaultTableModel(colsProductos, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 2;
-            }
-            
-            @Override
-            public Class<?> getColumnClass(int column) {
-                if (column == 2) return Integer.class;
-                return String.class;
-            }
-        };
-        
+
+        modeloProductosMod = crearModeloTablaProductos(true);  // ← USA MÉTODO AUXILIAR
         tablaProductosMod = new JTable(modeloProductosMod);
-        
-        modeloProductosMod.addTableModelListener(new TableModelListener() {
-            @Override
-            public void tableChanged(TableModelEvent e) {
-                if (e.getType() == TableModelEvent.UPDATE && e.getColumn() == 2) {
-                    validarYActualizarCantidad(modeloProductosMod, txtSubtotalMod, txtIVAMod, txtTotalMod, e.getFirstRow());
-                }
-            }
-        });
-        
+        configurarTablaProductos(modeloProductosMod, tablaProductosMod, true, 
+                                txtSubtotalMod, txtIVAMod, txtTotalMod);
+
         JScrollPane scrollProductos = new JScrollPane(tablaProductosMod);
         scrollProductos.setPreferredSize(new Dimension(900, 200));
         panel.add(scrollProductos, gbc);
-        
+
         gbc.fill = GridBagConstraints.NONE;
         gbc.weightx = 0;
         gbc.weighty = 0;
         gbc.gridwidth = 1;
         gbc.insets = new Insets(5, 10, 0, 10);
-        
-        fila++;
+
+        // Botón Quitar
         gbc.gridx = 7;
-        gbc.gridy = fila;
+        gbc.gridy = fila++;
         gbc.anchor = GridBagConstraints.EAST;
         JButton btnQuitar = new JButton(CargadorProperties.obtenerComponentes("FC_UI_028"));
         btnQuitar.setPreferredSize(new Dimension(90, 25));
-        btnQuitar.addActionListener(e -> quitarProductoMod());
+        btnQuitar.addActionListener(e -> quitarProducto(
+            tablaProductosMod, modeloProductosMod,
+            txtSubtotalMod, txtIVAMod, txtTotalMod
+        ));
         panel.add(btnQuitar, gbc);
-        
-        fila++;
-        gbc.gridx = 6;
-        gbc.gridy = fila;
-        JLabel lblSub = new JLabel(CargadorProperties.obtenerComponentes("LBL_SUBTOTAL"));
-        lblSub.setFont(new Font("Arial", Font.BOLD, 12));
-        panel.add(lblSub, gbc);
-        
-        gbc.gridx = 7;
-        panel.add(txtSubtotalMod, gbc);
-        
-        fila++;
-        gbc.gridx = 6;
-        gbc.gridy = fila;
-        JLabel lblIva = new JLabel(CargadorProperties.obtenerComponentes("LBL_IVA"));
-        lblIva.setFont(new Font("Arial", Font.BOLD, 12));
-        panel.add(lblIva, gbc);
-        
-        gbc.gridx = 7;
-        panel.add(txtIVAMod, gbc);
-        
-        fila++;
-        gbc.gridx = 6;
-        gbc.gridy = fila;
-        JLabel lblTot = new JLabel(CargadorProperties.obtenerComponentes("LBL_TOTAL"));
-        lblTot.setFont(new Font("Arial", Font.BOLD, 14));
-        panel.add(lblTot, gbc);
-        
-        gbc.gridx = 7;
-        panel.add(txtTotalMod, gbc);
-        
-        fila++;
+
+        // Totales
+        agregarSeccionTotales(panel, gbc, fila, txtSubtotalMod, txtIVAMod, txtTotalMod);
+        fila += 3;
+
+        // Botón Guardar
         gbc.gridx = 7;
         gbc.gridy = fila;
         gbc.insets = new Insets(15, 10, 10, 10);
@@ -889,54 +603,55 @@ public class VentanaFactura extends JFrame {
         btnGuardarMod.setEnabled(false);
         btnGuardarMod.addActionListener(e -> modificarFactura());
         panel.add(btnGuardarMod, gbc);
-        
-        configurarValidacionesMod(); 
-        
+
+        configurarValidacionesMod();
+
         JPanel panelConScroll = new JPanel(new BorderLayout());
         JScrollPane scrollPane = new JScrollPane(panel);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         scrollPane.setBorder(null);
         panelConScroll.add(scrollPane, BorderLayout.CENTER);
-        
+
         return panelConScroll;
     }
-    
+
     //Crea panel para eliminar facturas
     private JPanel crearPanelEliminar() {
         JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 0, 10);
         gbc.anchor = GridBagConstraints.WEST;
 
+        // Inicializar componentes
         txtCedulaElim = new JTextField();
         txtCedulaElim.setPreferredSize(new Dimension(200, 25));
 
         JLabel lblErrorCedulaElim = crearLabelError();
 
-        // Configurar validación en tiempo real
-        txtCedulaElim.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { validarCedulaElim(lblErrorCedulaElim); }
-            public void removeUpdate(DocumentEvent e) { validarCedulaElim(lblErrorCedulaElim); }
-            public void changedUpdate(DocumentEvent e) { validarCedulaElim(lblErrorCedulaElim); }
-        });
+        // Configurar validación en tiempo real usando método auxiliar
+        txtCedulaElim.getDocument().addDocumentListener(
+            crearValidadorTiempoReal(txtCedulaElim, lblErrorCedulaElim, "cedula")
+        );
 
         int fila = 0;
 
+        // Título
         gbc.gridx = 0;
-        gbc.gridy = fila;
+        gbc.gridy = fila++;
         gbc.gridwidth = 4;
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.insets = new Insets(10, 10, 15, 10);
-        JLabel lblTitulo = new JLabel("Eliminar Factura");
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 32));
-        panel.add(lblTitulo, gbc);
+        panel.add(crearTituloCentrado("TITULO_ELIMINAR_FACTURA"), gbc);
         gbc.gridwidth = 1;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(5, 10, 0, 10);
 
-        fila++;
+        // Fila: Cédula + Lupa
         gbc.gridx = 0;
         gbc.gridy = fila;
+        gbc.insets = new Insets(20, 10, 5, 10);
         JLabel lblCed = new JLabel(CargadorProperties.obtenerComponentes("LBL_CEDULA"));
         lblCed.setFont(new Font("Arial", Font.BOLD, 12));
         panel.add(lblCed, gbc);
@@ -945,22 +660,12 @@ public class VentanaFactura extends JFrame {
         gbc.gridwidth = 2;
         panel.add(txtCedulaElim, gbc);
 
-        
-        //AQUI
         gbc.gridx = 3;
         gbc.gridwidth = 1;
         gbc.insets = new Insets(20, 5, 5, 10);
-        JLabel lblLupa = new JLabel(CargadorProperties.obtenerComponentes("BTN_LUPA"));
-        lblLupa.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
-        lblLupa.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        lblLupa.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                buscarFacturasClienteEliminar();
-            }
-        });
-        panel.add(lblLupa, gbc);
-                
+        panel.add(crearBotonLupa(() -> buscarYCargarFacturas(txtCedulaElim, modeloFacturasElim, false)), gbc);
+
+        // Error cédula
         fila++;
         gbc.gridx = 1;
         gbc.gridy = fila;
@@ -970,110 +675,551 @@ public class VentanaFactura extends JFrame {
         gbc.gridwidth = 1;
         gbc.insets = new Insets(5, 10, 0, 10);
 
+        // Tabla de facturas (8 columnas - completa)
         fila++;
         gbc.gridx = 0;
-        gbc.gridy = fila;
+        gbc.gridy = fila++;
         gbc.gridwidth = 4;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weightx = 1.0;
         gbc.weighty = 1.0;
         gbc.insets = new Insets(10, 10, 10, 10);
 
-        String[] cols = CargadorProperties.obtenerComponentes("TABLA_FACTURAS_COLS").split(",");
-        modeloFacturasElim = new DefaultTableModel(cols, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) { return false; }
-        };
+        modeloFacturasElim = crearModeloTablaFacturas("completa");  // ← USA MÉTODO AUXILIAR
         tablaFacturasElim = new JTable(modeloFacturasElim);
+        tablaFacturasElim.setRowHeight(25);
+
+        // Listener para habilitar botón eliminar
         tablaFacturasElim.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 btnEliminar.setEnabled(tablaFacturasElim.getSelectedRow() != -1);
             }
         });
+
         JScrollPane scroll = new JScrollPane(tablaFacturasElim);
         scroll.setPreferredSize(new Dimension(900, 400));
         panel.add(scroll, gbc);
 
-        fila++;
-        gbc.gridx = 3;
-        gbc.gridy = fila;
-        gbc.gridwidth = 1;
-        gbc.anchor = GridBagConstraints.EAST;
         gbc.fill = GridBagConstraints.NONE;
         gbc.weightx = 0;
         gbc.weighty = 0;
+        gbc.gridwidth = 1;
+
+        // Botón Eliminar
+        gbc.gridx = 3;
+        gbc.gridy = fila;
+        gbc.anchor = GridBagConstraints.EAST;
         gbc.insets = new Insets(15, 10, 10, 10);
+
         btnEliminar = new JButton(CargadorProperties.obtenerComponentes("BTN_ELIMINAR"));
-        btnEliminar.setPreferredSize(new Dimension(100, 28));
-        btnEliminar.setEnabled(false);
+        btnEliminar.setPreferredSize(new Dimension(140, 30));
+        btnEliminar.setFont(new Font("Arial", Font.BOLD, 12));
+        btnEliminar.setEnabled(false);  // Deshabilitado hasta seleccionar factura
         btnEliminar.addActionListener(e -> eliminarFactura());
         panel.add(btnEliminar, gbc);
+                
+        
 
         return panel;
     }
-
-    //Valida cédula en panel eliminar
-    private void validarCedulaElim(JLabel lblError) {
-        String error = ValidacionesFactura.validarCedRucCliente(txtCedulaElim.getText());
-        mostrarError(lblError, error);
-    }
     
-   //Crea panel para consultar facturas
     private JPanel crearPanelConsultar() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
+        // Panel superior: Título + tipo de consulta
+        JPanel panelSuperior = new JPanel(new BorderLayout(10, 10));
+
+        // Título centrado
+        JPanel panelTitulo = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        panelTitulo.add(crearTituloCentrado("TITULO_CONSULTAR_FACTURA"));
+        panelSuperior.add(panelTitulo, BorderLayout.NORTH);
+
+        // ComboBox de tipo de consulta
         JPanel panelTipo = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         String[] opcionesTipo = CargadorProperties.obtenerComponentes("CMB_TIPO_CONSULTA").split(",");
         comboTipoConsulta = new JComboBox<>(opcionesTipo);
         comboTipoConsulta.setPreferredSize(new Dimension(250, 30));
         comboTipoConsulta.addActionListener(e -> cambiarTipoConsulta());
         panelTipo.add(comboTipoConsulta);
-        panel.add(panelTipo, BorderLayout.NORTH);
+        panelSuperior.add(panelTipo, BorderLayout.CENTER);
 
+        panel.add(panelSuperior, BorderLayout.NORTH);
+
+        // Panel central: búsqueda + tabla facturas + detalle
         JPanel panelCentral = new JPanel(new BorderLayout(5, 5));
 
-        panelBusqueda = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        // Panel de búsqueda (inicialmente oculto) - CON GridBagLayout para error debajo
+        panelBusqueda = new JPanel(new GridBagLayout());
+        GridBagConstraints gbcBusq = new GridBagConstraints();
+        gbcBusq.insets = new Insets(5, 5, 0, 5);
+
         txtCedulaConsulta = new JTextField();
         txtCedulaConsulta.setPreferredSize(new Dimension(250, 25));
 
-        panelBusqueda.add(new JLabel(CargadorProperties.obtenerComponentes("LBL_CEDULA")));
-        panelBusqueda.add(txtCedulaConsulta);
+        lblErrorCedulaConsulta = crearLabelError();
 
-        JLabel lblBuscarConsulta = new JLabel(CargadorProperties.obtenerComponentes("BTN_LUPA"));
-        lblBuscarConsulta.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
-        lblBuscarConsulta.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        lblBuscarConsulta.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                consultaPorCliente();
-            }
-        });
-        panelBusqueda.add(lblBuscarConsulta);
+        JLabel lblCed = new JLabel(CargadorProperties.obtenerComponentes("LBL_CEDULA"));
+        lblCed.setFont(new Font("Arial", Font.BOLD, 12));
+
+        // Fila 1: Label + Campo + Lupa
+        gbcBusq.gridx = 0;
+        gbcBusq.gridy = 0;
+        gbcBusq.anchor = GridBagConstraints.EAST;
+        panelBusqueda.add(lblCed, gbcBusq);
+
+        gbcBusq.gridx = 1;
+        gbcBusq.anchor = GridBagConstraints.WEST;
+        panelBusqueda.add(txtCedulaConsulta, gbcBusq);
+
+        gbcBusq.gridx = 2;
+        panelBusqueda.add(crearBotonLupa(() -> buscarYCargarFacturas(txtCedulaConsulta, modeloTablaResultados, true)), gbcBusq);
+
+        // Fila 2: Error (centrado debajo del campo)
+        gbcBusq.gridx = 1;
+        gbcBusq.gridy = 1;
+        gbcBusq.insets = new Insets(0, 5, 5, 5);
+        gbcBusq.anchor = GridBagConstraints.WEST;
+        panelBusqueda.add(lblErrorCedulaConsulta, gbcBusq);
 
         panelBusqueda.setVisible(false);
+        
+
         panelCentral.add(panelBusqueda, BorderLayout.NORTH);
 
-
-        panelCentral.add(panelBusqueda, BorderLayout.NORTH);
-
-        String[] columnas = CargadorProperties.obtenerComponentes("TABLA_FACTURAS_COLS").split(",");
-        modeloTablaResultados = new DefaultTableModel(columnas, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) { return false; }
-        };
+        // Tabla de facturas (8 columnas - completa)
+        modeloTablaResultados = crearModeloTablaFacturas("completa");  // ← USA EL MÉTODO AUXILIAR
         tablaResultados = new JTable(modeloTablaResultados);
         tablaResultados.setRowHeight(25);
-        JScrollPane scrollTabla = new JScrollPane(tablaResultados);
 
+        // LISTENER para seleccionar factura y mostrar detalle
+        tablaResultados.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                seleccionarYMostrarFactura(
+                    tablaResultados,
+                    modeloTablaResultados,
+                    modeloProductosConsulta,
+                    panelDetalleConsulta,
+                    lblCodigoConsulta,
+                    lblFechaConsulta,
+                    lblNombreClienteConsulta,
+                    lblCedulaClienteConsulta,
+                    lblEmailClienteConsulta,
+                    lblTelefonoClienteConsulta,
+                    txtSubtotalConsulta,
+                    txtIVAConsulta,
+                    txtTotalConsulta,
+                    false,  // NO editable
+                    null, null, null
+                );
+            }
+        });
+
+        JScrollPane scrollTabla = new JScrollPane(tablaResultados);
+        scrollTabla.setPreferredSize(new Dimension(900, 200));
         panelCentral.add(scrollTabla, BorderLayout.CENTER);
+
+        // Panel de detalle (inicialmente oculto)
+        panelDetalleConsulta = crearPanelDetalleConsulta();
+        panelDetalleConsulta.setVisible(false);
+        panelCentral.add(panelDetalleConsulta, BorderLayout.SOUTH);
+
         panel.add(panelCentral, BorderLayout.CENTER);
+        
+        configurarValidacionesConsultar(); 
 
         return panel;
     }
 
+    //Crear panel de detalle para consulta
+    private JPanel crearPanelDetalleConsulta() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 10, 0, 10);
+
+        // Inicializar labels
+        lblCodigoConsulta = new JLabel("");
+        lblFechaConsulta = new JLabel("");
+        lblNombreClienteConsulta = new JLabel("");
+        lblCedulaClienteConsulta = new JLabel("");
+        lblEmailClienteConsulta = new JLabel("");
+        lblTelefonoClienteConsulta = new JLabel("");
+
+        txtSubtotalConsulta = crearCampoTotal(false);
+        txtIVAConsulta = crearCampoTotal(false);
+        txtTotalConsulta = crearCampoTotal(true);
+
+        int fila = 0;
+
+        // Separador
+        gbc.gridx = 0; gbc.gridy = fila++;
+        gbc.gridwidth = 8;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(10, 10, 10, 10);
+        panel.add(new JSeparator(), gbc);
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(5, 10, 0, 10);
+
+        // Cabecera de la factura seleccionada
+        gbc.gridx = 0; gbc.gridy = fila++;
+        gbc.gridwidth = 8;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(crearCabeceraFactura(
+            lblCodigoConsulta, lblFechaConsulta,
+            lblNombreClienteConsulta, lblCedulaClienteConsulta, 
+            lblEmailClienteConsulta, lblTelefonoClienteConsulta,
+            false, null, null, null  // sin búsqueda
+        ), gbc);
+        gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+
+        // Título productos
+        gbc.gridx = 0; gbc.gridy = fila++;
+        gbc.gridwidth = 8;
+        JLabel lblTitProd = new JLabel(CargadorProperties.obtenerComponentes("TITULO_PRODUCTOS_FACTURA"));
+        lblTitProd.setFont(new Font("Arial", Font.BOLD, 18));
+        panel.add(lblTitProd, gbc);
+        gbc.gridwidth = 1;
+
+        // Tabla productos (NO EDITABLE)
+        gbc.gridx = 0; gbc.gridy = fila++;
+        gbc.gridwidth = 8;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        gbc.insets = new Insets(10, 10, 10, 10);
+
+        modeloProductosConsulta = crearModeloTablaProductos(false);  // ← USA EL MÉTODO AUXILIAR
+        tablaProductosConsulta = new JTable(modeloProductosConsulta);
+        configurarTablaProductos(modeloProductosConsulta, tablaProductosConsulta, false, 
+                                null, null, null);  // sin totales automáticos
+
+        JScrollPane scrollProductos = new JScrollPane(tablaProductosConsulta);
+        scrollProductos.setPreferredSize(new Dimension(900, 150));
+        panel.add(scrollProductos, gbc);
+
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        gbc.weighty = 0;
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(5, 10, 0, 10);
+
+        // Totales
+        fila++;
+        agregarSeccionTotales(panel, gbc, fila, txtSubtotalConsulta, txtIVAConsulta, txtTotalConsulta);
+
+        return panel;
+    }
+
+    //**Configuración de tablas**
+    private DefaultTableModel crearModeloTablaFacturas(String tipo) {
+        String[] columnas;
+
+        if ("modificar".equals(tipo)) {
+            // 3 columnas para MODIFICAR
+            columnas = CargadorProperties.obtenerComponentes("TABLA_FACTURAS_MOD_COLS").split(",");
+        } else {
+            // 8 columnas para ELIMINAR y CONSULTAR
+            columnas = CargadorProperties.obtenerComponentes("TABLA_FACTURAS_COLS").split(",");
+        }
+
+        return new DefaultTableModel(columnas, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { 
+                return false; 
+            }
+        };
+    }
+    
+    private void buscarYCargarFacturas(JTextField txtCedula, 
+                                       DefaultTableModel modelo, 
+                                       boolean incluirAnuladas) {
+        String cedula = txtCedula.getText().trim();
+        
+        // Validación
+        if (cedula.isEmpty()) {
+            JOptionPane.showMessageDialog(this, 
+                CargadorProperties.obtenerMessages("FC_A_019"), 
+                CargadorProperties.obtenerMessages("FC_C_005"), 
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        // Buscar cliente
+        Cliente cli = new Cliente();
+        cli.setCedRuc(cedula);
+        
+        // Buscar facturas (APR o todas)
+        Factura fac = new Factura();
+        ArrayList<Factura> lista = incluirAnuladas 
+            ? fac.consultarTodasPorParametro(cli)  // APR + ANU
+            : fac.consultarPorParametro(cli);       // solo APR
+        
+        // Limpiar tabla
+        modelo.setRowCount(0);
+        
+        // Validar resultados
+        if (lista == null || lista.isEmpty()) {
+            JOptionPane.showMessageDialog(this, 
+                CargadorProperties.obtenerMessages("FC_A_002"), 
+                CargadorProperties.obtenerMessages("FC_C_006"), 
+                JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        
+        // Obtener nombre del cliente
+        Cliente clienteBuscado = cli.verificarDP(cedula);
+        String nombreCliente = (clienteBuscado != null) ? clienteBuscado.getNombre() : "N/A";
+        
+        // Cargar en tabla según número de columnas
+        int numColumnas = modelo.getColumnCount();
+        
+        for (Factura f : lista) {
+            if (numColumnas == 3) {
+                // Tabla MODIFICAR (3 columnas)
+                modelo.addRow(new Object[]{
+                    f.getCodigo(),
+                    f.getFechaHora() != null ? f.getFechaHora().format(FMT_FECHA) : "",
+                    nombreCliente
+                });
+            } else {
+                // Tabla ELIMINAR/CONSULTAR (8 columnas)
+                modelo.addRow(new Object[]{
+                    f.getCodigo(),
+                    nombreCliente,
+                    f.getFechaHora() != null ? f.getFechaHora().format(FMT_FECHA) : "",
+                    String.format("%.2f", f.getSubtotal()),
+                    String.format("%.2f", f.getIva()),
+                    String.format("%.2f", f.getTotal()),
+                    f.getTipo(),
+                    f.getEstado()
+                });
+            }
+        }
+    }
+        
+    // Crea y configura el modelo de la tabla de productos
+    private DefaultTableModel crearModeloTablaProductos(boolean editable) {
+        String[] cols = CargadorProperties.obtenerComponentes("TABLA_PRODUCTOS_COLS").split(",");
+
+        return new DefaultTableModel(cols, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return editable && column == 2;  // Solo columna Cantidad si es editable
+            }
+
+            @Override
+            public Class<?> getColumnClass(int column) {
+                if (column == 2) return Integer.class;
+                return String.class;
+            }
+        };
+    }
+
+    // Configura la tabla con listener para recalcular totales si es editable
+    private void configurarTablaProductos(DefaultTableModel modelo, JTable tabla, 
+                                          boolean editable, 
+                                          JTextField txtSub, JTextField txtIva, JTextField txtTotal) {
+        tabla.setRowHeight(25);
+
+        // Si es editable, agregar listener para recalcular totales
+        if (editable && txtSub != null && txtIva != null && txtTotal != null) {
+            modelo.addTableModelListener(new TableModelListener() {
+                @Override
+                public void tableChanged(TableModelEvent e) {
+                    if (e.getType() == TableModelEvent.UPDATE && e.getColumn() == 2) {
+                        validarYActualizarCantidad(modelo, txtSub, txtIva, txtTotal, e.getFirstRow());
+                    }
+                }
+            });
+        }
+    }
+    
     //**METODOS AUXILIARES UI**
+    //Titulo de ventana centrado
+    private JLabel crearTituloCentrado(String textoKey) {
+        JLabel lblTitulo = new JLabel(CargadorProperties.obtenerComponentes(textoKey));
+        lblTitulo.setFont(new Font("Arial", Font.BOLD, 42));
+        lblTitulo.setForeground(Color.DARK_GRAY);
+        return lblTitulo;
+    }
+    
+    //**Creación de cabeceras**
+    private JPanel crearCabeceraFactura(JLabel lblCodigo, JLabel lblFecha,
+                                        JLabel lblNombreCliente, JLabel lblCedulaCliente,
+                                        JLabel lblEmailCliente, JLabel lblTelefonoCliente,
+                                        boolean mostrarBusqueda, JTextField txtCedulaBusqueda,
+                                        JLabel lblErrorCedula, Runnable accionBusqueda) {
+        JPanel panelCabecera = new JPanel(new BorderLayout(20, 10));
+        panelCabecera.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+        //PANEL IZQUIERDO: Código y Fecha
+        JPanel panelIzq = new JPanel();
+        panelIzq.setLayout(new BoxLayout(panelIzq, BoxLayout.Y_AXIS));
+
+        if (lblCodigo != null) {
+            lblCodigo.setFont(new Font("Arial", Font.BOLD, 14));
+            lblCodigo.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelIzq.add(lblCodigo);
+            panelIzq.add(Box.createVerticalStrut(8));
+        }
+
+        JLabel lblFechaTit = new JLabel(CargadorProperties.obtenerComponentes("LBL_FECHA_HORA"));
+        lblFechaTit.setFont(new Font("Arial", Font.BOLD, 13));
+        lblFechaTit.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelIzq.add(lblFechaTit);
+
+        if (lblFecha != null) {
+            lblFecha.setFont(new Font("Arial", Font.PLAIN, 13));
+            lblFecha.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelIzq.add(lblFecha);
+        } else {
+            //Si no hay label de fecha (para panel crear), mostrar fecha actual
+            LocalDateTime ahora = LocalDateTime.now();
+            String fechaHora = ahora.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+            JLabel lblFechaActual = new JLabel(fechaHora);
+            lblFechaActual.setFont(new Font("Arial", Font.PLAIN, 13));
+            lblFechaActual.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelIzq.add(lblFechaActual);
+        }
+
+        //PANEL CENTRO: Empresa
+        JPanel panelEmpresa = new JPanel();
+        panelEmpresa.setLayout(new BoxLayout(panelEmpresa, BoxLayout.Y_AXIS));
+
+        JLabel lblNom = new JLabel(CargadorProperties.obtenerComponentes("EMPRESA_NOMBRE"));
+        lblNom.setFont(new Font("Arial", Font.BOLD, 16));
+        lblNom.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelEmpresa.add(lblNom);
+
+        JLabel lblEmail = new JLabel(CargadorProperties.obtenerComponentes("EMPRESA_EMAIL"));
+        lblEmail.setFont(new Font("Arial", Font.PLAIN, 14));
+        lblEmail.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelEmpresa.add(lblEmail);
+
+        JLabel lblTel = new JLabel(CargadorProperties.obtenerComponentes("EMPRESA_TELEFONO"));
+        lblTel.setFont(new Font("Arial", Font.PLAIN, 14));
+        lblTel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelEmpresa.add(lblTel);
+
+        // PANEL DERECHO: Cliente
+        JPanel panelCliente = new JPanel();
+        panelCliente.setLayout(new BoxLayout(panelCliente, BoxLayout.Y_AXIS));
+
+        JLabel lblTitCliente = new JLabel(CargadorProperties.obtenerComponentes("LBL_INFO_CLIENTE"));
+        lblTitCliente.setFont(new Font("Arial", Font.BOLD, 16));
+        lblTitCliente.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelCliente.add(lblTitCliente);
+        panelCliente.add(Box.createVerticalStrut(5));
+
+        // Si tiene búsqueda (panel crear)
+        if (mostrarBusqueda && txtCedulaBusqueda != null && accionBusqueda != null) {
+            JPanel pCedBusqueda = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+            JLabel lblCedRucTit = new JLabel(CargadorProperties.obtenerComponentes("LBL_CEDULA_RUC"));
+            lblCedRucTit.setFont(new Font("Arial", Font.BOLD, 12));
+            pCedBusqueda.add(lblCedRucTit);
+            pCedBusqueda.add(txtCedulaBusqueda);
+            pCedBusqueda.add(crearBotonLupa(accionBusqueda));
+            panelCliente.add(pCedBusqueda);
+
+            if (lblErrorCedula != null) {
+                lblErrorCedula.setAlignmentX(Component.CENTER_ALIGNMENT);
+                panelCliente.add(lblErrorCedula);
+            }
+
+            panelCliente.add(Box.createVerticalStrut(3));
+        }
+
+        // Información del cliente
+        agregarCampoInfoClienteCabecera(panelCliente, "LBL_NOMBRE", lblNombreCliente);
+        agregarCampoInfoClienteCabecera(panelCliente, "FC_UI_019", lblCedulaCliente);
+        agregarCampoInfoClienteCabecera(panelCliente, "LBL_EMAIL", lblEmailCliente);
+        agregarCampoInfoClienteCabecera(panelCliente, "LBL_TELEFONO", lblTelefonoCliente);
+
+        // Ensamblar cabecera
+        panelCabecera.add(panelIzq, BorderLayout.WEST);
+        panelCabecera.add(panelEmpresa, BorderLayout.CENTER);
+        panelCabecera.add(panelCliente, BorderLayout.EAST);
+
+        return panelCabecera;
+    }
+
+    //Agregar campos de info cliente en cabecera
+    private void agregarCampoInfoClienteCabecera(JPanel panel, String keyLabel, JLabel lblValor) {
+        JPanel pCampo = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+        JLabel lblTit = new JLabel(CargadorProperties.obtenerComponentes(keyLabel));
+        lblTit.setFont(new Font("Arial", Font.BOLD, 12));
+        pCampo.add(lblTit);
+
+        if (lblValor != null) {
+            lblValor.setFont(new Font("Arial", Font.PLAIN, 12));
+            pCampo.add(lblValor);
+        }
+
+        panel.add(pCampo);
+    }
+    
+    //Boton buscar
+    private JLabel crearBotonLupa(Runnable accion) {
+        JLabel lupa = new JLabel(CargadorProperties.obtenerComponentes("BTN_LUPA"));
+        lupa.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
+        lupa.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        lupa.setPreferredSize(new Dimension(35, 25));
+        lupa.setHorizontalAlignment(SwingConstants.CENTER);
+        lupa.setOpaque(true);
+        lupa.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                accion.run();
+            }
+        });
+        return lupa;
+    }
+    
+    //Seccion de Totales
+    private void agregarSeccionTotales(JPanel panel, GridBagConstraints gbc, 
+                                       int filaInicio, JTextField txtSub, 
+                                       JTextField txtIva, JTextField txtTotal) {
+        int fila = filaInicio;
+
+        //Subtotal
+        gbc.gridx = 6; gbc.gridy = fila;
+        gbc.anchor = GridBagConstraints.EAST;
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("LBL_SUBTOTAL")), gbc);
+        gbc.gridx = 7;
+        panel.add(txtSub, gbc);
+
+        //IVA
+        fila++;
+        gbc.gridx = 6; gbc.gridy = fila;
+        panel.add(new JLabel(CargadorProperties.obtenerComponentes("LBL_IVA")), gbc);
+        gbc.gridx = 7;
+        panel.add(txtIva, gbc);
+
+        //Total
+        fila++;
+        gbc.gridx = 6; gbc.gridy = fila;
+        JLabel lblTot = new JLabel(CargadorProperties.obtenerComponentes("LBL_TOTAL"));
+        lblTot.setFont(new Font("Arial", Font.BOLD, 14));
+        panel.add(lblTot, gbc);
+        gbc.gridx = 7;
+        panel.add(txtTotal, gbc);
+    }
+
+    //Muestra el total inicial
+    private JTextField crearCampoTotal(boolean esBold) {
+        JTextField txt = new JTextField(CargadorProperties.obtenerComponentes("TOTAL_INICIAL"));
+        txt.setEditable(false);
+        txt.setPreferredSize(new Dimension(120, 25));
+        if (esBold) {
+            txt.setFont(new Font("Arial", Font.BOLD, 12));
+        }
+        return txt;
+    }
+        
     //Crea label para mostrar mensajes de error
     private JLabel crearLabelError() {
         JLabel lbl = new JLabel(" ");
@@ -1110,60 +1256,87 @@ public class VentanaFactura extends JFrame {
         new MenuPrincipal().setVisible(true);
     }
     
-    //**VALIDACIONES EN TIEMPO REAL**
-    //Configura validaciones en tiempo real para panel crear
+    //**Validaciones en tiempo real**
+    //Validacion de crear
     private void configurarValidacionesCrear() {
-        txtCedulaCrear.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { validarCedulaCrear(); }
-            public void removeUpdate(DocumentEvent e) { validarCedulaCrear(); }
-            public void changedUpdate(DocumentEvent e) { validarCedulaCrear(); }
-        });
+        // Cédula
+        txtCedulaCrear.getDocument().addDocumentListener(
+            crearValidadorTiempoReal(txtCedulaCrear, lblErrorCedulaCrear, "cedula")
+        );
         
-        txtCantidadCrear.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { validarCantidadCrear(); }
-            public void removeUpdate(DocumentEvent e) { validarCantidadCrear(); }
-            public void changedUpdate(DocumentEvent e) { validarCantidadCrear(); }
-        });
+        // Cantidad
+        txtCantidadCrear.getDocument().addDocumentListener(
+            crearValidadorTiempoReal(txtCantidadCrear, lblErrorCantidadCrear, "cantidad")
+        );
     }
     
-    //Valida cédula del cliente en tiempo real
-    private void validarCedulaCrear() {
-        String error = ValidacionesFactura.validarCedRucCliente(txtCedulaCrear.getText());
-        mostrarError(lblErrorCedulaCrear, error);
-    }
-    
-    //Valida cantidad de producto en tiempo real
-    private void validarCantidadCrear() {
-        String texto = txtCantidadCrear.getText();
-        if (texto.isEmpty()) {
-            mostrarError(lblErrorCantidadCrear, null);
-            return;
-        }
-        String error = ValidacionesFactura.validarCantidad(texto);
-        mostrarError(lblErrorCantidadCrear, error);
-    }
-    
-    //Configura validaciones en tiempo real para panel modificar
     private void configurarValidacionesMod() {
-        txtCantidadMod.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { validarCantidadMod(); }
-            public void removeUpdate(DocumentEvent e) { validarCantidadMod(); }
-            public void changedUpdate(DocumentEvent e) { validarCantidadMod(); }
-        });
+        txtCedulaMod.getDocument().addDocumentListener(
+            crearValidadorTiempoReal(txtCedulaMod, lblErrorCedulaMod, "cedula")
+        );
+        txtCantidadMod.getDocument().addDocumentListener(
+            crearValidadorTiempoReal(txtCantidadMod, lblErrorCantidadMod, "cantidad")
+        );
     }
+    
+    private void configurarValidacionesConsultar() {
+        txtCedulaConsulta.getDocument().addDocumentListener(
+            crearValidadorTiempoReal(txtCedulaConsulta, lblErrorCedulaConsulta, "cedula")
+        );
+    }
+        
+   private DocumentListener crearValidadorTiempoReal(JTextField campo, 
+                                                    JLabel lblError, 
+                                                    String tipo) {
+        return new DocumentListener() {
+          public void insertUpdate(DocumentEvent e) { validar(); }
+          public void removeUpdate(DocumentEvent e) { validar(); }
+          public void changedUpdate(DocumentEvent e) { validar(); }
 
-    //Valida cantidad de producto en modificar en tiempo real
-    private void validarCantidadMod() {
-        String texto = txtCantidadMod.getText();
-        if (texto.isEmpty()) {
-            mostrarError(lblErrorCantidadMod, null);
-            return;
+          private void validar() {
+              String texto = campo.getText().trim();
+
+              if (texto.isEmpty()) {
+                  mostrarError(lblError, null);
+                  return;
+              }
+
+              String error = null;
+              switch(tipo) {
+                  case "cedula":
+                      // Validación en tiempo real más permisiva
+                      error = validarCedulaTiempoReal(texto);
+                      break;
+                  case "cantidad":
+                      error = ValidacionesFactura.validarCantidad(texto);
+                      break;
+              }
+              mostrarError(lblError, error);
+          }
+        };
         }
-        String error = ValidacionesFactura.validarCantidad(texto);
-        mostrarError(lblErrorCantidadMod, error);
-    }
-    
-    
+
+        // NUEVO MÉTODO: Validación permisiva para cédula mientras se escribe
+        private String validarCedulaTiempoReal(String texto) {
+        // 1. Solo números
+        if (!texto.matches("\\d*")) {
+          return CargadorProperties.obtenerMessages("FC_A_011"); // "Solo números"
+        }
+
+        // 2. Máximo 13 caracteres (mientras escribe)
+        if (texto.length() > 13) {
+          return CargadorProperties.obtenerMessages("CL_A_005"); // "Máximo 13 dígitos"
+        }
+
+        // 3. Si ya escribió 10 o 13 dígitos, validar que sea válido
+        if (texto.length() == 10 || texto.length() == 13) {
+          return ValidacionesFactura.validarCedRucCliente(texto);
+        }
+
+        // 4. Si está escribiendo (menos de 10 o entre 10-13), NO mostrar error
+        return null;
+        }
+        
     //Valida y actualiza cantidad editada en tabla (con POPUP)
     private void validarYActualizarCantidad(DefaultTableModel modelo, JTextField txtSub, JTextField txtIva, JTextField txtTot, int fila) {
         try {
@@ -1178,8 +1351,19 @@ public class VentanaFactura extends JFrame {
                 modelo.setValueAt(productosFactura.get(fila).getCantidad(), fila, 2);
                 return;
             }
-
+            
             ProxFac pxf = productosFactura.get(fila);
+            Producto prod = new Producto();
+            Producto productoCompleto = prod.verificarPorCodigoDP(pxf.getCodigoProd());
+
+            if (productoCompleto != null && cantidad > productoCompleto.getSaldoFin()) {
+                JOptionPane.showMessageDialog(this,
+                    CargadorProperties.obtenerComponentes("FC_A_022") + productoCompleto.getSaldoFin(),
+                    CargadorProperties.obtenerMessages("FC_C_004"),
+                    JOptionPane.ERROR_MESSAGE);
+                modelo.setValueAt(productosFactura.get(fila).getCantidad(), fila, 2);
+                return;
+            }
             pxf.setCantidad(cantidad);
             pxf.calcularSubtotal();
 
@@ -1213,7 +1397,7 @@ public class VentanaFactura extends JFrame {
         String error = ValidacionesFactura.validarCedRucCliente(cedRuc);
         if (error != null) {
             mostrarError(lblErrorCedulaCrear, error);
-            limpiarDatosCliente();
+            limpiarDatosCliente(lblNombreClienteCrear, lblCedulaClienteCrear, lblEmailClienteCrear, lblTelefonoClienteCrear);
             return;
         }
         
@@ -1226,31 +1410,47 @@ public class VentanaFactura extends JFrame {
             lblEmailClienteCrear.setText(clienteSeleccionado.getEmail() != null ? clienteSeleccionado.getEmail() : "");
             lblTelefonoClienteCrear.setText(clienteSeleccionado.getTelefono() != null ? clienteSeleccionado.getTelefono() : "");
             mostrarError(lblErrorCedulaCrear, null);
+            
+            cmbProductoCrear.setEnabled(true);
+            txtCantidadCrear.setEnabled(true);
         } else {
-            limpiarDatosCliente();
+            limpiarDatosCliente(lblNombreClienteCrear, lblCedulaClienteCrear, lblEmailClienteCrear, lblTelefonoClienteCrear);
             mostrarError(lblErrorCedulaCrear, CargadorProperties.obtenerMessages("FC_A_009"));
+            
+            cmbProductoCrear.setEnabled(false);
+            txtCantidadCrear.setEnabled(false);
         }
     }
-    
+       
     //Limpia datos del cliente mostrados
-    private void limpiarDatosCliente() {
-        lblNombreClienteCrear.setText("");
-        lblCedulaClienteCrear.setText("");
-        lblEmailClienteCrear.setText("");
-        lblTelefonoClienteCrear.setText("");
+    private void limpiarDatosCliente(JLabel lblNombre, JLabel lblCedula, 
+                                     JLabel lblEmail, JLabel lblTelefono) {
+        lblNombre.setText("");
+        lblCedula.setText("");
+        lblEmail.setText("");
+        lblTelefono.setText("");
     }
     
     //Agrega producto a la tabla de productos
-    private void agregarProducto() {
-        if (clienteSeleccionado == null) {
+    private void agregarProducto(JComboBox<ItemProducto> combo,
+                                         JTextField txtCantidad,
+                                         JLabel lblError,
+                                         DefaultTableModel modelo,
+                                         JTextField txtSub,
+                                         JTextField txtIva,
+                                         JTextField txtTotal) {
+        
+        // Validar cliente (solo en crear)
+        if (clienteSeleccionado == null && combo == cmbProductoCrear) {
             JOptionPane.showMessageDialog(this, 
                 CargadorProperties.obtenerMessages("FC_A_012"), 
                 CargadorProperties.obtenerMessages("FC_C_005"), 
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
-
-        ItemProducto item = (ItemProducto) cmbProductoCrear.getSelectedItem();
+        
+        // Validar producto seleccionado
+        ItemProducto item = (ItemProducto) combo.getSelectedItem();
         if (item == null) {
             JOptionPane.showMessageDialog(this, 
                 CargadorProperties.obtenerMessages("FC_A_013"), 
@@ -1258,61 +1458,97 @@ public class VentanaFactura extends JFrame {
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
-
-        String cantidadStr = txtCantidadCrear.getText().trim();
+        
+        // Validar cantidad
+        String cantidadStr = txtCantidad.getText().trim();
         if (cantidadStr.isEmpty()) {
-            mostrarError(lblErrorCantidadCrear, CargadorProperties.obtenerMessages("FC_A_014"));
+            mostrarError(lblError, CargadorProperties.obtenerMessages("FC_A_014"));
             return;
         }
-
+        
+        
         int cantidad;
         try {
             cantidad = Integer.parseInt(cantidadStr);
             if (cantidad <= 0) throw new NumberFormatException();
-            mostrarError(lblErrorCantidadCrear, null);
+            mostrarError(lblError, null);
         } catch (NumberFormatException e) {
-            mostrarError(lblErrorCantidadCrear, CargadorProperties.obtenerMessages("FC_A_020"));
+            mostrarError(lblError, CargadorProperties.obtenerMessages("FC_A_020"));
+            return;
+        }
+        
+        Producto prod = item.producto;  // Solo para obtener el código
+
+        Producto prodActualizado = new Producto();
+        Producto productoCompleto = prodActualizado.verificarPorCodigoDP(prod.getCodigo());
+
+        if (productoCompleto == null) {
+            JOptionPane.showMessageDialog(this, 
+                CargadorProperties.obtenerMessages("FC_A_022"), 
+                CargadorProperties.obtenerMessages("FC_C_004"), 
+                JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        Producto prod = item.producto;
+        int stockDisponible = productoCompleto.getSaldoFin();
 
-        // Verificar si el producto YA existe en la tabla
-        boolean productoExiste = false;
-        for (int i = 0; i < productosFactura.size(); i++) {
-            ProxFac pxfExistente = productosFactura.get(i);
+        int cantidadExistente = 0;
 
-            if (pxfExistente.getCodigoProd().equals(prod.getCodigo())) {
-                productoExiste = true;
-
-                int cantidadAnterior = pxfExistente.getCantidad();
-                int cantidadNueva = cantidadAnterior + cantidad;
-
-                pxfExistente.setCantidad(cantidadNueva);
-                pxfExistente.calcularSubtotal();
-
-                modeloProductosCrear.setValueAt(cantidadNueva, i, 2);
-                modeloProductosCrear.setValueAt(String.format("%.2f", pxfExistente.getSubtotalProducto()), i, 4);
-
-                JOptionPane.showMessageDialog(this, 
-                    CargadorProperties.obtenerMessages("FC_A_021") + cantidadAnterior + " + " + cantidad + " = " + cantidadNueva, 
-                    CargadorProperties.obtenerComponentes("TITULO_PRODUCTO_DUPLICADO"), 
-                    JOptionPane.INFORMATION_MESSAGE);
-
-                break;
-            }
+        // Si el producto ya está en la lista, sumar su cantidad
+        int filaExistente = buscarProductoEnLista(prod.getCodigo());
+        if (filaExistente != -1) {
+            cantidadExistente = productosFactura.get(filaExistente).getCantidad();
         }
 
-        if (!productoExiste) {
+        int cantidadTotal = cantidadExistente + cantidad;
+
+       if (cantidadTotal > stockDisponible) {
+            String mensajeError = CargadorProperties.obtenerComponentes("FC_A_022");
+            if (mensajeError == null || mensajeError.trim().isEmpty()) {
+                mensajeError = "Stock insuficiente. Disponible: ";
+            }
+            mensajeError += stockDisponible;
+
+            if (cantidadExistente > 0) {
+                mensajeError += " (Ya tienes " + cantidadExistente + " en la factura)";
+            }
+
+            mostrarError(lblError, mensajeError);
+            return;
+        }     
+        
+        if (filaExistente != -1) {
+            // Producto existe: SUMAR cantidad
+            ProxFac pxfExistente = productosFactura.get(filaExistente);
+            int cantidadAnterior = pxfExistente.getCantidad();
+            int cantidadNueva = cantidadAnterior + cantidad;
+            
+            pxfExistente.setCantidad(cantidadNueva);
+            pxfExistente.calcularSubtotal();
+            
+            modelo.setValueAt(cantidadNueva, filaExistente, 2);
+            modelo.setValueAt(String.format("%.2f", pxfExistente.getSubtotalProducto()), filaExistente, 4);
+            
+            JOptionPane.showMessageDialog(this, 
+                CargadorProperties.obtenerMessages("FC_A_021") + 
+                cantidadAnterior + " + " + cantidad + " = " + cantidadNueva, 
+                CargadorProperties.obtenerComponentes("TITULO_PRODUCTO_DUPLICADO"), 
+                JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            // Producto nuevo: AGREGAR
             ProxFac pxf = new ProxFac();
+            if (facturaSeleccionada != null) {
+                pxf.setCodigoFac(facturaSeleccionada.getCodigo());
+            }
             pxf.setCodigoProd(prod.getCodigo());
             pxf.setCantidad(cantidad);
             pxf.setPrecioVenta(prod.getPrecioVenta());
             pxf.calcularSubtotal();
-
+            pxf.setEstado("APR");
+            
             productosFactura.add(pxf);
-
-            modeloProductosCrear.addRow(new Object[]{
+            
+            modelo.addRow(new Object[]{
                 prod.getCodigo(),
                 prod.getDescripcion(),
                 cantidad,
@@ -1320,16 +1556,29 @@ public class VentanaFactura extends JFrame {
                 String.format("%.2f", pxf.getSubtotalProducto())
             });
         }
-
-        calcularTotales(txtSubtotalCrear, txtIVACrear, txtTotalCrear);
-        txtCantidadCrear.setText("");
-        mostrarError(lblErrorCantidadCrear, null);
-    }
-
-    //Quita producto seleccionado de la tabla
-    private void quitarProducto(JTable tabla, DefaultTableModel modelo) {
-        int fila = tabla.getSelectedRow();
         
+        calcularTotales(txtSub, txtIva, txtTotal);
+        txtCantidad.setText("");
+        mostrarError(lblError, null);
+    }
+    
+    private int buscarProductoEnLista(String codigoProducto) {
+        for (int i = 0; i < productosFactura.size(); i++) {
+            if (productosFactura.get(i).getCodigoProd().equals(codigoProducto)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+    
+       
+    private void quitarProducto(JTable tabla, 
+                                        DefaultTableModel modelo,
+                                        JTextField txtSub,
+                                        JTextField txtIva,
+                                        JTextField txtTotal) {
+        int fila = tabla.getSelectedRow();
+
         if (fila == -1) {
             JOptionPane.showMessageDialog(this, 
                 CargadorProperties.obtenerMessages("FC_A_013"), 
@@ -1337,10 +1586,10 @@ public class VentanaFactura extends JFrame {
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
+
         productosFactura.remove(fila);
         modelo.removeRow(fila);
-        calcularTotales(txtSubtotalCrear, txtIVACrear, txtTotalCrear);
+        calcularTotales(txtSub, txtIva, txtTotal);
     }
     
     //Calcula subtotal IVA y total de la factura
@@ -1367,7 +1616,7 @@ public class VentanaFactura extends JFrame {
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
+
         if (productosFactura.isEmpty()) {
             JOptionPane.showMessageDialog(this, 
                 CargadorProperties.obtenerMessages("FC_A_005"),
@@ -1375,17 +1624,18 @@ public class VentanaFactura extends JFrame {
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
+
         Factura fac = new Factura();
         fac.setCodigoCliente(clienteSeleccionado.getIdCliente());
         fac.setFechaHora(LocalDateTime.now());
         fac.setProductos(productosFactura);
-        
+
         String codigoGenerado = fac.insertar();
-        
+
         if (codigoGenerado != null) {
             JOptionPane.showMessageDialog(this,
-                CargadorProperties.obtenerMessages("FC_I_001") + CargadorProperties.obtenerMessages("FC_I_004") + " " + codigoGenerado,
+                CargadorProperties.obtenerMessages("FC_I_001") + 
+                CargadorProperties.obtenerMessages("FC_I_004") + " " + codigoGenerado,
                 CargadorProperties.obtenerMessages("FC_C_003"), 
                 JOptionPane.INFORMATION_MESSAGE);
             limpiarPanelCrear();
@@ -1396,262 +1646,120 @@ public class VentanaFactura extends JFrame {
                 JOptionPane.ERROR_MESSAGE);
         }
     }
-    
+
     //**METODOS NEGOCIO MODIFICAR**
-    //Busca facturas asociadas a un cliente
-    private void buscarFacturasCliente(JTextField txtCed, DefaultTableModel modelo) {
-        String cedula = txtCed.getText().trim();
-        
-        if (cedula.isEmpty()) {
-            JOptionPane.showMessageDialog(this, 
-                CargadorProperties.obtenerMessages("FC_A_019"), 
-                CargadorProperties.obtenerMessages("FC_C_005"), 
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        Cliente cli = new Cliente();
-        cli.setCedRuc(cedula);
-        
-        Factura fac = new Factura();
-        ArrayList<Factura> lista = fac.consultarPorParametro(cli);
-        
+    //Busca facturas asociadas a un cliente -> Se ocupa en consulta especifica tambien
+    private void cargarProductosDeFactura(String codigoFactura, 
+                                        DefaultTableModel modelo,
+                                        boolean agregarALista) {
         modelo.setRowCount(0);
-        
-        if (lista == null || lista.isEmpty()) {
-            JOptionPane.showMessageDialog(this, 
-                CargadorProperties.obtenerMessages("FC_A_002"), 
-                CargadorProperties.obtenerMessages("FC_C_006"), 
-                JOptionPane.INFORMATION_MESSAGE);
-            return;
+
+        if (agregarALista) {
+          productosFactura.clear();  // Solo para modificar
         }
-        
-        Cliente clienteBuscado = cli.verificarDP(cedula);
-        String nombreCliente = (clienteBuscado != null) ? clienteBuscado.getNombre() : "N/A";
-        
-        for (Factura f : lista) {
-            modelo.addRow(new Object[]{
-                f.getCodigo(),
-                f.getFechaHora() != null ? f.getFechaHora().format(FMT_FECHA) : "",
-                nombreCliente
-            });
+
+        ProxFac pxfConsulta = new ProxFac();
+        pxfConsulta.setCodigoFac(codigoFactura);
+
+        ArrayList<ProxFac> productos = pxfConsulta.consultarPorFactura(pxfConsulta);
+
+        if (productos != null && !productos.isEmpty()) {
+          for (ProxFac pxf : productos) {
+              Producto prod = new Producto();
+              Producto prodCompleto = prod.verificarPorCodigoDP(pxf.getCodigoProd());
+
+              String descripcion = (prodCompleto != null) ? prodCompleto.getDescripcion() : "N/A";
+
+              modelo.addRow(new Object[]{
+                  pxf.getCodigoProd(),
+                  descripcion,
+                  pxf.getCantidad(),
+                  String.format("%.2f", pxf.getPrecioVenta()),
+                  String.format("%.2f", pxf.getSubtotalProducto())
+              });
+
+              // Solo agregar a productosFactura si es para MODIFICAR
+              if (agregarALista) {
+                  productosFactura.add(pxf);
+              }
+          }
         }
-    }
+     }
     
     //Carga factura seleccionada para modificar
-    private void seleccionarFacturaModificar() {
-        int fila = tablaFacturasMod.getSelectedRow();
+    private void seleccionarYMostrarFactura(JTable tabla,
+                                            DefaultTableModel modeloTabla,
+                                            DefaultTableModel modeloProductos,
+                                            JPanel panelCabecera,
+                                            JLabel lblCodigo,
+                                            JLabel lblFecha,
+                                            JLabel lblNombre,
+                                            JLabel lblCedula,
+                                            JLabel lblEmail,
+                                            JLabel lblTelefono,
+                                            JTextField txtSubtotal,
+                                            JTextField txtIva,
+                                            JTextField txtTotal,
+                                            boolean esEditable,
+                                            JComboBox<ItemProducto> combo,
+                                            JTextField txtCantidad,
+                                            JButton btnGuardar) {
+        int fila = tabla.getSelectedRow();
         if (fila == -1) return;
 
-        String codigo = (String) modeloFacturasMod.getValueAt(fila, 0);
+        String codigo = (String) modeloTabla.getValueAt(fila, 0);
 
+        // Consultar factura
         Factura facParam = new Factura();
         facParam.setCodigo(codigo);
 
         Factura fac = new Factura();
-        facturaSeleccionada = fac.consultarPorParametro(facParam);
+        Factura facturaConsultada = fac.consultarPorCodigoDetalle(facParam);
 
-        if (facturaSeleccionada != null) {
+        if (facturaConsultada != null) {
+            // Guardar referencia si es editable
+            if (esEditable) {
+                facturaSeleccionada = facturaConsultada;
+            }
+
+            // Obtener info del cliente
             Cliente cli = new Cliente();
-            Cliente clienteCompleto = cli.verificarDP(txtCedulaMod.getText().trim());
+            Cliente clienteCompleto = cli.verificarPorIdDP(facturaConsultada.getCodigoCliente());
 
-            panelCabeceraMod.setVisible(true);  // ← MUESTRA LA CABECERA
+            // Mostrar cabecera
+            if (panelCabecera != null) {
+                panelCabecera.setVisible(true);
+            }
 
-            lblCodigoMod.setText(CargadorProperties.obtenerComponentes("LBL_CODIGO") + " " + facturaSeleccionada.getCodigo());
-            lblFechaMod.setText(facturaSeleccionada.getFechaHora().format(FMT_FECHA));
+            // Llenar datos de cabecera
+            lblCodigo.setText(CargadorProperties.obtenerComponentes("LBL_CODIGO") + " " + facturaConsultada.getCodigo());
+            lblFecha.setText(facturaConsultada.getFechaHora().format(FMT_FECHA));
 
             if (clienteCompleto != null) {
-                lblNombreClienteMod.setText(clienteCompleto.getNombre());
-                lblCedulaClienteMod.setText(clienteCompleto.getCedRuc());
-                lblEmailClienteMod.setText(clienteCompleto.getEmail() != null ? clienteCompleto.getEmail() : "");
-                lblTelefonoClienteMod.setText(clienteCompleto.getTelefono() != null ? clienteCompleto.getTelefono() : "");
+                lblNombre.setText(clienteCompleto.getNombre());
+                lblCedula.setText(clienteCompleto.getCedRuc());
+                lblEmail.setText(clienteCompleto.getEmail() != null ? clienteCompleto.getEmail() : "");
+                lblTelefono.setText(clienteCompleto.getTelefono() != null ? clienteCompleto.getTelefono() : "");
             }
 
-            cargarProductosFactura(facturaSeleccionada.getCodigo());  // ← CARGA PRODUCTOS
+            // Cargar productos
+            cargarProductosDeFactura(facturaConsultada.getCodigo(), modeloProductos, esEditable);
 
-            txtSubtotalMod.setText(String.format("%.2f", facturaSeleccionada.getSubtotal()));
-            txtIVAMod.setText(String.format("%.2f", facturaSeleccionada.getIva()));
-            txtTotalMod.setText(String.format("%.2f", facturaSeleccionada.getTotal()));
+            // Mostrar totales
+            txtSubtotal.setText(String.format("%.2f", facturaConsultada.getSubtotal()));
+            txtIva.setText(String.format("%.2f", facturaConsultada.getIva()));
+            txtTotal.setText(String.format("%.2f", facturaConsultada.getTotal()));
 
-            cmbProductoMod.setEnabled(true);
-            txtCantidadMod.setEnabled(true);
-            btnGuardarMod.setEnabled(true);
-            cargarProductosActivos(cmbProductoMod);
-        }
-    }
-    
-    //Busca facturas para ELIMINAR (con todas las columnas)
-    private void buscarFacturasClienteEliminar() {
-        String cedula = txtCedulaElim.getText().trim();
-
-        if (cedula.isEmpty()) {
-            JOptionPane.showMessageDialog(this, 
-                CargadorProperties.obtenerMessages("FC_A_019"), 
-                CargadorProperties.obtenerMessages("FC_C_005"), 
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        Cliente cli = new Cliente();
-        cli.setCedRuc(cedula);
-
-        Factura fac = new Factura();
-        ArrayList<Factura> lista = fac.consultarPorParametro(cli);
-
-        modeloFacturasElim.setRowCount(0);
-
-        if (lista == null || lista.isEmpty()) {
-            JOptionPane.showMessageDialog(this, 
-                CargadorProperties.obtenerMessages("FC_A_002"), 
-                CargadorProperties.obtenerMessages("FC_C_006"), 
-                JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        Cliente clienteBuscado = cli.verificarDP(cedula);
-        String nombreCliente = (clienteBuscado != null) ? clienteBuscado.getNombre() : "N/A";
-
-        for (Factura f : lista) {
-            modeloFacturasElim.addRow(new Object[]{
-                f.getCodigo(),
-                nombreCliente,
-                f.getFechaHora() != null ? f.getFechaHora().format(FMT_FECHA) : "",
-                String.format("%.2f", f.getSubtotal()),
-                String.format("%.2f", f.getIva()),
-                String.format("%.2f", f.getTotal()),
-                f.getTipo(),
-                f.getEstado()
-            });
-        }
-    }
-    
-    //Carga productos de una factura específica
-    private void cargarProductosFactura(String codigoFactura) {
-        modeloProductosMod.setRowCount(0);
-        productosFactura.clear();
-        
-        ProxFac pxfConsulta = new ProxFac();
-        pxfConsulta.setCodigoFac(codigoFactura);
-        
-        ArrayList<ProxFac> productos = pxfConsulta.consultarPorFactura(pxfConsulta);
-        
-        if (productos != null && !productos.isEmpty()) {
-            for (ProxFac pxf : productos) {
-                Producto prod = new Producto();
-                Producto prodCompleto = prod.verificarPorCodigoDP(pxf.getCodigoProd());
-                
-                String descripcion = (prodCompleto != null) ? prodCompleto.getDescripcion() : "N/A";
-                
-                modeloProductosMod.addRow(new Object[]{
-                    pxf.getCodigoProd(),
-                    descripcion,
-                    pxf.getCantidad(),
-                    String.format("%.2f", pxf.getPrecioVenta()),
-                    String.format("%.2f", pxf.getSubtotalProducto())
-                });
-                
-                productosFactura.add(pxf);
+            // Si es EDITABLE, habilitar controles
+            if (esEditable && combo != null && txtCantidad != null && btnGuardar != null) {
+                combo.setEnabled(true);
+                txtCantidad.setEnabled(true);
+                btnGuardar.setEnabled(true);
+                cargarProductosActivos(combo);
             }
         }
     }
-    
-    //Agrega producto a factura en modificación
-    private void agregarProductoMod() {
-        ItemProducto item = (ItemProducto) cmbProductoMod.getSelectedItem();
-        if (item == null) {
-            JOptionPane.showMessageDialog(this, 
-                CargadorProperties.obtenerMessages("FC_A_013"), 
-                CargadorProperties.obtenerMessages("FC_C_005"), 
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
 
-        String cantidadStr = txtCantidadMod.getText().trim();
-        if (cantidadStr.isEmpty()) {
-            mostrarError(lblErrorCantidadMod, CargadorProperties.obtenerMessages("FC_A_014"));
-            return;
-        }
-
-        int cantidad;
-        try {
-            cantidad = Integer.parseInt(cantidadStr);
-            if (cantidad <= 0) throw new NumberFormatException();
-            mostrarError(lblErrorCantidadMod, null);
-        } catch (NumberFormatException e) {
-            mostrarError(lblErrorCantidadMod, CargadorProperties.obtenerMessages("FC_A_020"));
-            return;
-        }
-
-        Producto prod = item.producto;
-
-        // Verificar si el producto YA existe en la tabla
-        boolean productoExiste = false;
-        for (int i = 0; i < productosFactura.size(); i++) {
-            ProxFac pxfExistente = productosFactura.get(i);
-
-            if (pxfExistente.getCodigoProd().equals(prod.getCodigo())) {
-                productoExiste = true;
-
-                int cantidadAnterior = pxfExistente.getCantidad();
-                int cantidadNueva = cantidadAnterior + cantidad;
-
-                pxfExistente.setCantidad(cantidadNueva);
-                pxfExistente.calcularSubtotal();
-
-                modeloProductosMod.setValueAt(cantidadNueva, i, 2);
-                modeloProductosMod.setValueAt(String.format("%.2f", pxfExistente.getSubtotalProducto()), i, 4);
-
-                JOptionPane.showMessageDialog(this, 
-                    CargadorProperties.obtenerMessages("FC_A_021") + cantidadAnterior + " + " + cantidad + " = " + cantidadNueva, 
-                    CargadorProperties.obtenerComponentes("TITULO_PRODUCTO_DUPLICADO"), 
-                    JOptionPane.INFORMATION_MESSAGE);
-
-                break;
-            }
-        }
-
-        if (!productoExiste) {
-            ProxFac pxf = new ProxFac();
-            pxf.setCodigoFac(facturaSeleccionada.getCodigo());
-            pxf.setCodigoProd(prod.getCodigo());
-            pxf.setCantidad(cantidad);
-            pxf.setPrecioVenta(prod.getPrecioVenta());
-            pxf.calcularSubtotal();
-            pxf.setEstado("APR");
-
-            productosFactura.add(pxf);
-
-            modeloProductosMod.addRow(new Object[]{
-                prod.getCodigo(),
-                prod.getDescripcion(),
-                cantidad,
-                String.format("%.2f", prod.getPrecioVenta()),
-                String.format("%.2f", pxf.getSubtotalProducto())
-            });
-        }
-
-        calcularTotales(txtSubtotalMod, txtIVAMod, txtTotalMod);
-        txtCantidadMod.setText("");
-        mostrarError(lblErrorCantidadMod, null);
-    }
-
-    //Quita producto de factura en modificación
-    private void quitarProductoMod() {
-        int fila = tablaProductosMod.getSelectedRow();
-        
-        if (fila == -1) {
-            JOptionPane.showMessageDialog(this, 
-                CargadorProperties.obtenerMessages("FC_A_013"), 
-                CargadorProperties.obtenerMessages("FC_C_005"), 
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        productosFactura.remove(fila);
-        modeloProductosMod.removeRow(fila);
-        calcularTotales(txtSubtotalMod, txtIVAMod, txtTotalMod);
-    }
-    
     //Guarda cambios de factura modificadaa
     private void modificarFactura() {
         if (facturaSeleccionada == null) {
@@ -1683,7 +1791,6 @@ public class VentanaFactura extends JFrame {
                 CargadorProperties.obtenerMessages("FC_E_004"), 
                 CargadorProperties.obtenerMessages("FC_C_004"), 
                 JOptionPane.ERROR_MESSAGE);
-            return;
         }
     }
     
@@ -1698,31 +1805,34 @@ public class VentanaFactura extends JFrame {
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
+
         String codigo = (String) modeloFacturasElim.getValueAt(fila, 0);
-        
+
+        // Confirmación
         int conf = JOptionPane.showConfirmDialog(this, 
             CargadorProperties.obtenerMessages("FC_C_001") + codigo + "?", 
             CargadorProperties.obtenerMessages("FC_C_002"), 
             JOptionPane.YES_NO_OPTION);
         if (conf != JOptionPane.YES_OPTION) return;
-        
+
+        // Eliminar
         Factura fac = new Factura();
         fac.setCodigo(codigo);
-        
+
         if (fac.eliminar()) {
             JOptionPane.showMessageDialog(this, 
                 CargadorProperties.obtenerMessages("FC_I_003"), 
                 CargadorProperties.obtenerMessages("FC_C_003"), 
                 JOptionPane.INFORMATION_MESSAGE);
-            buscarFacturasCliente(txtCedulaElim, modeloFacturasElim);
+            // Recargar tabla
+            buscarYCargarFacturas(txtCedulaElim, modeloFacturasElim, false);
         } else {
             JOptionPane.showMessageDialog(this, 
                 CargadorProperties.obtenerMessages("FC_E_005"), 
                 CargadorProperties.obtenerMessages("FC_C_004"), 
                 JOptionPane.ERROR_MESSAGE);
         }
-    }
+    }  
     
     //**METODOS NEGOCIO CONSULTAR**
     //Cambia tipo de consulta y muestra panel correspondiente
@@ -1730,15 +1840,24 @@ public class VentanaFactura extends JFrame {
         String tipo = (String) comboTipoConsulta.getSelectedItem();
         String[] opciones = CargadorProperties.obtenerComponentes("CMB_TIPO_CONSULTA").split(",");
 
+        // Limpiar antes de cambiar
+        limpiarPanelConsultar();
+
         if (tipo.equals(opciones[1])) {
+            // Consulta General (todas las facturas APR)
             panelBusqueda.setVisible(false);
             consultarTodos();
         } else if (tipo.equals(opciones[2])) {
+            // Consulta Por Cliente (buscar por cédula)
+            panelBusqueda.setVisible(true);
             panelBusqueda.setVisible(true);
             modeloTablaResultados.setRowCount(0);
+            panelDetalleConsulta.setVisible(false);
         } else {
+            // "Seleccione..." (opción por defecto)
             panelBusqueda.setVisible(false);
             modeloTablaResultados.setRowCount(0);
+            panelDetalleConsulta.setVisible(false);
         }
     }
 
@@ -1774,54 +1893,11 @@ public class VentanaFactura extends JFrame {
                 f.getEstado()
             });
         }
+
+        // Ocultar detalle al mostrar lista general
+        panelDetalleConsulta.setVisible(false);
     }
- 
-    
-    //Consulta facturas de un cliente específico (APR y ANU)
-    private void consultaPorCliente() {
-        String cedula = txtCedulaConsulta.getText().trim();
-
-        if (cedula.isEmpty()) {
-            JOptionPane.showMessageDialog(this, 
-                CargadorProperties.obtenerMessages("FC_A_019"), 
-                CargadorProperties.obtenerMessages("FC_C_005"), 
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        Cliente cli = new Cliente();
-        cli.setCedRuc(cedula);
-
-        Factura fac = new Factura();
-        ArrayList<Factura> lista = fac.consultarTodasPorParametro(cli);  // ← CAMBIO AQUÍ
-
-        modeloTablaResultados.setRowCount(0);
-
-        if (lista == null || lista.isEmpty()) {
-            JOptionPane.showMessageDialog(this, 
-                CargadorProperties.obtenerMessages("FC_A_002"), 
-                CargadorProperties.obtenerMessages("FC_C_006"), 
-                JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        Cliente clienteBuscado = cli.verificarDP(cedula);
-        String nombreCliente = (clienteBuscado != null) ? clienteBuscado.getNombre() : "N/A";
-
-        for (Factura f : lista) {
-            modeloTablaResultados.addRow(new Object[]{
-                f.getCodigo(),
-                nombreCliente,
-                f.getFechaHora() != null ? f.getFechaHora().format(FMT_FECHA) : "",
-                String.format("%.2f", f.getSubtotal()),
-                String.format("%.2f", f.getIva()),
-                String.format("%.2f", f.getTotal()),
-                f.getTipo(),
-                f.getEstado()
-            });
-        }
-    }
-    
+     
     //**METODOS AUXILIARES DATOS**
     //Carga productos activos en el combobox
     private void cargarProductosActivos(JComboBox<ItemProducto> combo) {
@@ -1832,7 +1908,7 @@ public class VentanaFactura extends JFrame {
         
         if (lista != null) {
             for (Producto p : lista) {
-                if ("ACT".equalsIgnoreCase(p.getEstado())) {
+                if ("ACT".equalsIgnoreCase(p.getEstado()) && p.getSaldoFin() > 0) {
                     combo.addItem(new ItemProducto(p));
                 }
             }
@@ -1874,56 +1950,113 @@ public class VentanaFactura extends JFrame {
         if (productosFactura != null) {
             productosFactura.clear();
         }
+
+        if (cmbProductoCrear != null) cmbProductoCrear.setEnabled(false);
+        if (txtCantidadCrear != null) txtCantidadCrear.setEnabled(false);
         
         generarYMostrarCodigo();
     }
     
     //Limpia panel modificar y resetea variables
     private void limpiarPanelModificar() {
-        txtCedulaMod.setText("");
-        modeloFacturasMod.setRowCount(0);
-        modeloProductosMod.setRowCount(0);
-        
+        if (txtCedulaMod != null) txtCedulaMod.setText("");
+        if (lblErrorCedulaMod != null) lblErrorCedulaMod.setText(" ");
+        if (modeloFacturasMod != null) modeloFacturasMod.setRowCount(0);
+        if (modeloProductosMod != null) modeloProductosMod.setRowCount(0);
+
         if (panelCabeceraMod != null) {
             panelCabeceraMod.setVisible(false);
         }
-        
-        if (lblCodigoMod != null) lblCodigoMod.setText(CargadorProperties.obtenerComponentes("LBL_CODIGO") + " ");
-        if (lblFechaMod != null) lblFechaMod.setText(CargadorProperties.obtenerComponentes("LBL_FECHA_HORA") + " ");
+
+        if (lblCodigoMod != null) lblCodigoMod.setText("");
+        if (lblFechaMod != null) lblFechaMod.setText("");
         if (lblNombreClienteMod != null) lblNombreClienteMod.setText("");
         if (lblCedulaClienteMod != null) lblCedulaClienteMod.setText("");
         if (lblEmailClienteMod != null) lblEmailClienteMod.setText("");
         if (lblTelefonoClienteMod != null) lblTelefonoClienteMod.setText("");
-        
-        txtSubtotalMod.setText(CargadorProperties.obtenerComponentes("TOTAL_INICIAL"));
-        txtIVAMod.setText(CargadorProperties.obtenerComponentes("TOTAL_INICIAL"));
-        txtTotalMod.setText(CargadorProperties.obtenerComponentes("TOTAL_INICIAL"));
-        
-        cmbProductoMod.setEnabled(false);
-        txtCantidadMod.setEnabled(false);
-        btnGuardarMod.setEnabled(false);
-        
+
+        if (txtSubtotalMod != null) txtSubtotalMod.setText(CargadorProperties.obtenerComponentes("TOTAL_INICIAL"));
+        if (txtIVAMod != null) txtIVAMod.setText(CargadorProperties.obtenerComponentes("TOTAL_INICIAL"));
+        if (txtTotalMod != null) txtTotalMod.setText(CargadorProperties.obtenerComponentes("TOTAL_INICIAL"));
+
+        if (cmbProductoMod != null) cmbProductoMod.setEnabled(false);
+        if (txtCantidadMod != null) txtCantidadMod.setEnabled(false);
+        if (btnGuardarMod != null) btnGuardarMod.setEnabled(false);
+
         facturaSeleccionada = null;
-        productosFactura.clear();
-        
+        if (productosFactura != null) productosFactura.clear();
+
         if (lblErrorCantidadMod != null) lblErrorCantidadMod.setText(" ");
-    }
-    
-    //Limpia panel consultar
-    private void limpiarPanelConsultar() {
-        comboTipoConsulta.setSelectedIndex(0);
-        txtCedulaConsulta.setText("");
-        modeloTablaResultados.setRowCount(0);
-        panelBusqueda.setVisible(false);
     }
 
     //Limpia panel eliminar
     private void limpiarPanelEliminar() {
-        txtCedulaElim.setText("");
-        modeloFacturasElim.setRowCount(0);
-        btnEliminar.setEnabled(false);
+        if (txtCedulaElim != null) {
+            txtCedulaElim.setText("");
+        }
+        if (modeloFacturasElim != null) {
+            modeloFacturasElim.setRowCount(0);
+        }
+        if (btnEliminar != null) {
+            btnEliminar.setEnabled(false);
+        }
     }
-    
+
+    //Limpia panel consultar
+    private void limpiarPanelConsultar() {
+        // Resetear combo
+        if (comboTipoConsulta != null) {
+            comboTipoConsulta.setSelectedIndex(0);
+        }
+
+        // Limpiar campo de búsqueda
+        if (txtCedulaConsulta != null) {
+            txtCedulaConsulta.setText("");
+        }
+        
+        
+        if (lblErrorCedulaConsulta != null) {
+            lblErrorCedulaConsulta.setText(" ");
+        }
+
+        // Limpiar tabla de facturas
+        if (modeloTablaResultados != null) {
+            modeloTablaResultados.setRowCount(0);
+        }
+
+        // Limpiar tabla de productos
+        if (modeloProductosConsulta != null) {
+            modeloProductosConsulta.setRowCount(0);
+        }
+
+        // Limpiar labels de cabecera
+        if (lblCodigoConsulta != null) lblCodigoConsulta.setText("");
+        if (lblFechaConsulta != null) lblFechaConsulta.setText("");
+        if (lblNombreClienteConsulta != null) lblNombreClienteConsulta.setText("");
+        if (lblCedulaClienteConsulta != null) lblCedulaClienteConsulta.setText("");
+        if (lblEmailClienteConsulta != null) lblEmailClienteConsulta.setText("");
+        if (lblTelefonoClienteConsulta != null) lblTelefonoClienteConsulta.setText("");
+
+        // Limpiar totales
+        if (txtSubtotalConsulta != null) {
+            txtSubtotalConsulta.setText(CargadorProperties.obtenerComponentes("TOTAL_INICIAL"));
+        }
+        if (txtIVAConsulta != null) {
+            txtIVAConsulta.setText(CargadorProperties.obtenerComponentes("TOTAL_INICIAL"));
+        }
+        if (txtTotalConsulta != null) {
+            txtTotalConsulta.setText(CargadorProperties.obtenerComponentes("TOTAL_INICIAL"));
+        }
+
+        // Ocultar paneles
+        if (panelBusqueda != null) {
+            panelBusqueda.setVisible(false);
+        }
+        if (panelDetalleConsulta != null) {
+            panelDetalleConsulta.setVisible(false);
+        }
+    }
+
     //**CLASE INTERNA**
     //Clase wrapper para mostrar productos en ComboBox
     private static class ItemProducto {
