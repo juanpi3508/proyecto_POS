@@ -185,19 +185,43 @@ public class Producto {
         return proMD.buscarPorNombre(textoBusqueda);
     }
     
-    public ArrayList<Producto> buscarPorCategoriaDP(String idCategoria) {
+    public ArrayList<Producto> buscarPorNombreCategoriaDP(String nombreCategoria) {
         ProductoMD proMD = new ProductoMD();
-        return proMD.buscarPorCategoria(idCategoria);
+        ArrayList<ItemCombo> categorias = proMD.obtenerCategorias();
+
+        for (ItemCombo cat : categorias) {
+            if (cat.getDescripcion().toLowerCase().contains(nombreCategoria.toLowerCase())) {
+                return proMD.buscarPorCategoria(cat.getId());
+            }
+        }
+
+        return new ArrayList<>();
     }
-    
-    public ArrayList<Producto> buscarPorUmCompraDP(String idUnidad) {
+
+    public ArrayList<Producto> buscarPorNombreUmCompraDP(String nombreUm) {
         ProductoMD proMD = new ProductoMD();
-        return proMD.buscarPorUmCompra(idUnidad);
+        ArrayList<ItemCombo> unidades = proMD.obtenerUnidadesMedida();
+
+        for (ItemCombo um : unidades) {
+            if (um.getDescripcion().toLowerCase().contains(nombreUm.toLowerCase())) {
+                return proMD.buscarPorUmCompra(um.getId());
+            }
+        }
+
+        return new ArrayList<>();
     }
-    
-    public ArrayList<Producto> buscarPorUmVentaDP(String idUnidad) {
+
+    public ArrayList<Producto> buscarPorNombreUmVentaDP(String nombreUm) {
         ProductoMD proMD = new ProductoMD();
-        return proMD.buscarPorUmVenta(idUnidad);
+        ArrayList<ItemCombo> unidades = proMD.obtenerUnidadesMedida();
+
+        for (ItemCombo um : unidades) {
+            if (um.getDescripcion().toLowerCase().contains(nombreUm.toLowerCase())) {
+                return proMD.buscarPorUmVenta(um.getId());
+            }
+        }
+
+        return new ArrayList<>();
     }
     
     public boolean eliminarDP() {
@@ -240,44 +264,5 @@ public class Producto {
     public ArrayList<ItemCombo> obtenerUnidadesMedidaDP() {
         ProductoMD proMD = new ProductoMD();
         return proMD.obtenerUnidadesMedida();
-    }
-    
-    public ArrayList<Producto> buscarPorNombreCategoriaDP(String nombreCategoria) {
-        ProductoMD proMD = new ProductoMD();
-        ArrayList<ItemCombo> categorias = proMD.obtenerCategorias();
-
-        for (ItemCombo cat : categorias) {
-            if (cat.getDescripcion().toLowerCase().contains(nombreCategoria.toLowerCase())) {
-                return proMD.buscarPorCategoria(cat.getId());
-            }
-        }
-
-        return new ArrayList<>();
-    }
-
-    public ArrayList<Producto> buscarPorNombreUmCompraDP(String nombreUm) {
-        ProductoMD proMD = new ProductoMD();
-        ArrayList<ItemCombo> unidades = proMD.obtenerUnidadesMedida();
-
-        for (ItemCombo um : unidades) {
-            if (um.getDescripcion().toLowerCase().contains(nombreUm.toLowerCase())) {
-                return proMD.buscarPorUmCompra(um.getId());
-            }
-        }
-
-        return new ArrayList<>();
-    }
-
-    public ArrayList<Producto> buscarPorNombreUmVentaDP(String nombreUm) {
-        ProductoMD proMD = new ProductoMD();
-        ArrayList<ItemCombo> unidades = proMD.obtenerUnidadesMedida();
-
-        for (ItemCombo um : unidades) {
-            if (um.getDescripcion().toLowerCase().contains(nombreUm.toLowerCase())) {
-                return proMD.buscarPorUmVenta(um.getId());
-            }
-        }
-
-        return new ArrayList<>();
     }
 }
