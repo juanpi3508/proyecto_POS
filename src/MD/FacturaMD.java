@@ -346,4 +346,28 @@ public class FacturaMD {
 
         return fac;
     }
+
+
+        
+    public boolean aprobarFactura(Factura facParam) {
+        String sql = CargadorProperties.obtenerConfigFactura("fac.aprobar");
+        try {
+            PreparedStatement ps = conexion.prepareStatement(sql);
+            ps.setString(1, facParam.getCodigo());
+            ResultSet rs = ps.executeQuery();
+
+            boolean resultado = false;
+            if (rs.next()) {
+                resultado = rs.getBoolean(1);
+            }
+
+            rs.close();
+            ps.close();
+            return resultado;
+        } catch (SQLException e) {
+            System.out.println(CargadorProperties.obtenerMessages("FC_E_002"));
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
