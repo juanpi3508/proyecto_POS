@@ -56,6 +56,7 @@ public class VentanaCliente extends JFrame {
     private JPanel panelBusqueda;
     
     private Timer timerBusqueda;
+    private boolean validandoCedulaIna = false;
     
     public VentanaCliente() {
         configurarVentana();
@@ -193,9 +194,8 @@ public class VentanaCliente extends JFrame {
         lblErrorDireccionIng = crearLabelError();
         lblErrorDireccionIng.setPreferredSize(new Dimension(350, 20));
         
-        //Cargar ciudades
+        //Cargar ciudades y aplicar validaciones
         cargarCiudades(comboCiudadIng);
-        
         configurarValidacionesIngresar();
         
         int fila = 0;
@@ -324,6 +324,7 @@ public class VentanaCliente extends JFrame {
         gbc.insets = new Insets(5, 10, 0, 10);
         gbc.anchor = GridBagConstraints.WEST;
         
+        //Coniguracion de campos
         txtCedulaMod = new JTextField();
         txtCedulaMod.setPreferredSize(new Dimension(320, 28));
         txtCedulaMod.setMinimumSize(new Dimension(320, 28));
@@ -373,10 +374,8 @@ public class VentanaCliente extends JFrame {
         lblErrorDireccionMod = crearLabelError();
         lblErrorDireccionMod.setPreferredSize(new Dimension(350, 20));
         
-        //Cargar ciudades
+        //Cargar ciudades y aplicar validaciones 
         cargarCiudades(comboCiudadMod);
-        
-        //Validaciones automaticas 
         configurarValidacionesModificar();
         
         //Deshabilitar campos inicialmente
@@ -389,7 +388,7 @@ public class VentanaCliente extends JFrame {
         //Configurar búsqueda por cédula
         txtCedulaMod.addActionListener(e -> buscarClienteModificar());
         
-        
+        //COLUMNA IZQUIERDA
         int fila = 0;
         
         //Cedula o RUC
@@ -401,6 +400,7 @@ public class VentanaCliente extends JFrame {
         gbc.gridx = 1;
         gbc.gridwidth = 3;
         JPanel panelCedula = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        panelCedula.setPreferredSize(new Dimension(380, 30));
         panelCedula.add(txtCedulaMod);
         JLabel lblLupa = new JLabel(CargadorProperties.obtenerComponentes("emoji.lupa"));
         lblLupa.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
@@ -423,7 +423,6 @@ public class VentanaCliente extends JFrame {
         gbc.insets = new Insets(5, 10, 0, 10);
         gbc.gridwidth = 1;
         
-        //COLUMNA IZQUIERDA
         fila++;
         
         //Nombre
@@ -528,9 +527,10 @@ public class VentanaCliente extends JFrame {
     private JPanel crearPanelEliminar() {
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 10, 10, 10);
+        gbc.insets = new Insets(5, 10, 15, 10);
         gbc.anchor = GridBagConstraints.WEST;
         
+        //Configurar Campos
         txtCedulaElim = new JTextField();
         txtCedulaElim.setPreferredSize(new Dimension(320, 28));
         txtCedulaElim.setMinimumSize(new Dimension(320, 28));
@@ -576,7 +576,8 @@ public class VentanaCliente extends JFrame {
         
         int fila = 0;
         
-        // Cédula con botón de búsqueda
+        //COLUMNA IZQUIERDA
+        //Cédula 
         gbc.gridx = 0;
         gbc.gridy = fila;
         gbc.gridwidth = 1;
@@ -585,9 +586,10 @@ public class VentanaCliente extends JFrame {
         gbc.gridx = 1;
         gbc.gridwidth = 3;
         JPanel panelCedula = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        panelCedula.setPreferredSize(new Dimension(380, 32));
         panelCedula.add(txtCedulaElim);
         JLabel lblLupa = new JLabel(CargadorProperties.obtenerComponentes("emoji.lupa"));
-        lblLupa.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+        lblLupa.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
         lblLupa.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         lblLupa.addMouseListener(new MouseAdapter() {
             @Override
@@ -599,7 +601,6 @@ public class VentanaCliente extends JFrame {
         panel.add(panelCedula, gbc);
         gbc.gridwidth = 1;
         
-        //COLUMNA IZQUIERDA
         fila++;
         
         //Nombre
@@ -630,7 +631,7 @@ public class VentanaCliente extends JFrame {
         gbc.gridx = 1;
         panel.add(txtEmailElim, gbc);
         
-        // COLUMNA DERECHA
+        //COLUMNA DERECHA
         fila = 1; 
         
         //Ciudad
@@ -685,6 +686,7 @@ public class VentanaCliente extends JFrame {
         
         JPanel panelCentral = new JPanel(new BorderLayout(5, 5));
         
+        //Configurar elementos de busqueda 
         panelBusqueda = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         txtBusqueda = new JTextField(20);
         txtBusqueda.setPreferredSize(new Dimension(250, 25));
@@ -708,6 +710,7 @@ public class VentanaCliente extends JFrame {
         
         panelCentral.add(panelBusqueda, BorderLayout.NORTH);
         
+        //Configuracion tabla 
         String[] columnas = {
             CargadorProperties.obtenerComponentes("tabla.col.cedula.ruc"),
             CargadorProperties.obtenerComponentes("label.nombre"),
@@ -737,7 +740,7 @@ public class VentanaCliente extends JFrame {
         return panel;
     }
     
-    
+    //Errores en rojo
     private JLabel crearLabelError() {
         JLabel lbl = new JLabel(" "); 
         lbl.setForeground(Color.RED);
@@ -750,6 +753,7 @@ public class VentanaCliente extends JFrame {
         return lbl;
     }
     
+    //Validaciones para el ingreso 
     private void configurarValidacionesIngresar() {
         txtCedulaIng.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { validarCedulaIng(); }
@@ -784,9 +788,44 @@ public class VentanaCliente extends JFrame {
         });
     }
     
+    //Validaciones en tiempo real 
     private void validarCedulaIng() {
-        String error = ValidacionesCliente.validarCedula(txtCedulaIng.getText(), false);
-        mostrarError(lblErrorCedulaIng, error);
+        if (validandoCedulaIna) {
+            return;
+        }
+
+        String cedula = txtCedulaIng.getText().trim();
+        if (cedula.length() != 10 && cedula.length() != 13) {
+            String error = ValidacionesCliente.validarCedula(cedula, false);
+            mostrarError(lblErrorCedulaIng, error);
+            return;
+        }
+
+        String error = ValidacionesCliente.validarCedula(cedula, false);
+
+        if ("CLIENTE_INACTIVO".equals(error)) {
+            mostrarError(lblErrorCedulaIng, CargadorProperties.obtenerMessages("CL_A_016"));
+
+            validandoCedulaIna = true;
+
+            SwingUtilities.invokeLater(() -> {
+                int opcion = JOptionPane.showConfirmDialog(this,
+                    CargadorProperties.obtenerMessages("CL_A_016"),
+                    CargadorProperties.obtenerMessages("FC_A_008"),
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE);
+
+                if (opcion == JOptionPane.YES_OPTION) {
+                    cargarClienteInactivoParaReactivar(cedula);
+                } else {
+                    txtCedulaIng.setText("");
+                    lblErrorCedulaIng.setText(" ");
+                    validandoCedulaIna = false; 
+                }
+            });
+        } else {
+            mostrarError(lblErrorCedulaIng, error);
+        }
     }
     
     private void validarNombreIng() {
@@ -823,6 +862,7 @@ public class VentanaCliente extends JFrame {
         }
     }
     
+    //Validaciones para la modificacion 
     private void configurarValidacionesModificar() {
 
         txtCedulaMod.getDocument().addDocumentListener(new DocumentListener() {
@@ -858,6 +898,7 @@ public class VentanaCliente extends JFrame {
         });
     }
     
+    //Validaciones en tiempo real
     private void validarCedulaMod() {
         String error = ValidacionesCliente.validarCedula(txtCedulaMod.getText(), true);
         mostrarError(lblErrorCedulaMod, error);
@@ -905,11 +946,11 @@ public class VentanaCliente extends JFrame {
             lblErrorDireccionMod.setText(" ");
             return;
         }
-    String error = ValidacionesCliente.validarDireccion(txtDireccionMod.getText());
-    mostrarError(lblErrorDireccionMod, error);
-}
+        String error = ValidacionesCliente.validarDireccion(txtDireccionMod.getText());
+        mostrarError(lblErrorDireccionMod, error);
+    }
 
-    
+    //Carga de ComboBox
     private void cargarCiudades(JComboBox<ItemCombo> combo) {
         combo.removeAllItems();
         combo.addItem(new ItemCombo("", CargadorProperties.obtenerComponentes("combo.ciudad.seleccione")));
@@ -922,6 +963,7 @@ public class VentanaCliente extends JFrame {
         }
     }
     
+    //Metodo para cargar el panel segun la elección
     private void cambiarPanel() {
         int seleccion = comboOpciones.getSelectedIndex();
 
@@ -952,34 +994,101 @@ public class VentanaCliente extends JFrame {
         }
     }
     
+    private void cambiarTipoConsulta() {
+        String tipo = (String) comboTipoConsulta.getSelectedItem();
+        
+        if (CargadorProperties.obtenerComponentes("combo.consulta.general").equals(tipo)) {
+            panelBusqueda.setVisible(false);
+            scrollTabla.setVisible(true);
+            consultarGeneral();
+        } else if (CargadorProperties.obtenerComponentes("combo.consulta.parametro").equals(tipo)) {
+            panelBusqueda.setVisible(true);
+            scrollTabla.setVisible(true);
+            modeloTabla.setRowCount(0);
+        } else {
+            panelBusqueda.setVisible(false);
+            scrollTabla.setVisible(false);
+        }
+    }
+    
     //Vuelve al panel vacío
     private void volverAlMenu() {
         this.dispose();             
         new MenuPrincipal().setVisible(true);
     }
     
+    //Caso especial de carga para reactivaion de un cliente
+    private void cargarClienteInactivoParaReactivar(String cedula) {
+        Cliente cli = new Cliente();
+        Cliente clienteExistente = cli.verificarDP(cedula);
+
+        if (clienteExistente != null) {
+            txtCedulaIng.setText(clienteExistente.getCedRuc());
+            txtNombreIng.setText(clienteExistente.getNombre());
+            txtTelefonoIng.setText(clienteExistente.getTelefono());
+            txtEmailIng.setText(clienteExistente.getEmail());
+            txtDireccionIng.setText(clienteExistente.getDireccion());
+
+            for (int i = 0; i < comboCiudadIng.getItemCount(); i++) {
+                ItemCombo item = comboCiudadIng.getItemAt(i);
+                if (item.getId().equals(clienteExistente.getIdCiudad())) {
+                    comboCiudadIng.setSelectedIndex(i);
+                    break;
+                }
+            }
+
+            txtCedulaIng.setEnabled(false);
+
+            lblErrorCedulaIng.setText(" ");
+            lblErrorNombreIng.setText(" ");
+            lblErrorTelefonoIng.setText(" ");
+            lblErrorEmailIng.setText(" ");
+            lblErrorCiudadIng.setText(" ");
+            lblErrorDireccionIng.setText(" ");
+
+            validandoCedulaIna = false;
+
+            JOptionPane.showMessageDialog(this,
+                CargadorProperties.obtenerMessages("CL_I_006"),
+                CargadorProperties.obtenerMessages("FC_C_006"),
+                JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+    
+    //Metodos CRUD 
     private void guardarCliente() {
         ItemCombo ciudadSel = (ItemCombo) comboCiudadIng.getSelectedItem();
         String idCiudad = ciudadSel != null ? ciudadSel.getId() : "";
-        
-        boolean valido = ValidacionesCliente.validarTodo(
-            txtCedulaIng.getText(),
-            txtNombreIng.getText(),
-            txtTelefonoIng.getText(),
-            txtEmailIng.getText(),
-            idCiudad,
-            txtDireccionIng.getText(),
-            false
-        );
-        
-        if (!valido) {
+
+        String errorCedula = ValidacionesCliente.validarCedula(txtCedulaIng.getText(), false);
+        String errorNombre = ValidacionesCliente.validarNombre(txtNombreIng.getText());
+        String errorTelefono = ValidacionesCliente.validarTelefono(txtTelefonoIng.getText());
+        String errorEmail = ValidacionesCliente.validarEmail(txtEmailIng.getText());
+        String errorCiudad = ValidacionesCliente.validarCiudad(idCiudad);
+        String errorDireccion = ValidacionesCliente.validarDireccion(txtDireccionIng.getText());
+
+        mostrarError(lblErrorCedulaIng, "CLIENTE_INACTIVO".equals(errorCedula) ? null : errorCedula);
+        mostrarError(lblErrorNombreIng, errorNombre);
+        mostrarError(lblErrorTelefonoIng, errorTelefono);
+        mostrarError(lblErrorEmailIng, errorEmail);
+        mostrarError(lblErrorCiudadIng, errorCiudad);
+        mostrarError(lblErrorDireccionIng, errorDireccion);
+
+        boolean hayErrores = (errorCedula != null && !"CLIENTE_INACTIVO".equals(errorCedula)) || 
+                             errorNombre != null || 
+                             errorTelefono != null || 
+                             errorEmail != null || 
+                             errorCiudad != null || 
+                             errorDireccion != null;
+
+        if (hayErrores) {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("CL_A_015"),
                 CargadorProperties.obtenerMessages("FC_C_005"),
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
+
         Cliente cli = new Cliente();
         cli.setCedRuc(txtCedulaIng.getText().trim());
         cli.setNombre(txtNombreIng.getText().trim());
@@ -987,10 +1096,21 @@ public class VentanaCliente extends JFrame {
         cli.setEmail(txtEmailIng.getText().trim());
         cli.setIdCiudad(idCiudad);
         cli.setDireccion(txtDireccionIng.getText().trim());
-        
-        if (cli.grabarDP()) {
+
+        boolean exitoso;
+        if (!txtCedulaIng.isEnabled()) {
+            exitoso = cli.reactivarDP();
+        } else {
+            exitoso = cli.grabarDP();
+        }
+
+        if (exitoso) {
+            String mensaje = !txtCedulaIng.isEnabled() ? 
+                CargadorProperties.obtenerMessages("CL_I_007") : 
+                CargadorProperties.obtenerMessages("CL_I_001");  
+
             JOptionPane.showMessageDialog(this,
-                CargadorProperties.obtenerMessages("CL_I_001"),
+                mensaje,
                 CargadorProperties.obtenerMessages("FC_C_003"),
                 JOptionPane.INFORMATION_MESSAGE);
             limpiarCamposIngresar();
@@ -1004,7 +1124,7 @@ public class VentanaCliente extends JFrame {
     
     private void buscarClienteModificar() {
         String cedula = txtCedulaMod.getText().trim();
-        
+
         if (cedula.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("CL_A_013"),
@@ -1012,16 +1132,24 @@ public class VentanaCliente extends JFrame {
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
+
         Cliente cli = new Cliente();
         Cliente encontrado = cli.verificarDP(cedula);
-        
+
         if (encontrado != null) {
+            if ("INA".equals(encontrado.getEstado())) {
+                JOptionPane.showMessageDialog(this,
+                    CargadorProperties.obtenerMessages("CL_A_017"),
+                    CargadorProperties.obtenerMessages("FC_C_006"),
+                    JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
             txtNombreMod.setText(encontrado.getNombre());
             txtTelefonoMod.setText(encontrado.getTelefono());
             txtEmailMod.setText(encontrado.getEmail());
             txtDireccionMod.setText(encontrado.getDireccion());
-            
+
             for (int i = 0; i < comboCiudadMod.getItemCount(); i++) {
                 ItemCombo item = comboCiudadMod.getItemAt(i);
                 if (item.getId().equals(encontrado.getIdCiudad())) {
@@ -1029,18 +1157,18 @@ public class VentanaCliente extends JFrame {
                     break;
                 }
             }
-            
+
             txtNombreMod.setEnabled(true);
             txtTelefonoMod.setEnabled(true);
             txtEmailMod.setEnabled(true);
             comboCiudadMod.setEnabled(true);
             txtDireccionMod.setEnabled(true);
-            
+
             txtCedulaMod.setEnabled(false);
-            
-            btnGuardarMod.setEnabled(true); 
-            
-            lblErrorCedulaMod.setText(" "); 
+
+            btnGuardarMod.setEnabled(true);
+
+            lblErrorCedulaMod.setText(" ");
         } else {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("CL_A_014"),
@@ -1048,29 +1176,37 @@ public class VentanaCliente extends JFrame {
                 JOptionPane.INFORMATION_MESSAGE);
         }
     }
-    
+   
     private void modificarCliente() {
         ItemCombo ciudadSel = (ItemCombo) comboCiudadMod.getSelectedItem();
         String idCiudad = ciudadSel != null ? ciudadSel.getId() : "";
-        
-        boolean valido = ValidacionesCliente.validarTodo(
-            txtCedulaMod.getText(),
-            txtNombreMod.getText(),
-            txtTelefonoMod.getText(),
-            txtEmailMod.getText(),
-            idCiudad,
-            txtDireccionMod.getText(),
-            true
-        );
-        
-        if (!valido) {
+
+        String errorCedula = ValidacionesCliente.validarCedula(txtCedulaMod.getText(), true);
+        String errorNombre = ValidacionesCliente.validarNombre(txtNombreMod.getText());
+        String errorTelefono = ValidacionesCliente.validarTelefono(txtTelefonoMod.getText());
+        String errorEmail = ValidacionesCliente.validarEmail(txtEmailMod.getText());
+        String errorCiudad = ValidacionesCliente.validarCiudad(idCiudad);
+        String errorDireccion = ValidacionesCliente.validarDireccion(txtDireccionMod.getText());
+
+        mostrarError(lblErrorCedulaMod, errorCedula);
+        mostrarError(lblErrorNombreMod, errorNombre);
+        mostrarError(lblErrorTelefonoMod, errorTelefono);
+        mostrarError(lblErrorEmailMod, errorEmail);
+        mostrarError(lblErrorCiudadMod, errorCiudad);
+        mostrarError(lblErrorDireccionMod, errorDireccion);
+
+        boolean hayErrores = errorCedula != null || errorNombre != null || 
+                             errorTelefono != null || errorEmail != null || 
+                             errorCiudad != null || errorDireccion != null;
+
+        if (hayErrores) {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("CL_A_015"),
                 CargadorProperties.obtenerMessages("FC_C_005"),
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
+
         Cliente cli = new Cliente();
         cli.setCedRuc(txtCedulaMod.getText().trim());
         cli.setNombre(txtNombreMod.getText().trim());
@@ -1078,7 +1214,7 @@ public class VentanaCliente extends JFrame {
         cli.setEmail(txtEmailMod.getText().trim());
         cli.setIdCiudad(idCiudad);
         cli.setDireccion(txtDireccionMod.getText().trim());
-        
+
         if (cli.grabarDP()) {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("CL_I_002"),
@@ -1095,7 +1231,7 @@ public class VentanaCliente extends JFrame {
     
     private void buscarClienteEliminar() {
         String cedula = txtCedulaElim.getText().trim();
-        
+
         if (cedula.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("CL_A_013"),
@@ -1103,16 +1239,24 @@ public class VentanaCliente extends JFrame {
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
+
         Cliente cli = new Cliente();
         Cliente encontrado = cli.verificarDP(cedula);
-        
+
         if (encontrado != null) {
+            if ("INA".equals(encontrado.getEstado())) {
+                JOptionPane.showMessageDialog(this,
+                    CargadorProperties.obtenerMessages("CL_A_017"),
+                    CargadorProperties.obtenerMessages("FC_C_006"),
+                    JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
             txtNombreElim.setText(encontrado.getNombre());
             txtTelefonoElim.setText(encontrado.getTelefono());
             txtEmailElim.setText(encontrado.getEmail());
             txtDireccionElim.setText(encontrado.getDireccion());
-            
+
             for (int i = 0; i < comboCiudadElim.getItemCount(); i++) {
                 ItemCombo item = comboCiudadElim.getItemAt(i);
                 if (item.getDescripcion().equals(encontrado.getCiudad())) {
@@ -1120,7 +1264,7 @@ public class VentanaCliente extends JFrame {
                     break;
                 }
             }
-            
+
             btnEliminar.setEnabled(true);
         } else {
             JOptionPane.showMessageDialog(this,
@@ -1154,30 +1298,21 @@ public class VentanaCliente extends JFrame {
             }
         }
     }
-    
-    private void cambiarTipoConsulta() {
-        String tipo = (String) comboTipoConsulta.getSelectedItem();
         
-        if (CargadorProperties.obtenerComponentes("combo.consulta.general").equals(tipo)) {
-            panelBusqueda.setVisible(false);
-            scrollTabla.setVisible(true);
-            consultarGeneral();
-        } else if (CargadorProperties.obtenerComponentes("combo.consulta.parametro").equals(tipo)) {
-            panelBusqueda.setVisible(true);
-            scrollTabla.setVisible(true);
-            modeloTabla.setRowCount(0);
-        } else {
-            panelBusqueda.setVisible(false);
-            scrollTabla.setVisible(false);
-        }
-    }
-    
     private void consultarGeneral() {
         Cliente cli = new Cliente();
         ArrayList<Cliente> clientes = cli.consultarTodos();
-        
+
         modeloTabla.setRowCount(0);
-        
+
+        if (clientes.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                CargadorProperties.obtenerMessages("CL_I_004"),
+                CargadorProperties.obtenerMessages("FC_C_006"),
+                JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
         for (Cliente c : clientes) {
             modeloTabla.addRow(new Object[]{
                 c.getCedRuc(),
@@ -1190,6 +1325,7 @@ public class VentanaCliente extends JFrame {
         }
     }
     
+    //Busqueda en tiempo real para la consulta por parámetro 
     private void configurarBusquedaTiempoReal() {
         timerBusqueda = new Timer(300, e -> realizarBusqueda());
         timerBusqueda.setRepeats(false);
@@ -1223,9 +1359,9 @@ public class VentanaCliente extends JFrame {
             resultados = cli.buscarPorNombreDP(texto);
         } else if (parametro.equals(CargadorProperties.obtenerComponentes("combo.param.cedula.ruc"))) {
             resultados = cli.buscarPorCedulaDP(texto);
-        } else if (parametro.equals(CargadorProperties.obtenerComponentes("combo.param.telefono"))) {  // ✅
+        } else if (parametro.equals(CargadorProperties.obtenerComponentes("combo.param.telefono"))) {  
             resultados = cli.buscarPorTelefonoDP(texto);
-        } else if (parametro.equals(CargadorProperties.obtenerComponentes("combo.param.email"))) {     // ✅
+        } else if (parametro.equals(CargadorProperties.obtenerComponentes("combo.param.email"))) {    
             resultados = cli.buscarPorEmailDP(texto);
         } else if (parametro.equals(CargadorProperties.obtenerComponentes("combo.param.ciudad.desc"))) {
             resultados = cli.buscarPorCiudadDP(texto);
@@ -1234,6 +1370,14 @@ public class VentanaCliente extends JFrame {
         }
         
         modeloTabla.setRowCount(0);
+        
+        if (resultados.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                CargadorProperties.obtenerMessages("CL_I_005"),
+                CargadorProperties.obtenerMessages("FC_C_006"),
+                JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
         
         for (Cliente c : resultados) {
             modeloTabla.addRow(new Object[]{
@@ -1247,14 +1391,28 @@ public class VentanaCliente extends JFrame {
         }
     }
     
+    //Métods para limpiar campos 
     private void limpiarCamposIngresar() {
+        validandoCedulaIna = false;
+        String cedulaActual = txtCedulaIng.getText().trim();
+        boolean esReactivacion = false;
+
+        if (!cedulaActual.isEmpty()) {
+            Cliente cli = new Cliente();
+            Cliente existe = cli.verificarDP(cedulaActual);
+            if (existe != null && "ACT".equals(existe.getEstado())) {
+                esReactivacion = true;
+            }
+        }
+
         txtCedulaIng.setText("");
+        txtCedulaIng.setEnabled(true); 
         txtNombreIng.setText("");
         txtTelefonoIng.setText("");
         txtEmailIng.setText("");
         comboCiudadIng.setSelectedIndex(0);
         txtDireccionIng.setText("");
-        
+
         lblErrorCedulaIng.setText(" ");
         lblErrorNombreIng.setText(" ");
         lblErrorTelefonoIng.setText(" ");
