@@ -20,7 +20,7 @@ public class ProxFac {
     private String estado;
     
     public ProxFac() {
-        this.estado = "APR";  // ← Estado por defecto
+        this.estado = "ABI";  // ← Estado por defecto
     }
     
     // Método para calcular subtotal del producto
