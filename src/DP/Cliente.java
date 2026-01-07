@@ -102,8 +102,7 @@ public class Cliente {
         ClienteMD cliMD = new ClienteMD();
         return cliMD.eliminar(this);
     }
-    
-    //NUEVO
+        
     public boolean reactivarDP() {
         ClienteMD cliMD = new ClienteMD();
         return cliMD.reactivar(this);
