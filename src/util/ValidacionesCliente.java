@@ -54,7 +54,7 @@ public class ValidacionesCliente {
         }
         
         if (!telefono.startsWith("09")) {
-            return CargadorProperties.obtenerMessages("CL_A_020");
+            return CargadorProperties.obtenerMessages("CL_A_018");
         }
         
         return null; 
