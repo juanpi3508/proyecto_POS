@@ -365,6 +365,7 @@ public class FacturaMD {
             ps.close();
             return resultado;
         } catch (SQLException e) {
+            System.out.println(CargadorProperties.obtenerMessages("FC_E_002"));
             e.printStackTrace();
             return false;
         }
