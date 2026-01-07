@@ -44,6 +44,8 @@ public class VentanaFactura extends JFrame {
     private JTable tablaProductosCrear;
     private DefaultTableModel modeloProductosCrear;
     private JTextField txtSubtotalCrear, txtIVACrear, txtTotalCrear;
+    private String codigoFacturaActual = null; //Para dar seguimiento a la creacion
+    private boolean facturaYaInsertada = false;
     
     //**VARIABLES PANEL MODIFICAR**
     private JTextField txtCedulaMod;
@@ -1544,7 +1546,7 @@ public class VentanaFactura extends JFrame {
             pxf.setCantidad(cantidad);
             pxf.setPrecioVenta(prod.getPrecioVenta());
             pxf.calcularSubtotal();
-            pxf.setEstado("APR");
+            pxf.setEstado("ABI");
             
             productosFactura.add(pxf);
             
@@ -1609,14 +1611,16 @@ public class VentanaFactura extends JFrame {
     
     //Crea y guarda nueva factura en la base de datos
     private void crearFactura() {
+        // Validar cliente
         if (clienteSeleccionado == null) {
             JOptionPane.showMessageDialog(this, 
-                CargadorProperties.obtenerMessages("FC_A_009"),
+                CargadorProperties.obtenerMessages("FC_A_004"),
                 CargadorProperties.obtenerMessages("FC_C_005"), 
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
 
+        // Validar que haya productos
         if (productosFactura.isEmpty()) {
             JOptionPane.showMessageDialog(this, 
                 CargadorProperties.obtenerMessages("FC_A_005"),
@@ -1625,12 +1629,13 @@ public class VentanaFactura extends JFrame {
             return;
         }
 
-        Factura fac = new Factura();
-        fac.setCodigoCliente(clienteSeleccionado.getIdCliente());
-        fac.setFechaHora(LocalDateTime.now());
-        fac.setProductos(productosFactura);
+        // Crear objeto factura con todos los datos
+        Factura factura = new Factura();
+        factura.setCodigoCliente(clienteSeleccionado.getIdCliente());
+        factura.setProductos(new ArrayList<>(productosFactura));
 
-        String codigoGenerado = fac.insertar();
+        // Aprobar (inserta y aprueba)
+        String codigoGenerado = factura.aprobar();
 
         if (codigoGenerado != null) {
             JOptionPane.showMessageDialog(this,
@@ -1646,6 +1651,7 @@ public class VentanaFactura extends JFrame {
                 JOptionPane.ERROR_MESSAGE);
         }
     }
+
 
     //**METODOS NEGOCIO MODIFICAR**
     //Busca facturas asociadas a un cliente -> Se ocupa en consulta especifica tambien
