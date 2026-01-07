@@ -1608,15 +1608,26 @@ public class VentanaFactura extends JFrame {
     }
     
     //Crea y guarda nueva factura en la base de datos
-    private void crearFactura() {
+   private void crearFactura() {
+        // Validar que la factura ya esté insertada en BD
+        if (!facturaYaInsertada || codigoFacturaActual == null) {
+            JOptionPane.showMessageDialog(this,
+                "Debe agregar al menos un producto antes de guardar",
+                CargadorProperties.obtenerMessages("FC_C_004"),
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Validar cliente (redundante porque ya se validó al agregar productos, pero por si acaso)
         if (clienteSeleccionado == null) {
             JOptionPane.showMessageDialog(this, 
-                CargadorProperties.obtenerMessages("FC_A_009"),
+                CargadorProperties.obtenerMessages("FC_A_004"),
                 CargadorProperties.obtenerMessages("FC_C_005"), 
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
 
+        // Validar productos (redundante también)
         if (productosFactura.isEmpty()) {
             JOptionPane.showMessageDialog(this, 
                 CargadorProperties.obtenerMessages("FC_A_005"),
@@ -1625,20 +1636,17 @@ public class VentanaFactura extends JFrame {
             return;
         }
 
-        Factura fac = new Factura();
-        fac.setCodigoCliente(clienteSeleccionado.getIdCliente());
-        fac.setFechaHora(LocalDateTime.now());
-        fac.setProductos(productosFactura);
+        // SOLO APROBAR (la factura ya está en BD con estado ABI)
+        Factura facAprobar = new Factura();
+        facAprobar.setCodigo(codigoFacturaActual);
 
-        String codigoGenerado = fac.insertar();
-
-        if (codigoGenerado != null) {
+        if (facAprobar.aprobar()) {  // ← Llama al método aprobar que retorna boolean
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("FC_I_001") + 
-                CargadorProperties.obtenerMessages("FC_I_004") + " " + codigoGenerado,
+                CargadorProperties.obtenerMessages("FC_I_004") + " " + codigoFacturaActual,
                 CargadorProperties.obtenerMessages("FC_C_003"), 
                 JOptionPane.INFORMATION_MESSAGE);
-            limpiarPanelCrear();
+            limpiarPanelCrear();  // ← Cambié el nombre para que sea consistente
         } else {
             JOptionPane.showMessageDialog(this, 
                 CargadorProperties.obtenerMessages("FC_E_002"),
@@ -1646,6 +1654,7 @@ public class VentanaFactura extends JFrame {
                 JOptionPane.ERROR_MESSAGE);
         }
     }
+
 
     //**METODOS NEGOCIO MODIFICAR**
     //Busca facturas asociadas a un cliente -> Se ocupa en consulta especifica tambien
