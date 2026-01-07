@@ -3,7 +3,6 @@ package util;
 import DP.Cliente;
 
 public class ValidacionesCliente {
-    //NUEVO
     public static String validarCedula(String cedRuc, boolean esModificar) {
         if (cedRuc == null || cedRuc.trim().isEmpty()) {
             return CargadorProperties.obtenerMessages("CL_A_004");
@@ -17,9 +16,8 @@ public class ValidacionesCliente {
             Cliente cli = new Cliente();
             Cliente existe = cli.verificarDP(cedRuc);
             if (existe != null) {
-                // Verificar si está inactivo
                 if ("INA".equals(existe.getEstado())) {
-                    return "CLIENTE_INACTIVO"; // Código especial para manejar en GUI
+                    return "CLIENTE_INACTIVO"; 
                 }
                 return CargadorProperties.obtenerMessages("CL_A_001");
             }
@@ -54,7 +52,7 @@ public class ValidacionesCliente {
         }
         
         if (!telefono.startsWith("09")) {
-            return CargadorProperties.obtenerMessages("CL_A_020");
+            return CargadorProperties.obtenerMessages("CL_A_018");
         }
         
         return null; 
