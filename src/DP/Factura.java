@@ -18,7 +18,7 @@ public class Factura {
     
     public Factura() {
         this.tipo = "POS"; //Directamente Point of Sale
-        this.estado = "APR"; //Se crean en aporbadas
+        this.estado = "ABI"; //Se crean en aporbadas
         this.productos = new ArrayList<>();
         this.fechaHora = LocalDateTime.now();
     }
@@ -115,12 +115,6 @@ public class Factura {
         return facMD.consultarTodos();
     }
     
-    //Consulta una factura en específico (para mostrar el detalle en modificar)
-    public Factura consultarPorParametro(Factura fac) {
-        FacturaMD facMD = new FacturaMD();
-        return facMD.consultarPorCodigo(fac);
-    }
-    
     //Consulta especifica (solo cliente)
     public ArrayList<Factura> consultarPorParametro(Cliente cli) {
         FacturaMD facMD = new FacturaMD();
@@ -204,9 +198,31 @@ public class Factura {
         return facMD.consultarPorCodigoDetalle(facParam);
     }
     
-    public boolean aprobar() {
+    public String aprobar() {
+        recalcularTotales();
+
+        // 1. Insertar factura completa (cabecera + detalle)
+        String codigoGenerado = insertarFacturaCompleta();
+
+        if (codigoGenerado == null) {
+            return null;
+        }
+
+        // 2. Aprobar la factura
+        this.codigo = codigoGenerado;
         FacturaMD facMD = new FacturaMD();
-        return facMD.aprobarFactura(this);
+        boolean aprobada = facMD.aprobarFactura(this);
+
+        if (aprobada) {
+            return codigoGenerado;
+        } else {
+            return null;
+        }
+    }
+
+    private String insertarFacturaCompleta() {
+        FacturaMD facMD = new FacturaMD();
+        return facMD.insertarFacturaCompleta(this);
     }
     
 }
