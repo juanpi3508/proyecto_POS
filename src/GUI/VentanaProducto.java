@@ -961,8 +961,17 @@ public class VentanaProducto extends JFrame {
             pro.setIdCategoria(categoriaSeleccionada.getId());
             String codigoGenerado = pro.generarCodigoDP();
             txtCodigoIng.setText(codigoGenerado);
+            lblErrorCodigoIng.setText(" ");
         } else {
             txtCodigoIng.setText("");
+        }
+    }
+    
+    private void mostrarError(JLabel label, String error) {
+        if (error != null) {
+            label.setText(error);
+        } else {
+            label.setText(" ");
         }
     }
     
@@ -1252,21 +1261,41 @@ public class VentanaProducto extends JFrame {
         String idUmVenta = umVenta != null ? umVenta.getId() : "";
         String precioVenta = txtPrecioVentaIng.getText().trim();
         
-        if (rutaImagenSeleccionadaIng.isEmpty()) {
-            lblErrorImagenIng.setText(CargadorProperties.obtenerMessages("PD_A_012"));
-            return;
-        }
+        String errorCategoria = ValidacionesProducto.validarCategoria(idCategoria);
+        String errorCodigo = ValidacionesProducto.validarCodigo(codigo);
+        String errorDescripcion = ValidacionesProducto.validarDescripcion(descripcion, false);
+        String errorUmCompra = ValidacionesProducto.validarUnidadMedida(idUmCompra, "compra");
+        String errorPrecioCompra = ValidacionesProducto.validarPrecioCompra(precioCompra);
+        String errorUmVenta = ValidacionesProducto.validarUnidadMedida(idUmVenta, "venta");
+        String errorPrecioVenta = ValidacionesProducto.validarPrecioVenta(precioVenta, precioCompra);
+        String errorImagen = ValidacionesProducto.validarImagen(rutaImagenSeleccionadaIng);
         
-        if (!ValidacionesProducto.validarTodoInsertar(codigo, descripcion, idCategoria, 
-                                                       idUmCompra, precioCompra, 
-                                                       idUmVenta, precioVenta, 
-                                                       rutaImagenSeleccionadaIng)) {
+        mostrarError(lblErrorCategoriaIng, errorCategoria);
+        mostrarError(lblErrorCodigoIng, errorCodigo);
+        mostrarError(lblErrorDescripcionIng, errorDescripcion);
+        mostrarError(lblErrorUmCompraIng, errorUmCompra);
+        mostrarError(lblErrorPrecioCompraIng, errorPrecioCompra);
+        mostrarError(lblErrorUmVentaIng, errorUmVenta);
+        mostrarError(lblErrorPrecioVentaIng, errorPrecioVenta);
+        mostrarError(lblErrorImagenIng, errorImagen);
+
+        boolean hayErrores = errorCategoria != null || 
+                             errorCodigo != null || 
+                             errorDescripcion != null || 
+                             errorUmCompra != null || 
+                             errorPrecioCompra != null || 
+                             errorUmVenta != null || 
+                             errorPrecioVenta != null || 
+                             errorImagen != null;
+
+        if (hayErrores) {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("PD_A_013"),
                 CargadorProperties.obtenerMessages("FC_C_005"),
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
+
         
         String rutaImagenGuardada = copiarImagenAProyecto(rutaImagenSeleccionadaIng);
         
@@ -1493,6 +1522,14 @@ public class VentanaProducto extends JFrame {
         
         modeloTabla.setRowCount(0);
         
+        if (productos.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                CargadorProperties.obtenerMessages("PD_I_004"),
+                CargadorProperties.obtenerMessages("FC_C_006"),
+                JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        
         for (Producto p : productos) {
             modeloTabla.addRow(new Object[]{
                 p.getCodigo(),
@@ -1556,6 +1593,14 @@ public class VentanaProducto extends JFrame {
             case "um_venta":
                 resultados = pro.buscarPorNombreUmVentaDP(texto);
                 break;
+        }
+        
+        if (resultados.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                CargadorProperties.obtenerMessages("PD_I_005"),
+                CargadorProperties.obtenerMessages("FC_C_006"),
+                JOptionPane.INFORMATION_MESSAGE);
+            return;
         }
 
         modeloTabla.setRowCount(0);
