@@ -90,6 +90,32 @@ public class ClienteMD {
         }
     }
     
+    public boolean reactivar(Cliente cli) {
+        String sql = CargadorProperties.obtenerConfigCliente("cli.reactivar");
+
+        try {
+            PreparedStatement ps = conexion.prepareStatement(sql);
+            ps.setString(1, cli.getNombre());
+            ps.setString(2, cli.getTelefono());
+            ps.setString(3, cli.getEmail());
+            ps.setString(4, cli.getIdCiudad());
+            ps.setString(5, cli.getDireccion());
+            ps.setString(6, cli.getCedRuc());
+
+            int filas = ps.executeUpdate();
+            ps.close();
+            return filas > 0;
+        } catch (SQLException e) {
+            System.out.println(CargadorProperties.obtenerMessages("CL_E_007"));
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null,
+                CargadorProperties.obtenerMessages("CL_E_007"),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+    }
+    
     public Cliente verificarMD(String cedRuc){
         String sql = CargadorProperties.obtenerConfigCliente("cli.verificar");
         Cliente cli = null;
@@ -368,7 +394,6 @@ public class ClienteMD {
     }
     
     //Adicional para consulta especifica factura
-    
     //Verifica cliente por id_cliente (CLI0001)
     public Cliente verificarPorIdMD(String idCliente) {
         String sql = CargadorProperties.obtenerConfigCliente("cli.verificar.porId");
