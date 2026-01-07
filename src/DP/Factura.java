@@ -203,4 +203,10 @@ public class Factura {
         FacturaMD facMD = new FacturaMD();
         return facMD.consultarPorCodigoDetalle(facParam);
     }
+    
+    public boolean aprobar() {
+        FacturaMD facMD = new FacturaMD();
+        return facMD.aprobarFactura(this);
+    }
+    
 }
