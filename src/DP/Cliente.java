@@ -103,6 +103,12 @@ public class Cliente {
         return cliMD.eliminar(this);
     }
     
+    //NUEVO
+    public boolean reactivarDP() {
+        ClienteMD cliMD = new ClienteMD();
+        return cliMD.reactivar(this);
+    }
+    
     public boolean grabarDP(){
         ClienteMD cliMD = new ClienteMD();
         Cliente existe = cliMD.verificarMD(this.cedRuc);
