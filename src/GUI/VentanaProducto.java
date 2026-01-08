@@ -1711,7 +1711,7 @@ public class VentanaProducto extends JFrame {
 
         modeloTabla.setRowCount(0);
 
-        if (productos.isEmpty()) {
+        if (resultados.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                 CargadorProperties.obtenerMessages("PD_I_004"),
                 CargadorProperties.obtenerMessages("FC_C_006"),
