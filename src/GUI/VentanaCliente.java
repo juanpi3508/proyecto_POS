@@ -29,11 +29,11 @@ public class VentanaCliente extends JFrame {
     private static final Color COLOR_TEXTO_CAMPO = Color.BLACK; // Negro para texto en campos
 
     // Fuente principal - Poppins
-    private static final Font FUENTE_TITULO = new Font("Poppins", Font.BOLD, 32);
-    private static final Font FUENTE_SUBTITULO = new Font("Poppins", Font.BOLD, 24);
-    private static final Font FUENTE_BASE = new Font("Poppins", Font.PLAIN, 14);
-    private static final Font FUENTE_LABEL = new Font("Poppins", Font.PLAIN, 13);
-    private static final Font FUENTE_BOTON = new Font("Poppins", Font.BOLD, 13);
+    private static Font FUENTE_TITULO;
+    private static Font FUENTE_SUBTITULO;
+    private static Font FUENTE_BASE;
+    private static Font FUENTE_LABEL;
+    private static Font FUENTE_BOTON;
 
     private CardLayout cardLayout;
     private JPanel panelContenedor;
@@ -80,6 +80,12 @@ public class VentanaCliente extends JFrame {
     private boolean validandoCedulaIna = false;
 
     public VentanaCliente() {
+        FUENTE_TITULO = cargarFuente("/resources/fonts/Poppins-Bold.ttf", Font.BOLD, 32f);
+        FUENTE_SUBTITULO = cargarFuente("/resources/fonts/Poppins-Bold.ttf", Font.BOLD, 24f);
+        FUENTE_BASE = cargarFuente("/resources/fonts/Poppins-Regular.ttf", Font.PLAIN, 14f);
+        FUENTE_LABEL = cargarFuente("/resources/fonts/Poppins-Regular.ttf", Font.PLAIN, 13f);
+        FUENTE_BOTON = cargarFuente("/resources/fonts/Poppins-Bold.ttf", Font.BOLD, 13f);
+
         configurarVentana();
         inicializarComponentes();
         configurarLayout();
@@ -128,7 +134,7 @@ public class VentanaCliente extends JFrame {
 
         JPanel panelFilaCombo = new JPanel(new BorderLayout());
         panelFilaCombo.setBackground(COLOR_PRIMARIO);
-        
+
         JPanel panelIzquierda = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
         panelIzquierda.setBackground(COLOR_PRIMARIO);
         try {
@@ -140,7 +146,7 @@ public class VentanaCliente extends JFrame {
             System.err.println("No se pudo cargar el logo");
         }
         panelFilaCombo.add(panelIzquierda, BorderLayout.WEST);
-        
+
         JPanel panelDerecha = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
         panelDerecha.setBackground(COLOR_PRIMARIO);
         estilizarComboBox(comboOpciones);
@@ -518,7 +524,7 @@ public class VentanaCliente extends JFrame {
         lblNombreMod.setForeground(COLOR_TEXTO);
         panel.add(lblNombreMod, gbc);
         gbc.gridx = 1;
-        
+
         panel.add(txtNombreMod, gbc);
 
         fila++;
@@ -618,7 +624,7 @@ public class VentanaCliente extends JFrame {
         btnGuardarMod = new JButton(CargadorProperties.obtenerComponentes("boton.guardar"));
         btnGuardarMod.setPreferredSize(new Dimension(120, 35));
         estilizarBotonPrimario(btnGuardarMod);
-        
+
         btnGuardarMod.setEnabled(false);
         btnGuardarMod.addActionListener(e -> modificarCliente());
         panel.add(btnGuardarMod, gbc);
@@ -1004,11 +1010,13 @@ public class VentanaCliente extends JFrame {
             validandoCedulaIna = true;
 
             SwingUtilities.invokeLater(() -> {
+                personalizarPopup();
                 int opcion = JOptionPane.showConfirmDialog(this,
                         CargadorProperties.obtenerMessages("CL_A_016"),
                         CargadorProperties.obtenerMessages("FC_A_008"),
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.QUESTION_MESSAGE);
+                restaurarEstilosPopup();
 
                 if (opcion == JOptionPane.YES_OPTION) {
                     cargarClienteInactivoParaReactivar(cedula);
@@ -1161,6 +1169,48 @@ public class VentanaCliente extends JFrame {
                 btn.setBackground(COLOR_ACENTO);
             }
         });
+    }
+
+    // ============================================
+    // MÉTODOS PARA PERSONALIZAR POPUPS (JOptionPane)
+    // ============================================
+
+    /**
+     * Personaliza el JOptionPane con la paleta de colores y tipografía del sistema
+     * Debe llamarse ANTES de mostrar cualquier JOptionPane
+     */
+    private void personalizarPopup() {
+        // Configurar fuente Poppins para todos los componentes del popup
+        UIManager.put("OptionPane.messageFont", FUENTE_BASE);
+        UIManager.put("OptionPane.buttonFont", FUENTE_BOTON);
+
+        // Configurar colores del panel principal
+        UIManager.put("OptionPane.background", COLOR_FONDO_CENTRAL);
+        UIManager.put("Panel.background", COLOR_FONDO_CENTRAL);
+
+        // Configurar colores de los botones
+        UIManager.put("Button.background", COLOR_SECUNDARIO);
+        UIManager.put("Button.foreground", COLOR_BLANCO);
+        UIManager.put("Button.select", new Color(82, 121, 54)); // Hover color
+        UIManager.put("Button.focus", new Color(82, 121, 54));
+
+        // Configurar texto del mensaje
+        UIManager.put("OptionPane.messageForeground", COLOR_TEXTO_CAMPO);
+    }
+
+    /**
+     * Restaura los valores por defecto de UIManager después de mostrar el popup
+     */
+    private void restaurarEstilosPopup() {
+        UIManager.put("OptionPane.messageFont", null);
+        UIManager.put("OptionPane.buttonFont", null);
+        UIManager.put("OptionPane.background", null);
+        UIManager.put("Panel.background", null);
+        UIManager.put("Button.background", null);
+        UIManager.put("Button.foreground", null);
+        UIManager.put("Button.select", null);
+        UIManager.put("Button.focus", null);
+        UIManager.put("OptionPane.messageForeground", null);
     }
 
     private void mostrarError(JLabel label, String mensaje) {
@@ -1397,10 +1447,12 @@ public class VentanaCliente extends JFrame {
 
             validandoCedulaIna = false;
 
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("CL_I_006"),
                     CargadorProperties.obtenerMessages("FC_C_006"),
                     JOptionPane.INFORMATION_MESSAGE);
+            restaurarEstilosPopup();
         }
     }
 
@@ -1431,10 +1483,12 @@ public class VentanaCliente extends JFrame {
                 errorDireccion != null;
 
         if (hayErrores) {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("CL_A_015"),
                     CargadorProperties.obtenerMessages("FC_C_005"),
                     JOptionPane.WARNING_MESSAGE);
+            restaurarEstilosPopup();
             return;
         }
 
@@ -1457,16 +1511,20 @@ public class VentanaCliente extends JFrame {
             String mensaje = !txtCedulaIng.isEnabled() ? CargadorProperties.obtenerMessages("CL_I_007")
                     : CargadorProperties.obtenerMessages("CL_I_001");
 
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
                     mensaje,
                     CargadorProperties.obtenerMessages("FC_C_003"),
                     JOptionPane.INFORMATION_MESSAGE);
+            restaurarEstilosPopup();
             limpiarCamposIngresar();
         } else {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("CL_E_002"),
                     CargadorProperties.obtenerMessages("FC_C_004"),
                     JOptionPane.ERROR_MESSAGE);
+            restaurarEstilosPopup();
         }
     }
 
@@ -1474,10 +1532,12 @@ public class VentanaCliente extends JFrame {
         String cedula = txtCedulaMod.getText().trim();
 
         if (cedula.isEmpty()) {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("CL_A_013"),
                     CargadorProperties.obtenerMessages("FC_C_005"),
                     JOptionPane.WARNING_MESSAGE);
+            restaurarEstilosPopup();
             return;
         }
 
@@ -1486,10 +1546,12 @@ public class VentanaCliente extends JFrame {
 
         if (encontrado != null) {
             if ("INA".equals(encontrado.getEstado())) {
+                personalizarPopup();
                 JOptionPane.showMessageDialog(this,
                         CargadorProperties.obtenerMessages("CL_A_017"),
                         CargadorProperties.obtenerMessages("FC_C_006"),
                         JOptionPane.INFORMATION_MESSAGE);
+                restaurarEstilosPopup();
                 return;
             }
 
@@ -1518,10 +1580,12 @@ public class VentanaCliente extends JFrame {
 
             lblErrorCedulaMod.setText(" ");
         } else {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("CL_A_014"),
                     CargadorProperties.obtenerMessages("FC_C_006"),
                     JOptionPane.INFORMATION_MESSAGE);
+            restaurarEstilosPopup();
         }
     }
 
@@ -1548,10 +1612,12 @@ public class VentanaCliente extends JFrame {
                 errorCiudad != null || errorDireccion != null;
 
         if (hayErrores) {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("CL_A_015"),
                     CargadorProperties.obtenerMessages("FC_C_005"),
                     JOptionPane.WARNING_MESSAGE);
+            restaurarEstilosPopup();
             return;
         }
 
@@ -1564,16 +1630,20 @@ public class VentanaCliente extends JFrame {
         cli.setDireccion(txtDireccionMod.getText().trim());
 
         if (cli.grabarDP()) {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("CL_I_002"),
                     CargadorProperties.obtenerMessages("FC_C_003"),
                     JOptionPane.INFORMATION_MESSAGE);
+            restaurarEstilosPopup();
             limpiarCamposModificar();
         } else {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("CL_E_004"),
                     CargadorProperties.obtenerMessages("FC_C_004"),
                     JOptionPane.ERROR_MESSAGE);
+            restaurarEstilosPopup();
         }
     }
 
@@ -1581,10 +1651,12 @@ public class VentanaCliente extends JFrame {
         String cedula = txtCedulaElim.getText().trim();
 
         if (cedula.isEmpty()) {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("CL_A_013"),
                     CargadorProperties.obtenerMessages("FC_C_005"),
                     JOptionPane.WARNING_MESSAGE);
+            restaurarEstilosPopup();
             return;
         }
 
@@ -1593,10 +1665,12 @@ public class VentanaCliente extends JFrame {
 
         if (encontrado != null) {
             if ("INA".equals(encontrado.getEstado())) {
+                personalizarPopup();
                 JOptionPane.showMessageDialog(this,
                         CargadorProperties.obtenerMessages("CL_A_017"),
                         CargadorProperties.obtenerMessages("FC_C_006"),
                         JOptionPane.INFORMATION_MESSAGE);
+                restaurarEstilosPopup();
                 return;
             }
 
@@ -1615,35 +1689,43 @@ public class VentanaCliente extends JFrame {
 
             btnEliminar.setEnabled(true);
         } else {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("CL_A_014"),
                     CargadorProperties.obtenerMessages("FC_C_006"),
                     JOptionPane.INFORMATION_MESSAGE);
+            restaurarEstilosPopup();
         }
     }
 
     private void eliminarCliente() {
+        personalizarPopup();
         int confirm = JOptionPane.showConfirmDialog(this,
                 CargadorProperties.obtenerMessages("CL_C_001") + txtNombreElim.getText()
                         + CargadorProperties.obtenerMessages("CL_C_002"),
                 CargadorProperties.obtenerMessages("FC_A_008"),
                 JOptionPane.YES_NO_OPTION);
+        restaurarEstilosPopup();
 
         if (confirm == JOptionPane.YES_OPTION) {
             Cliente cli = new Cliente();
             cli.setCedRuc(txtCedulaElim.getText().trim());
 
             if (cli.eliminarDP()) {
+                personalizarPopup();
                 JOptionPane.showMessageDialog(this,
                         CargadorProperties.obtenerMessages("CL_I_003"),
                         CargadorProperties.obtenerMessages("FC_C_003"),
                         JOptionPane.INFORMATION_MESSAGE);
+                restaurarEstilosPopup();
                 limpiarCamposEliminar();
             } else {
+                personalizarPopup();
                 JOptionPane.showMessageDialog(this,
                         CargadorProperties.obtenerMessages("CL_E_005"),
                         CargadorProperties.obtenerMessages("FC_C_004"),
                         JOptionPane.ERROR_MESSAGE);
+                restaurarEstilosPopup();
             }
         }
     }
@@ -1655,10 +1737,12 @@ public class VentanaCliente extends JFrame {
         modeloTabla.setRowCount(0);
 
         if (clientes.isEmpty()) {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("CL_I_004"),
                     CargadorProperties.obtenerMessages("FC_C_006"),
                     JOptionPane.INFORMATION_MESSAGE);
+            restaurarEstilosPopup();
             return;
         }
 
@@ -1729,10 +1813,12 @@ public class VentanaCliente extends JFrame {
         modeloTabla.setRowCount(0);
 
         if (resultados.isEmpty()) {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("CL_I_005"),
                     CargadorProperties.obtenerMessages("FC_C_006"),
                     JOptionPane.INFORMATION_MESSAGE);
+            restaurarEstilosPopup();
             return;
         }
 
@@ -1807,5 +1893,18 @@ public class VentanaCliente extends JFrame {
         txtDireccionElim.setText("");
 
         btnEliminar.setEnabled(false);
+    }
+    
+    private Font cargarFuente(String ruta, int estilo, float tamaño) {
+        try {
+            Font fuente = Font.createFont(Font.TRUETYPE_FONT, 
+                getClass().getResourceAsStream(ruta));
+            return fuente.deriveFont(estilo, tamaño);
+        } catch (Exception e) {
+            System.err.println("No se pudo cargar la fuente Poppins desde: " + ruta);
+            e.printStackTrace();
+            // Fuente de respaldo si Poppins no se carga
+            return new Font("SansSerif", estilo, (int)tamaño);
+        }
     }
 }
