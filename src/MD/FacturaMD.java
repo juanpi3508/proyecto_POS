@@ -128,7 +128,6 @@ public class FacturaMD {
                 ps.setInt(3, producto.getCantidad());
                 ps.setDouble(4, producto.getPrecioVenta());
                 ps.setDouble(5, producto.getSubtotalProducto());
-                ps.setString(6, producto.getEstado());
                 
                 int filas = ps.executeUpdate();
                 ps.close();
@@ -346,9 +345,7 @@ public class FacturaMD {
 
         return fac;
     }
-
-
-        
+    
     public boolean aprobarFactura(Factura facParam) {
         String sql = CargadorProperties.obtenerConfigFactura("fac.aprobar");
         try {
@@ -365,9 +362,9 @@ public class FacturaMD {
             ps.close();
             return resultado;
         } catch (SQLException e) {
-            System.out.println(CargadorProperties.obtenerMessages("FC_E_002"));
             e.printStackTrace();
             return false;
         }
     }
+    
 }
