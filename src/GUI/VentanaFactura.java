@@ -1300,6 +1300,7 @@ public class VentanaFactura extends JFrame {
         JPanel panelEmpresa = new JPanel();
         panelEmpresa.setOpaque(false);
         panelEmpresa.setLayout(new BoxLayout(panelEmpresa, BoxLayout.Y_AXIS));
+        panelEmpresa.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 50));
 
         // Título "Información de la Empresa"
         JLabel lblTitEmpresa = new JLabel(CargadorProperties.obtenerComponentes("LBL_INFO_EMPRESA"));
@@ -1310,7 +1311,7 @@ public class VentanaFactura extends JFrame {
         panelEmpresa.add(Box.createVerticalStrut(10));
 
         // Empresa info: Nombre, Email, Telefono con labels bold
-        JPanel pNombre = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+        JPanel pNombre = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
         pNombre.setOpaque(false);
         JLabel lblNombreTit = new JLabel(CargadorProperties.obtenerComponentes("FC_UI_008"));
         lblNombreTit.setFont(FUENTE_LABEL.deriveFont(Font.BOLD));
