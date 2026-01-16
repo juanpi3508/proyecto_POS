@@ -20,7 +20,7 @@ public class ProxFac {
     private String estado;
     
     public ProxFac() {
-        this.estado = "ABI";  // ← Estado por defecto
+        this.estado = "APR";  // ← Estado por defecto
     }
     
     // Método para calcular subtotal del producto
@@ -58,10 +58,27 @@ public class ProxFac {
     /**
     * Consulta todos los productos asociados a esta factura
     */
+    
+    public boolean insertar() {
+        ProxFacMD pxfMD = new ProxFacMD();
+        return pxfMD.insertar(this);
+    }
+
+    public boolean modificar() {
+        ProxFacMD pxfMD = new ProxFacMD();
+        return pxfMD.modificar(this);
+    }
+    
     public ArrayList<ProxFac> consultarPorFactura(ProxFac pxf) {
        ProxFacMD pxfMD = new ProxFacMD();
        return pxfMD.consultarPorFactura(pxf);
     }
+    
+    public ArrayList<ProxFac> consultarPorFacturaABI(ProxFac pxf) {
+       ProxFacMD pxfMD = new ProxFacMD();
+       return pxfMD.consultarPorFacturaABI(pxf);
+    }
+    
    
     //Elimina un producto en especifico
     public boolean eliminar() {
