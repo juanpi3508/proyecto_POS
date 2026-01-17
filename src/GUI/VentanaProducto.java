@@ -2328,58 +2328,95 @@ public class VentanaProducto extends JFrame {
     Producto pro = new Producto();
     Producto encontrado = pro.verificarPorCodigoDP(codigo);
 
+    // ✅ Validaciones iniciales
     if (encontrado == null || encontrado.getImagen() == null || encontrado.getImagen().trim().isEmpty()) {
+        personalizarPopup();
         JOptionPane.showMessageDialog(this,
-            CargadorProperties.obtenerMessages("PD_A_019"),
-            CargadorProperties.obtenerMessages("FC_C_006"),
-            JOptionPane.INFORMATION_MESSAGE);
+                CargadorProperties.obtenerMessages("PD_A_019"),
+                CargadorProperties.obtenerMessages("FC_C_006"),
+                JOptionPane.INFORMATION_MESSAGE);
+        restaurarEstilosPopup();
         return;
     }
 
-    // ✅ Crear el dialog desde el inicio
-    JDialog dialog = new JDialog(this, CargadorProperties.obtenerComponentes("popup.imagen.titulo") + codigo, true);
+    // ✅ TAMAÑO FIJO DEL POPUP (valores finales para usarlos en SwingWorker)
+    int w = 600;
+    int h = 500;
+    try {
+        // Si tienes una sola propiedad:
+        // int max = Integer.parseInt(CargadorProperties.obtenerConfigProducto("img.popup.max"));
+        // w = max;
+        // h = max;
+    } catch (Exception ex) {
+        // Si falla, se quedan 600x500
+    }
+    final int maxWidth = w;
+    final int maxHeight = h;
+
+    // ✅ Crear el dialog con el formato del primer método
+    final JDialog dialog = new JDialog(this,
+            CargadorProperties.obtenerComponentes("popup.imagen.titulo") + codigo, true);
     dialog.setLayout(new BorderLayout(10, 10));
+    dialog.getContentPane().setBackground(COLOR_FONDO_CENTRAL);
 
-    // ✅ Label temporal mientras carga
-    JLabel lblCargando = new JLabel("Cargando imagen...", SwingConstants.CENTER);
-    lblCargando.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-    dialog.add(lblCargando, BorderLayout.CENTER);
+    // ✅ Panel contenedor para la imagen
+    final JPanel panelImagen = new JPanel(new GridBagLayout());
+    panelImagen.setBackground(COLOR_FONDO_CENTRAL);
+    panelImagen.setPreferredSize(new Dimension(maxWidth, maxHeight));
+    panelImagen.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
+    // Label "Cargando..." mientras se obtiene la imagen
+    final JLabel lblCargando = new JLabel("Cargando imagen...", SwingConstants.CENTER);
+    panelImagen.add(lblCargando, new GridBagConstraints());
+    dialog.add(panelImagen, BorderLayout.CENTER);
+
+    // ✅ PANEL DE BOTÓN CON FONDO CORRECTO
     JPanel panelBoton = new JPanel(new FlowLayout(FlowLayout.CENTER));
+    panelBoton.setBackground(COLOR_FONDO_CENTRAL);
+
     JButton btnCerrar = new JButton(CargadorProperties.obtenerComponentes("boton.cerrar"));
+    estilizarBotonEliminar(btnCerrar); // tu estilo
+    btnCerrar.setPreferredSize(new Dimension(120, 35));
     btnCerrar.addActionListener(e -> dialog.dispose());
+
     panelBoton.add(btnCerrar);
     dialog.add(panelBoton, BorderLayout.SOUTH);
 
-    dialog.setSize(500, 500);
+    // ✅ TAMAÑO FIJO DEL DIALOG
+    dialog.setSize(maxWidth + 40, maxHeight + 100); // márgenes + botón
+    dialog.setResizable(false);
     dialog.setLocationRelativeTo(this);
 
-    // ✅ Cargar imagen en segundo plano
+    // ✅ Cargar imagen DESDE URL en segundo plano (lógica del segundo método)
     new SwingWorker<ImageIcon, Void>() {
 
         @Override
         protected ImageIcon doInBackground() throws Exception {
+            try {
+                String baseStorage = CargadorProperties.obtenerConfigProducto("img.server.base");
+                String urlCompleta = baseStorage + "/" + encontrado.getImagen(); // productos/uuid.jpg
 
-            String baseStorage = CargadorProperties.obtenerConfigProducto("img.server.base");
-            String urlCompleta = baseStorage + "/" + encontrado.getImagen(); // productos/uuid.jpg
+                BufferedImage img = ImageIO.read(new URL(urlCompleta));
+                if (img == null) {
+                    return null;
+                }
 
-            BufferedImage img = ImageIO.read(new URL(urlCompleta));
-            if (img == null) return null;
+                // Escalado para que quepa en maxWidth x maxHeight
+                double scale = Math.min(
+                        (double) maxWidth / img.getWidth(),
+                        (double) maxHeight / img.getHeight()
+                );
 
-            int max = Integer.parseInt(CargadorProperties.obtenerConfigProducto("img.popup.max"));
-            int maxWidth = max;
-            int maxHeight = max;
+                int newWidth = (int) (img.getWidth() * scale);
+                int newHeight = (int) (img.getHeight() * scale);
 
-            double scale = Math.min(
-                (double) maxWidth / img.getWidth(),
-                (double) maxHeight / img.getHeight()
-            );
+                Image imagenEscalada = img.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+                return new ImageIcon(imagenEscalada);
 
-            int newWidth = (int) (img.getWidth() * scale);
-            int newHeight = (int) (img.getHeight() * scale);
-
-            Image imagenEscalada = img.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
-            return new ImageIcon(imagenEscalada);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                return null;
+            }
         }
 
         @Override
@@ -2387,36 +2424,51 @@ public class VentanaProducto extends JFrame {
             try {
                 ImageIcon icon = get();
 
-                dialog.getContentPane().remove(lblCargando);
+                // Limpiar el "Cargando..."
+                panelImagen.removeAll();
 
                 if (icon != null) {
                     JLabel lblImagen = new JLabel(icon);
-                    lblImagen.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-                    dialog.add(lblImagen, BorderLayout.CENTER);
+                    lblImagen.setOpaque(false);
+
+                    GridBagConstraints gbc = new GridBagConstraints();
+                    gbc.gridx = 0;
+                    gbc.gridy = 0;
+                    panelImagen.add(lblImagen, gbc);
                 } else {
                     JLabel lblError = new JLabel("No se pudo cargar la imagen.", SwingConstants.CENTER);
                     lblError.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-                    dialog.add(lblError, BorderLayout.CENTER);
+                    panelImagen.add(lblError, new GridBagConstraints());
+
+                    personalizarPopup();
+                    JOptionPane.showMessageDialog(dialog,
+                            CargadorProperties.obtenerMessages("PD_A_017"),
+                            CargadorProperties.obtenerMessages("FC_C_004"),
+                            JOptionPane.ERROR_MESSAGE);
+                    restaurarEstilosPopup();
                 }
 
-                dialog.revalidate();
-                dialog.repaint();
+                panelImagen.revalidate();
+                panelImagen.repaint();
 
             } catch (Exception e) {
                 e.printStackTrace();
+                personalizarPopup();
                 JOptionPane.showMessageDialog(dialog,
-                    CargadorProperties.obtenerMessages("PD_A_017"),
-                    CargadorProperties.obtenerMessages("FC_C_004"),
-                    JOptionPane.ERROR_MESSAGE);
+                        CargadorProperties.obtenerMessages("PD_A_017"),
+                        CargadorProperties.obtenerMessages("FC_C_004"),
+                        JOptionPane.ERROR_MESSAGE);
+                restaurarEstilosPopup();
                 dialog.dispose();
-                }
             }
+        }
 
-        }.execute();
+    }.execute();
 
     // ✅ Mostrar el dialog (modal)
     dialog.setVisible(true);
-    }
+}
+
 
 
 
