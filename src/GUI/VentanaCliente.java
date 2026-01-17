@@ -7,6 +7,7 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import java.awt.*;
@@ -78,6 +79,13 @@ public class VentanaCliente extends JFrame {
 
     private Timer timerBusqueda;
     private boolean validandoCedulaIna = false;
+
+    // Variables de paginación
+    private JPanel panelPaginacion;
+    private JPanel panelTabla;
+    private JButton btnPrimero, btnAnterior, btnSiguiente, btnUltimo;
+    private ArrayList<Cliente> clientesPaginadosTotal = new ArrayList<>();
+    private int paginaActual = 0;
 
     public VentanaCliente() {
         FUENTE_TITULO = cargarFuente("/resources/fonts/Poppins-Bold.ttf", Font.BOLD, 32f);
@@ -865,11 +873,11 @@ public class VentanaCliente extends JFrame {
         // Configuracion tabla
         String[] columnas = {
                 CargadorProperties.obtenerComponentes("tabla.col.cedula.ruc"),
-                CargadorProperties.obtenerComponentes("label.nombre"),
-                CargadorProperties.obtenerComponentes("label.telefono"),
-                CargadorProperties.obtenerComponentes("label.email"),
-                CargadorProperties.obtenerComponentes("label.ciudad"),
-                CargadorProperties.obtenerComponentes("label.direccion")
+                CargadorProperties.obtenerComponentes("combo.param.nombre"),
+                CargadorProperties.obtenerComponentes("combo.param.telefono"),
+                CargadorProperties.obtenerComponentes("combo.param.email"),
+                CargadorProperties.obtenerComponentes("combo.param.ciudad.desc"),
+                CargadorProperties.obtenerComponentes("combo.param.direccion")
         };
         modeloTabla = new DefaultTableModel(columnas, 0) {
             @Override
@@ -883,16 +891,65 @@ public class VentanaCliente extends JFrame {
         tablaResultados.setFont(FUENTE_BASE);
         tablaResultados.setForeground(COLOR_TEXTO_CAMPO);
 
-        // Estilizar header de la tabla
+        // Header
         tablaResultados.getTableHeader().setFont(new Font("Poppins", Font.BOLD, 13));
-        tablaResultados.getTableHeader().setBackground(COLOR_ENFASIS); // #ffa41c
-        tablaResultados.getTableHeader().setForeground(COLOR_TEXTO); // #4C57A9
+        tablaResultados.getTableHeader().setBackground(COLOR_ENFASIS);
+        tablaResultados.getTableHeader().setForeground(COLOR_TEXTO);
         tablaResultados.getTableHeader().setOpaque(true);
 
-        scrollTabla = new JScrollPane(tablaResultados);
-        scrollTabla.setVisible(false);
+        tablaResultados.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
-        panelCentral.add(scrollTabla, BorderLayout.CENTER);
+        tablaResultados.setBackground(COLOR_FONDO_CENTRAL);
+
+        DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (!isSelected)
+                    c.setBackground(Color.WHITE);
+                return c;
+            }
+        };
+        tablaResultados.setDefaultRenderer(Object.class, renderer);
+
+        scrollTabla = new JScrollPane(tablaResultados);
+        scrollTabla.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollTabla.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+        scrollTabla.setBorder(new LineBorder(COLOR_BORDE, 1));
+
+        scrollTabla.setBackground(COLOR_FONDO_CENTRAL);
+        scrollTabla.getViewport().setBackground(COLOR_FONDO_CENTRAL);
+
+        scrollTabla.getViewport().addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                int totalWidth = scrollTabla.getViewport().getWidth();
+                int cols = tablaResultados.getColumnModel().getColumnCount();
+                if (cols <= 0)
+                    return;
+
+                int base = totalWidth / cols;
+                int resto = totalWidth % cols;
+
+                for (int i = 0; i < cols; i++) {
+                    int w = base + (i == cols - 1 ? resto : 0);
+                    tablaResultados.getColumnModel().getColumn(i).setPreferredWidth(Math.max(80, w));
+                }
+            }
+        });
+
+        panelTabla = new JPanel(new BorderLayout());
+        panelTabla.setBackground(COLOR_FONDO_CENTRAL);
+        panelTabla.add(scrollTabla, BorderLayout.NORTH);
+        panelTabla.setVisible(false);
+
+        panelCentral.add(panelTabla, BorderLayout.CENTER);
+
+        // Panel de paginación
+        panelPaginacion = crearPanelPaginacion();
+        panelPaginacion.setVisible(false);
+        panelCentral.add(panelPaginacion, BorderLayout.SOUTH);
 
         panel.add(panelCentral, BorderLayout.CENTER);
 
@@ -1137,18 +1194,15 @@ public class VentanaCliente extends JFrame {
                 new EmptyBorder(8, 16, 8, 16)));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        // Configurar el UI para forzar el color del texto
         btn.setUI(new javax.swing.plaf.basic.BasicButtonUI() {
             @Override
             public void paint(Graphics g, JComponent c) {
                 JButton button = (JButton) c;
                 Graphics2D g2 = (Graphics2D) g.create();
 
-                // Dibujar el fondo
                 g2.setColor(button.getBackground());
                 g2.fillRoundRect(0, 0, button.getWidth(), button.getHeight(), 0, 0);
 
-                // Dibujar el texto en BLANCO
                 g2.setColor(COLOR_BLANCO);
                 g2.setFont(button.getFont());
                 FontMetrics fm = g2.getFontMetrics();
@@ -1171,36 +1225,22 @@ public class VentanaCliente extends JFrame {
         });
     }
 
-    // ============================================
-    // MÉTODOS PARA PERSONALIZAR POPUPS (JOptionPane)
-    // ============================================
-
-    /**
-     * Personaliza el JOptionPane con la paleta de colores y tipografía del sistema
-     * Debe llamarse ANTES de mostrar cualquier JOptionPane
-     */
+    //Metodos PopUps
     private void personalizarPopup() {
-        // Configurar fuente Poppins para todos los componentes del popup
         UIManager.put("OptionPane.messageFont", FUENTE_BASE);
         UIManager.put("OptionPane.buttonFont", FUENTE_BOTON);
 
-        // Configurar colores del panel principal
         UIManager.put("OptionPane.background", COLOR_FONDO_CENTRAL);
         UIManager.put("Panel.background", COLOR_FONDO_CENTRAL);
 
-        // Configurar colores de los botones
         UIManager.put("Button.background", COLOR_SECUNDARIO);
         UIManager.put("Button.foreground", COLOR_BLANCO);
-        UIManager.put("Button.select", new Color(82, 121, 54)); // Hover color
+        UIManager.put("Button.select", new Color(82, 121, 54)); 
         UIManager.put("Button.focus", new Color(82, 121, 54));
 
-        // Configurar texto del mensaje
         UIManager.put("OptionPane.messageForeground", COLOR_TEXTO_CAMPO);
     }
 
-    /**
-     * Restaura los valores por defecto de UIManager después de mostrar el popup
-     */
     private void restaurarEstilosPopup() {
         UIManager.put("OptionPane.messageFont", null);
         UIManager.put("OptionPane.buttonFont", null);
@@ -1362,7 +1402,172 @@ public class VentanaCliente extends JFrame {
         }
     }
 
-    // Metodo para cargar el panel segun la elección
+    private JPanel crearPanelPaginacion() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        panel.setBackground(COLOR_FONDO_CENTRAL);
+
+        btnPrimero = crearBotonPaginacion("primero.png");
+        btnAnterior = crearBotonPaginacion("anterior.png");
+        btnSiguiente = crearBotonPaginacion("siguiente.png");
+        btnUltimo = crearBotonPaginacion("ultimo.png");
+
+        btnPrimero.addActionListener(e -> {
+            paginaActual = 0;
+            actualizarTablaPaginada();
+        });
+
+        btnAnterior.addActionListener(e -> {
+            if (paginaActual > 0) {
+                paginaActual--;
+                actualizarTablaPaginada();
+            }
+        });
+
+        btnSiguiente.addActionListener(e -> {
+            int filasPorPagina = obtenerFilasPorPagina();
+            if (clientesPaginadosTotal != null
+                    && (paginaActual + 1) * filasPorPagina < clientesPaginadosTotal.size()) {
+                paginaActual++;
+                actualizarTablaPaginada();
+            }
+        });
+
+        btnUltimo.addActionListener(e -> {
+            if (clientesPaginadosTotal != null && !clientesPaginadosTotal.isEmpty()) {
+                int filasPorPagina = obtenerFilasPorPagina();
+                paginaActual = (int) Math.ceil((double) clientesPaginadosTotal.size() / filasPorPagina) - 1;
+                if (paginaActual < 0)
+                    paginaActual = 0;
+                actualizarTablaPaginada();
+            }
+        });
+
+        panel.add(btnPrimero);
+        panel.add(btnAnterior);
+        panel.add(btnSiguiente);
+        panel.add(btnUltimo);
+
+        return panel;
+    }
+
+    private JButton crearBotonPaginacion(String iconName) {
+        JButton btn = new JButton();
+        btn.setPreferredSize(new Dimension(50, 35));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBackground(COLOR_TEXTO);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createEmptyBorder());
+        btn.setContentAreaFilled(false);
+
+        try {
+            java.net.URL url = getClass().getResource("/resources/img/" + iconName);
+            if (url != null) {
+                ImageIcon icon = new ImageIcon(url);
+                Image img = icon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+                btn.setIcon(new ImageIcon(img));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        btn.setUI(new javax.swing.plaf.basic.BasicButtonUI() {
+            @Override
+            public void paint(Graphics g, JComponent c) {
+                JButton button = (JButton) c;
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                if (!button.isEnabled()) {
+                    g2.setColor(new Color(200, 200, 200));
+                } else if (button.getModel().isRollover()) {
+                    g2.setColor(button.getBackground().brighter());
+                } else {
+                    g2.setColor(button.getBackground());
+                }
+
+                g2.fillRoundRect(0, 0, button.getWidth(), button.getHeight(), 10, 10);
+                g2.dispose();
+                super.paint(g, c);
+            }
+        });
+
+        return btn;
+    }
+
+    private int obtenerFilasPorPagina() {
+        if (panelBusqueda != null && panelBusqueda.isVisible()) {
+            return 15;
+        }
+        return 17;
+    }
+
+    private void actualizarTablaPaginada() {
+        modeloTabla.setRowCount(0);
+
+        if (clientesPaginadosTotal == null || clientesPaginadosTotal.isEmpty()) {
+            panelTabla.setVisible(false);
+            if (btnPrimero != null) {
+                btnPrimero.setEnabled(false);
+                btnAnterior.setEnabled(false);
+                btnSiguiente.setEnabled(false);
+                btnUltimo.setEnabled(false);
+            }
+            return;
+        }
+
+        panelTabla.setVisible(true);
+
+        int filasPorPagina = obtenerFilasPorPagina();
+        int totalRegistros = clientesPaginadosTotal.size();
+        int totalPaginas = (int) Math.ceil((double) totalRegistros / filasPorPagina);
+
+        if (paginaActual >= totalPaginas)
+            paginaActual = totalPaginas - 1;
+        if (paginaActual < 0)
+            paginaActual = 0;
+
+        int inicio = paginaActual * filasPorPagina;
+        int fin = Math.min(inicio + filasPorPagina, totalRegistros);
+
+        for (int i = inicio; i < fin; i++) {
+            Cliente c = clientesPaginadosTotal.get(i);
+            modeloTabla.addRow(new Object[] {
+                    c.getCedRuc(),
+                    c.getNombre(),
+                    c.getTelefono(),
+                    c.getEmail(),
+                    c.getCiudad(),
+                    c.getDireccion()
+            });
+        }
+
+        int filasActuales = fin - inicio;
+        int alturaFila = 25;
+        int alturaHeader = 35;
+        int alturaBorde = 2;
+        int alturaTotal = (filasActuales * alturaFila) + alturaHeader + alturaBorde;
+
+        scrollTabla.setPreferredSize(new Dimension(1300, alturaTotal));
+        scrollTabla.setMinimumSize(new Dimension(1300, alturaTotal));
+        scrollTabla.setMaximumSize(new Dimension(1300, alturaTotal));
+
+        panelTabla.setPreferredSize(new Dimension(1300, alturaTotal));
+        panelTabla.setMinimumSize(new Dimension(1300, alturaTotal));
+        panelTabla.setMaximumSize(new Dimension(1300, alturaTotal));
+
+        scrollTabla.revalidate();
+        scrollTabla.repaint();
+        panelTabla.revalidate();
+        panelTabla.repaint();
+
+        if (btnPrimero != null) {
+            btnPrimero.setEnabled(paginaActual > 0);
+            btnAnterior.setEnabled(paginaActual > 0);
+            btnSiguiente.setEnabled(paginaActual < totalPaginas - 1);
+            btnUltimo.setEnabled(paginaActual < totalPaginas - 1);
+        }
+    }
+
     private void cambiarPanel() {
         int seleccion = comboOpciones.getSelectedIndex();
 
@@ -1398,16 +1603,22 @@ public class VentanaCliente extends JFrame {
 
         if (CargadorProperties.obtenerComponentes("combo.consulta.general").equals(tipo)) {
             panelBusqueda.setVisible(false);
-            scrollTabla.setVisible(true);
+            panelTabla.setVisible(true);
             consultarGeneral();
         } else if (CargadorProperties.obtenerComponentes("combo.consulta.parametro").equals(tipo)) {
             panelBusqueda.setVisible(true);
-            scrollTabla.setVisible(true);
+            panelTabla.setVisible(true);
             modeloTabla.setRowCount(0);
+            clientesPaginadosTotal = new ArrayList<>();
+            panelPaginacion.setVisible(false);
         } else {
             panelBusqueda.setVisible(false);
-            scrollTabla.setVisible(false);
+            panelTabla.setVisible(false);
+            panelPaginacion.setVisible(false);
+            clientesPaginadosTotal = new ArrayList<>();
         }
+        panelContenedor.revalidate();
+        panelContenedor.repaint();
     }
 
     // Vuelve al panel vacío
@@ -1732,9 +1943,8 @@ public class VentanaCliente extends JFrame {
 
     private void consultarGeneral() {
         Cliente cli = new Cliente();
-        ArrayList<Cliente> clientes = cli.consultarTodos();
-
-        modeloTabla.setRowCount(0);
+        ArrayList<Cliente> clientes = cli.consultarTodos(); // Usando el método existente que parece ser el correcto
+                                                            // según el código previo
 
         if (clientes.isEmpty()) {
             personalizarPopup();
@@ -1743,19 +1953,17 @@ public class VentanaCliente extends JFrame {
                     CargadorProperties.obtenerMessages("FC_C_006"),
                     JOptionPane.INFORMATION_MESSAGE);
             restaurarEstilosPopup();
+            clientesPaginadosTotal = new ArrayList<>();
+            paginaActual = 0;
+            actualizarTablaPaginada();
+            panelPaginacion.setVisible(false);
             return;
         }
 
-        for (Cliente c : clientes) {
-            modeloTabla.addRow(new Object[] {
-                    c.getCedRuc(),
-                    c.getNombre(),
-                    c.getTelefono(),
-                    c.getEmail(),
-                    c.getCiudad(),
-                    c.getDireccion()
-            });
-        }
+        clientesPaginadosTotal = clientes;
+        paginaActual = 0;
+        actualizarTablaPaginada();
+        panelPaginacion.setVisible(true);
     }
 
     // Busqueda en tiempo real para la consulta por parámetro
@@ -1788,7 +1996,10 @@ public class VentanaCliente extends JFrame {
         String texto = txtBusqueda.getText().trim();
 
         if (texto.isEmpty()) {
-            modeloTabla.setRowCount(0);
+            clientesPaginadosTotal = new ArrayList<>();
+            paginaActual = 0;
+            actualizarTablaPaginada();
+            panelPaginacion.setVisible(false);
             return;
         }
 
@@ -1810,8 +2021,6 @@ public class VentanaCliente extends JFrame {
             resultados = cli.buscarPorDireccionDP(texto);
         }
 
-        modeloTabla.setRowCount(0);
-
         if (resultados.isEmpty()) {
             personalizarPopup();
             JOptionPane.showMessageDialog(this,
@@ -1819,19 +2028,17 @@ public class VentanaCliente extends JFrame {
                     CargadorProperties.obtenerMessages("FC_C_006"),
                     JOptionPane.INFORMATION_MESSAGE);
             restaurarEstilosPopup();
+            clientesPaginadosTotal = new ArrayList<>();
+            paginaActual = 0;
+            actualizarTablaPaginada();
+            panelPaginacion.setVisible(false);
             return;
         }
 
-        for (Cliente c : resultados) {
-            modeloTabla.addRow(new Object[] {
-                    c.getCedRuc(),
-                    c.getNombre(),
-                    c.getTelefono(),
-                    c.getEmail(),
-                    c.getCiudad(),
-                    c.getDireccion()
-            });
-        }
+        clientesPaginadosTotal = resultados;
+        paginaActual = 0;
+        actualizarTablaPaginada();
+        panelPaginacion.setVisible(true);
     }
 
     // Métods para limpiar campos
@@ -1894,17 +2101,17 @@ public class VentanaCliente extends JFrame {
 
         btnEliminar.setEnabled(false);
     }
-    
+
     private Font cargarFuente(String ruta, int estilo, float tamaño) {
         try {
-            Font fuente = Font.createFont(Font.TRUETYPE_FONT, 
-                getClass().getResourceAsStream(ruta));
+            Font fuente = Font.createFont(Font.TRUETYPE_FONT,
+                    getClass().getResourceAsStream(ruta));
             return fuente.deriveFont(estilo, tamaño);
         } catch (Exception e) {
             System.err.println("No se pudo cargar la fuente Poppins desde: " + ruta);
             e.printStackTrace();
             // Fuente de respaldo si Poppins no se carga
-            return new Font("SansSerif", estilo, (int)tamaño);
+            return new Font("SansSerif", estilo, (int) tamaño);
         }
     }
 }
