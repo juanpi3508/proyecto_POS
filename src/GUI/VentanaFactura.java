@@ -116,6 +116,13 @@ public class VentanaFactura extends JFrame {
     private DefaultTableModel modeloProductosConsulta;
     private JTextField txtSubtotalConsulta, txtIVAConsulta, txtTotalConsulta;
 
+    // Variables de paginación
+    private JPanel panelPaginacion;
+    private JButton btnPrimero, btnAnterior, btnSiguiente, btnUltimo;
+    private ArrayList<Factura> facturasPaginadasTotal = new ArrayList<>();
+    private int paginaActual = 0;
+    private final int FILAS_POR_PAGINA = 18;
+
     // **VARIABLES DATOS**
     private Cliente clienteSeleccionado;
     private ArrayList<ProxFac> productosFactura;
@@ -269,7 +276,7 @@ public class VentanaFactura extends JFrame {
 
         txtCantidadCrear = new JTextField();
         estilizarCampoTexto(txtCantidadCrear);
-        txtCantidadCrear.setPreferredSize(new Dimension(80, 25));
+        txtCantidadCrear.setPreferredSize(new Dimension(120, 25));
 
         txtSubtotalCrear = crearCampoTotal(false);
         txtIVACrear = crearCampoTotal(false);
@@ -360,6 +367,7 @@ public class VentanaFactura extends JFrame {
         panel.add(txtCantidadCrear, gbc);
 
         gbc.gridx = 7;
+        gbc.insets = new Insets(5, 3, 0, 10); // Reducir margen izquierdo para acercar el botón
         JButton btnAgregar = new JButton(CargadorProperties.obtenerComponentes("FC_UI_003"));
         btnAgregar.setPreferredSize(new Dimension(90, 25));
         estilizarBotonPrimario(btnAgregar);
@@ -372,6 +380,7 @@ public class VentanaFactura extends JFrame {
                 txtIVACrear,
                 txtTotalCrear));
         panel.add(btnAgregar, gbc);
+        gbc.insets = new Insets(5, 10, 0, 10); // Restaurar insets
 
         // Error cantidad
         gbc.gridx = 6;
@@ -506,7 +515,7 @@ public class VentanaFactura extends JFrame {
 
         txtCantidadMod = new JTextField();
         estilizarCampoTexto(txtCantidadMod);
-        txtCantidadMod.setPreferredSize(new Dimension(80, 25));
+        txtCantidadMod.setPreferredSize(new Dimension(120, 25));
         lblErrorCantidadMod = crearLabelError();
 
         txtSubtotalMod = crearCampoTotal(false);
@@ -668,6 +677,7 @@ public class VentanaFactura extends JFrame {
         panel.add(txtCantidadMod, gbc);
 
         gbc.gridx = 7;
+        gbc.insets = new Insets(5, 3, 0, 10); // Reducir margen izquierdo para acercar el botón
         JButton btnAgregar = new JButton(CargadorProperties.obtenerComponentes("FC_UI_003"));
         btnAgregar.setPreferredSize(new Dimension(90, 25));
         estilizarBotonPrimario(btnAgregar);
@@ -675,6 +685,7 @@ public class VentanaFactura extends JFrame {
                 cmbProductoMod, txtCantidadMod, lblErrorCantidadMod,
                 modeloProductosMod, txtSubtotalMod, txtIVAMod, txtTotalMod));
         panel.add(btnAgregar, gbc);
+        gbc.insets = new Insets(5, 10, 0, 10); // Restaurar insets
 
         // Error cantidad
         gbc.gridx = 6;
@@ -880,20 +891,190 @@ public class VentanaFactura extends JFrame {
         return panel;
     }
 
+    // Método para crear el panel de paginación
+    private JPanel crearPanelPaginacion() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        panel.setBackground(COLOR_FONDO_CENTRAL);
+
+        btnPrimero = crearBotonPaginacion("primero.png");
+        btnAnterior = crearBotonPaginacion("anterior.png");
+        btnSiguiente = crearBotonPaginacion("siguiente.png");
+        btnUltimo = crearBotonPaginacion("ultimo.png");
+
+        btnPrimero.addActionListener(e -> {
+            paginaActual = 0;
+            actualizarTablaPaginada();
+        });
+        btnAnterior.addActionListener(e -> {
+            if (paginaActual > 0) {
+                paginaActual--;
+                actualizarTablaPaginada();
+            }
+        });
+        btnSiguiente.addActionListener(e -> {
+            if (facturasPaginadasTotal != null
+                    && (paginaActual + 1) * FILAS_POR_PAGINA < facturasPaginadasTotal.size()) {
+                paginaActual++;
+                actualizarTablaPaginada();
+            }
+        });
+        btnUltimo.addActionListener(e -> {
+            if (facturasPaginadasTotal != null && !facturasPaginadasTotal.isEmpty()) {
+                paginaActual = (int) Math.ceil((double) facturasPaginadasTotal.size() / FILAS_POR_PAGINA) - 1;
+                if (paginaActual < 0)
+                    paginaActual = 0;
+                actualizarTablaPaginada();
+            }
+        });
+
+        panel.add(btnPrimero);
+        panel.add(btnAnterior);
+        panel.add(btnSiguiente);
+        panel.add(btnUltimo);
+
+        return panel;
+    }
+
+    private JButton crearBotonPaginacion(String iconName) {
+        JButton btn = new JButton();
+        btn.setPreferredSize(new Dimension(50, 35)); // Tamaño uniforme y rectangular/redondeado
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBackground(COLOR_TEXTO); // Fondo Azul solicitado
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createEmptyBorder());
+        btn.setContentAreaFilled(false); // Importante para bordes redondeados personalizados
+
+        // Cargar icono con escalado
+        try {
+            java.net.URL url = getClass().getResource("/resources/img/" + iconName);
+            if (url != null) {
+                ImageIcon icon = new ImageIcon(url);
+                // Escalar icono un poco más pequeño para que quepa en el botón
+                Image img = icon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+                btn.setIcon(new ImageIcon(img));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // UI Personalizada para fondo redondeado y hover
+        btn.setUI(new javax.swing.plaf.basic.BasicButtonUI() {
+            @Override
+            public void paint(Graphics g, JComponent c) {
+                JButton button = (JButton) c;
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Colores
+                if (!button.isEnabled()) {
+                    g2.setColor(new Color(200, 200, 200)); // Gris si deshabilitado
+                } else if (button.getModel().isRollover()) {
+                    g2.setColor(button.getBackground().brighter()); // Más claro al pasar mouse
+                } else {
+                    g2.setColor(button.getBackground()); // Color normal
+                }
+
+                // Dibujar fondo redondeado
+                g2.fillRoundRect(0, 0, button.getWidth(), button.getHeight(), 10, 10);
+
+                g2.dispose();
+
+                // Pintar icono centrado (super.paint llamará a paintIcon)
+                super.paint(g, c);
+            }
+        });
+
+        return btn;
+    }
+
+    // Actualiza la tabla con los datos de la página actual
+    private void actualizarTablaPaginada() {
+        modeloTablaResultados.setRowCount(0);
+
+        if (facturasPaginadasTotal == null || facturasPaginadasTotal.isEmpty()) {
+            if (btnPrimero != null) {
+                btnPrimero.setEnabled(false);
+                btnAnterior.setEnabled(false);
+                btnSiguiente.setEnabled(false);
+                btnUltimo.setEnabled(false);
+            }
+            return;
+        }
+
+        // Determinar filas por página según el tipo de consulta
+        int filasPorPagina = 18; // Default (General)
+        // Si el panel de búsqueda por cédula es visible, es Específica -> 16 filas
+        if (panelBusqueda != null && panelBusqueda.isVisible()) {
+            filasPorPagina = 16;
+        }
+
+        int totalRegistros = facturasPaginadasTotal.size();
+        int totalPaginas = (int) Math.ceil((double) totalRegistros / filasPorPagina);
+
+        if (paginaActual >= totalPaginas)
+            paginaActual = totalPaginas - 1;
+        if (paginaActual < 0)
+            paginaActual = 0;
+
+        int inicio = paginaActual * filasPorPagina;
+        int fin = Math.min(inicio + filasPorPagina, totalRegistros);
+
+        for (int i = inicio; i < fin; i++) {
+            Factura f = facturasPaginadasTotal.get(i);
+
+            // Buscar nombre cliente para mostrar si no está cargado
+            String nombreCliente = "N/A";
+            Cliente cli = new Cliente();
+            Cliente c = cli.verificarPorIdDP(f.getCodigoCliente());
+            if (c != null)
+                nombreCliente = c.getNombre();
+
+            modeloTablaResultados.addRow(new Object[] {
+                    f.getCodigo(),
+                    nombreCliente,
+                    f.getFechaHora() != null ? f.getFechaHora().format(FMT_FECHA) : "",
+                    String.format("%.2f", f.getSubtotal()),
+                    String.format("%.2f", f.getIva()),
+                    String.format("%.2f", f.getTotal()),
+                    f.getTipo(),
+                    f.getEstado()
+            });
+        }
+
+        // Actualizar estado botones
+        if (btnPrimero != null) {
+            btnPrimero.setEnabled(paginaActual > 0);
+            btnAnterior.setEnabled(paginaActual > 0);
+            btnSiguiente.setEnabled(paginaActual < totalPaginas - 1);
+            btnUltimo.setEnabled(paginaActual < totalPaginas - 1);
+        }
+    }
+
     private JPanel crearPanelConsultar() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         panel.setBackground(COLOR_FONDO_CENTRAL);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // Panel superior: Tipo de consulta (Sin título)
-        JPanel panelTipo = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        // Panel superior: Tipo de consulta (Sin título)
+        JPanel panelTipo = new JPanel(new GridBagLayout()); // Cambiado a GridBagLayout para alinear verticalmente
         panelTipo.setBackground(COLOR_FONDO_CENTRAL);
+        GridBagConstraints gbcTipo = new GridBagConstraints();
+        gbcTipo.insets = new Insets(5, 0, 5, 0);
+
         String[] opcionesTipo = CargadorProperties.obtenerComponentes("CMB_TIPO_CONSULTA").split(",");
         comboTipoConsulta = new JComboBox<>(opcionesTipo);
         estilizarComboBox(comboTipoConsulta);
         comboTipoConsulta.setPreferredSize(new Dimension(250, 30));
         comboTipoConsulta.addActionListener(e -> cambiarTipoConsulta());
-        panelTipo.add(comboTipoConsulta);
+
+        gbcTipo.gridx = 0;
+        gbcTipo.gridy = 0;
+        panelTipo.add(comboTipoConsulta, gbcTipo);
+
+        // Inicializar panel paginación (se agregará al CENTRO, debajo de la tabla)
+        panelPaginacion = crearPanelPaginacion();
+        panelPaginacion.setVisible(false); // Oculto inicialmente
 
         panel.add(panelTipo, BorderLayout.NORTH);
 
@@ -939,7 +1120,7 @@ public class VentanaFactura extends JFrame {
         // Fila 2: Error (centrado debajo del campo)
         gbcBusq.gridx = 1;
         gbcBusq.gridy = 1;
-        gbcBusq.insets = new Insets(0, 5, 5, 5);
+        gbcBusq.insets = new Insets(0, 5, 0, 5); // Margen inferior eliminado
         gbcBusq.anchor = GridBagConstraints.WEST;
         panelBusqueda.add(lblErrorCedulaConsulta, gbcBusq);
 
@@ -979,17 +1160,28 @@ public class VentanaFactura extends JFrame {
         });
 
         scrollTablaResultados = new JScrollPane(tablaResultados);
-        scrollTablaResultados.setPreferredSize(new Dimension(900, 450)); // Mantener el espacio solicitado
+        scrollTablaResultados.setBorder(BorderFactory.createEmptyBorder()); // Eliminar borde visual
+        scrollTablaResultados.getViewport().setBackground(COLOR_FONDO_CENTRAL); // Fondo integrado
+        scrollTablaResultados.setPreferredSize(new Dimension(900, 500)); // Aumentar un poco altura para 20 filas
         gbcC.gridy = 1;
         gbcC.weighty = 0.3; // Darle peso para que se mantenga grande
         gbcC.fill = GridBagConstraints.BOTH;
         panelCentral.add(scrollTablaResultados, gbcC);
 
+        // Panel de Paginación (Debajo de la tabla)
+        gbcC.gridy = 2;
+        gbcC.weighty = 0.0;
+        gbcC.fill = GridBagConstraints.NONE; // No estirar
+        gbcC.anchor = GridBagConstraints.NORTH; // Pegar arriba
+        gbcC.insets = new Insets(0, 0, 10, 0); // Reducir espacio superior
+        panelCentral.add(panelPaginacion, gbcC);
+
         // Panel de detalle (inicialmente oculto)
         panelDetalleConsulta = crearPanelDetalleConsulta();
         panelDetalleConsulta.setVisible(false);
-        gbcC.gridy = 2;
+        gbcC.gridy = 3;
         gbcC.weighty = 0.7; // El detalle también toma espacio si es necesario
+        gbcC.fill = GridBagConstraints.BOTH; // Restaurar fill
         panelCentral.add(panelDetalleConsulta, gbcC);
 
         panel.add(panelCentral, BorderLayout.CENTER);
@@ -1040,6 +1232,9 @@ public class VentanaFactura extends JFrame {
                 scrollTablaResultados.setPreferredSize(new Dimension(900, 450));
                 scrollTablaResultados.revalidate();
                 scrollTablaResultados.repaint();
+            }
+            if (panelPaginacion != null) {
+                panelPaginacion.setVisible(true);
             }
         });
         panel.add(btnCerrarDetalle, gbc);
@@ -1168,14 +1363,28 @@ public class VentanaFactura extends JFrame {
                     CargadorProperties.obtenerMessages("FC_A_002"),
                     CargadorProperties.obtenerMessages("FC_C_006"),
                     JOptionPane.INFORMATION_MESSAGE);
+            // Limpiar paginación si no hay resultados y es la tabla de consulta
+            if (modelo == modeloTablaResultados) {
+                facturasPaginadasTotal.clear();
+                actualizarTablaPaginada();
+            }
             return;
+        }
+
+        // LOGICA PAGINACIÓN PARA CONSULTA
+        if (modelo == modeloTablaResultados) {
+            facturasPaginadasTotal = lista;
+            paginaActual = 0;
+            actualizarTablaPaginada();
+            return; // Salir, ya que actualizarTablaPaginada se encarga de llenar el modelo
         }
 
         // Obtener nombre del cliente
         Cliente clienteBuscado = cli.verificarDP(cedula);
         String nombreCliente = (clienteBuscado != null) ? clienteBuscado.getNombre() : "N/A";
 
-        // Cargar en tabla según número de columnas
+        // Cargar en tabla según número de columnas (LÓGICA ORIGINAL PARA
+        // MODIFICAR/ELIMINAR)
         int numColumnas = modelo.getColumnCount();
 
         for (Factura f : lista) {
@@ -1187,7 +1396,7 @@ public class VentanaFactura extends JFrame {
                         nombreCliente
                 });
             } else {
-                // Tabla ELIMINAR/CONSULTAR (8 columnas)
+                // Tabla ELIMINAR (8 columnas)
                 modelo.addRow(new Object[] {
                         f.getCodigo(),
                         nombreCliente,
@@ -1519,6 +1728,8 @@ public class VentanaFactura extends JFrame {
         JLabel lbl = new JLabel(" ");
         lbl.setForeground(COLOR_ACENTO);
         lbl.setFont(new Font("Poppins", Font.PLAIN, 11));
+        lbl.setPreferredSize(new Dimension(200, 30)); // Altura fija para evitar que los botones se muevan
+        lbl.setVerticalAlignment(SwingConstants.TOP);
         return lbl;
     }
 
@@ -1639,12 +1850,25 @@ public class VentanaFactura extends JFrame {
             Producto productoCompleto = prod.verificarPorCodigoDP(pxf.getCodigoProd());
 
             if (productoCompleto != null) {
+                // Validar stock (considerando que si estamos editando, la cantidad actual YA
+                // está
+                // reservada en memoria, pero NO restada del stock si es consulta fresca)
+                // Simplificación: Validar si la NUEVA cantidad excede el stock disponible
+                // real.
+                // Stock disponible en BD = Saldo Final.
+                // Si la factura ya existe (Modify), los items ya restaron stock?
+                // Depende de la lógica de negocio. Asumiremos validación simple: nueva cantidad
+                // vs saldo final.
+
                 String errorStock = ValidacionesFactura.validarStock(cantidad, productoCompleto.getSaldoFin());
                 if (errorStock != null) {
-                    mostrarMensaje(
+                    personalizarPopup(); // Asegurar estilo
+                    JOptionPane.showMessageDialog(this,
                             errorStock,
                             CargadorProperties.obtenerMessages("FC_C_004"),
                             JOptionPane.ERROR_MESSAGE);
+                    restaurarEstilosPopup();
+
                     modelo.setValueAt(productosFactura.get(fila).getCantidad(), fila, 2);
                     return;
                 }
@@ -1669,8 +1893,23 @@ public class VentanaFactura extends JFrame {
             calcularTotales(txtSub, txtIva, txtTot);
 
         } catch (NumberFormatException ex) {
+            String valStr = modelo.getValueAt(fila, 2).toString().trim();
+
+            // Si son solo dígitos pero falla parseInt, es overflow -> Revertir
+            // silenciosamente
+            if (valStr.matches("\\d+")) {
+                modelo.setValueAt(productosFactura.get(fila).getCantidad(), fila, 2);
+                return;
+            }
+
+            // Determinar tipo de error para mostrar mensaje adecuado
+            String mensajeError = CargadorProperties.obtenerMessages("FC_A_011"); // Por defecto: Solo enteros
+            if (valStr.startsWith("-")) {
+                mensajeError = CargadorProperties.obtenerMessages("FC_A_023"); // Negativos
+            }
+
             mostrarMensaje(
-                    CargadorProperties.obtenerMessages("FC_A_023"),
+                    mensajeError,
                     CargadorProperties.obtenerMessages("FC_C_004"),
                     JOptionPane.ERROR_MESSAGE);
             modelo.setValueAt(productosFactura.get(fila).getCantidad(), fila, 2);
@@ -1800,21 +2039,27 @@ public class VentanaFactura extends JFrame {
             return;
         }
 
-        // Validar cantidad
+        // Validar cantidad usando lógica centralizada
         String cantidadStr = txtCantidad.getText().trim();
-        if (cantidadStr.isEmpty()) {
-            mostrarError(lblError, CargadorProperties.obtenerMessages("FC_A_014"));
+        String errorCantidad = ValidacionesFactura.validarCantidad(cantidadStr);
+
+        if (errorCantidad != null) {
+            mostrarError(lblError, errorCantidad);
             return;
         }
 
         int cantidad;
         try {
             cantidad = Integer.parseInt(cantidadStr);
-            if (cantidad <= 0)
-                throw new NumberFormatException();
+            if (cantidad <= 0) {
+                // Esto no debería pasar si validarCantidad funcionó, pero por seguridad
+                mostrarError(lblError, CargadorProperties.obtenerMessages("FC_A_023"));
+                return;
+            }
             mostrarError(lblError, null);
         } catch (NumberFormatException e) {
-            mostrarError(lblError, CargadorProperties.obtenerMessages("FC_A_020"));
+            // Número muy grande (overflow) u otro error de formato raro -> No mostrar
+            // mensaje y no agregar
             return;
         }
 
@@ -1845,6 +2090,7 @@ public class VentanaFactura extends JFrame {
 
         if (cantidadTotal > stockDisponible) {
             String errorStock = ValidacionesFactura.validarStockAcumulado(cantidad, cantidadExistente, stockDisponible);
+            lblError.setForeground(COLOR_ACENTO);
             mostrarError(lblError, errorStock);
             return;
         }
@@ -2178,6 +2424,10 @@ public class VentanaFactura extends JFrame {
                     scrollTablaResultados.setPreferredSize(new Dimension(900, 150));
                     scrollTablaResultados.revalidate();
                     scrollTablaResultados.repaint();
+
+                    if (panelPaginacion != null) {
+                        panelPaginacion.setVisible(false);
+                    }
                 }
             }
 
@@ -2325,6 +2575,7 @@ public class VentanaFactura extends JFrame {
 
     // **METODOS NEGOCIO CONSULTAR**
     // Cambia tipo de consulta y muestra panel correspondiente
+    // Cambia tipo de consulta y muestra panel correspondiente
     private void cambiarTipoConsulta() {
         String tipo = (String) comboTipoConsulta.getSelectedItem();
         String[] opciones = CargadorProperties.obtenerComponentes("CMB_TIPO_CONSULTA").split(",");
@@ -2335,18 +2586,41 @@ public class VentanaFactura extends JFrame {
         if (tipo.equals(opciones[1])) {
             // Consulta General (todas las facturas APR)
             panelBusqueda.setVisible(false);
+            // Mostrar scroll en general
+            if (scrollTablaResultados != null) {
+                scrollTablaResultados.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+                scrollTablaResultados.setPreferredSize(new Dimension(900, 480)); // Altura para 18 filas
+            }
+
             consultarTodos();
         } else if (tipo.equals(opciones[2])) {
             // Consulta Por Cliente (buscar por cédula)
             panelBusqueda.setVisible(true);
-            panelBusqueda.setVisible(true);
+            // Ocultar scroll en específica
+            // Ocultar scroll en específica
+            if (scrollTablaResultados != null) {
+                scrollTablaResultados.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+                scrollTablaResultados.setPreferredSize(new Dimension(900, 425)); // Altura exacta para 16 filas (16*25 +
+                                                                                 // header)
+            }
+
             modeloTablaResultados.setRowCount(0);
+            facturasPaginadasTotal.clear();
+            actualizarTablaPaginada();
             panelDetalleConsulta.setVisible(false);
         } else {
             // "Seleccione..." (opción por defecto)
             panelBusqueda.setVisible(false);
+            panelPaginacion.setVisible(false); // Ocultar si no hay selección
             modeloTablaResultados.setRowCount(0);
+            facturasPaginadasTotal.clear();
+            actualizarTablaPaginada();
             panelDetalleConsulta.setVisible(false);
+        }
+
+        // Mostrar paginación si hay un tipo válido seleccionado
+        if (tipo.equals(opciones[1]) || tipo.equals(opciones[2])) {
+            panelPaginacion.setVisible(true);
         }
     }
 
@@ -2357,34 +2631,10 @@ public class VentanaFactura extends JFrame {
 
         modeloTablaResultados.setRowCount(0);
 
-        if (lista == null || lista.isEmpty()) {
-            mostrarMensaje(
-                    CargadorProperties.obtenerMessages("FC_A_001"),
-                    CargadorProperties.obtenerMessages("FC_C_006"),
-                    JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        for (Factura f : lista) {
-            // Obtener nombre del cliente
-            Cliente cli = new Cliente();
-            Cliente clienteCompleto = cli.verificarPorIdDP(f.getCodigoCliente());
-            String nombreCliente = (clienteCompleto != null) ? clienteCompleto.getNombre() : "N/A";
-
-            modeloTablaResultados.addRow(new Object[] {
-                    f.getCodigo(),
-                    nombreCliente,
-                    f.getFechaHora() != null ? f.getFechaHora().format(FMT_FECHA) : "",
-                    String.format("%.2f", f.getSubtotal()),
-                    String.format("%.2f", f.getIva()),
-                    String.format("%.2f", f.getTotal()),
-                    f.getTipo(),
-                    f.getEstado()
-            });
-        }
-
-        // Ocultar detalle al mostrar lista general
-        panelDetalleConsulta.setVisible(false);
+        // Usar lógica de paginación
+        facturasPaginadasTotal = (lista != null) ? lista : new ArrayList<>();
+        paginaActual = 0;
+        actualizarTablaPaginada();
     }
 
     // **METODOS AUXILIARES DATOS**
@@ -2458,7 +2708,7 @@ public class VentanaFactura extends JFrame {
         if (btnGuardarCrear != null)
             btnGuardarCrear.setEnabled(false);
 
-        generarYMostrarCodigo();
+        lblCodigoGenerado.setText("Código: Pendiente...");
     }
 
     // Limpia panel modificar y resetea variables
