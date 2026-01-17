@@ -38,11 +38,24 @@ public class ValidacionesFactura {
             return CargadorProperties.obtenerMessages("FC_A_023");
         }
 
+        String textoLimpio = cantidadStr.trim();
+
+        // Detectar números negativos específicamente
+        if (textoLimpio.startsWith("-")) {
+            return CargadorProperties.obtenerMessages("FC_A_023");
+        }
+
+        // Validar que solo contenga dígitos (sin puntos ni comas)
+        if (!textoLimpio.matches("\\d+")) {
+            return CargadorProperties.obtenerMessages("FC_A_011");
+        }
+
         try {
-            int cantidad = Integer.parseInt(cantidadStr);
+            int cantidad = Integer.parseInt(textoLimpio);
             return validarCantidad(cantidad);
         } catch (NumberFormatException e) {
-            return CargadorProperties.obtenerMessages("FC_A_023");
+            // El número es demasiado grande para un int - no mostrar mensaje de error
+            return null;
         }
     }
 
@@ -63,7 +76,7 @@ public class ValidacionesFactura {
     // Validar stock disponible
     public static String validarStock(int cantidad, int stockDisponible) {
         if (cantidad > stockDisponible) {
-            return String.format(CargadorProperties.obtenerMessages("FC_A_024"), cantidad, stockDisponible);
+            return String.format(CargadorProperties.obtenerMessages("FC_A_025"), stockDisponible);
         }
         return null;
     }
@@ -72,12 +85,7 @@ public class ValidacionesFactura {
     public static String validarStockAcumulado(int cantidadNueva, int cantidadExistente, int stockDisponible) {
         int total = cantidadNueva + cantidadExistente;
         if (total > stockDisponible) {
-            String msg = String.format(CargadorProperties.obtenerMessages("FC_A_025"), cantidadNueva, total,
-                    stockDisponible);
-            if (cantidadExistente > 0) {
-                msg += String.format(CargadorProperties.obtenerMessages("FC_A_026"), cantidadExistente);
-            }
-            return msg;
+            return String.format(CargadorProperties.obtenerMessages("FC_A_025"), stockDisponible);
         }
         return null;
     }
