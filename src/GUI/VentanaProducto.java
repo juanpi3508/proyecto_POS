@@ -20,6 +20,7 @@ import javax.imageio.ImageIO;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 
 public class VentanaProducto extends JFrame {
 
@@ -85,6 +86,13 @@ public class VentanaProducto extends JFrame {
     private JScrollPane scrollTabla;
     private JPanel panelBusqueda;
     private Timer timerBusqueda;
+
+    // Variables de paginación
+    private JPanel panelPaginacion;
+    private JPanel panelTabla;
+    private JButton btnPrimero, btnAnterior, btnSiguiente, btnUltimo;
+    private ArrayList<Producto> productosPaginadosTotal = new ArrayList<>();
+    private int paginaActual = 0;
 
     public VentanaProducto() {
         FUENTE_TITULO = cargarFuente("/resources/fonts/Poppins-Bold.ttf", Font.BOLD, 32f);
@@ -202,6 +210,7 @@ public class VentanaProducto extends JFrame {
     private JPanel crearPanelIngresar() {
         // Wrapper centrado
         JPanel panelWrapper = new JPanel(new GridBagLayout());
+        panelWrapper.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gw = new GridBagConstraints();
         gw.gridx = 0;
         gw.gridy = 0;
@@ -210,12 +219,14 @@ public class VentanaProducto extends JFrame {
 
         // Panel con 2 columnas
         JPanel panelPrincipal = new JPanel(new GridBagLayout());
+        panelPrincipal.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gp = new GridBagConstraints();
         gp.insets = new Insets(0, 0, 0, 0);
         gp.anchor = GridBagConstraints.NORTHWEST;
 
         // Panel Izquierdo para los campos
         JPanel panelCampos = new JPanel(new GridBagLayout());
+        panelCampos.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 0, 10);
         gbc.anchor = GridBagConstraints.WEST;
@@ -269,7 +280,7 @@ public class VentanaProducto extends JFrame {
         lblImagenPreviewIng.setBorder(BorderFactory.createLineBorder(Color.GRAY));
 
         btnSeleccionarImagenIng = new JButton(CargadorProperties.obtenerComponentes("boton.seleccionar.imagen"));
-        estilizarBotonPrimario(btnSeleccionarImagenIng);
+        estilizarBotonTercero(btnSeleccionarImagenIng);
         btnSeleccionarImagenIng.addActionListener(e -> seleccionarImagenIngresar());
 
         // Labels error
@@ -334,7 +345,7 @@ public class VentanaProducto extends JFrame {
         lblCodigoIng.setForeground(COLOR_TEXTO);
         panelCampos.add(lblCodigoIng, gbc);
         gbc.gridx = 1;
-        txtCodigoIng.setEnabled(false); 
+        txtCodigoIng.setEnabled(false);
         panelCampos.add(txtCodigoIng, gbc);
 
         fila++;
@@ -436,6 +447,7 @@ public class VentanaProducto extends JFrame {
 
         // Columna Derecha
         JPanel panelImagen = new JPanel(new GridBagLayout());
+        panelImagen.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gi = new GridBagConstraints();
         gi.insets = new Insets(5, 10, 0, 10);
         gi.anchor = GridBagConstraints.WEST;
@@ -494,6 +506,7 @@ public class VentanaProducto extends JFrame {
     private JPanel crearPanelModificar() {
         // Wrapper centrado
         JPanel panelWrapper = new JPanel(new GridBagLayout());
+        panelWrapper.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gw = new GridBagConstraints();
         gw.gridx = 0;
         gw.gridy = 0;
@@ -502,12 +515,14 @@ public class VentanaProducto extends JFrame {
 
         // Panel con 2 columnas
         JPanel panelPrincipal = new JPanel(new GridBagLayout());
+        panelPrincipal.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gp = new GridBagConstraints();
         gp.insets = new Insets(0, 0, 0, 0);
         gp.anchor = GridBagConstraints.NORTHWEST;
 
         // Panel Izquierdo para los campos
         JPanel panelCampos = new JPanel(new GridBagLayout());
+        panelCampos.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 0, 10);
         gbc.anchor = GridBagConstraints.WEST;
@@ -560,7 +575,7 @@ public class VentanaProducto extends JFrame {
         lblImagenPreviewMod.setBorder(BorderFactory.createLineBorder(Color.GRAY));
 
         btnSeleccionarImagenMod = new JButton(CargadorProperties.obtenerComponentes("boton.cambiar.imagen"));
-        estilizarBotonPrimario(btnSeleccionarImagenMod);
+        estilizarBotonTercero(btnSeleccionarImagenMod);
         btnSeleccionarImagenMod.setEnabled(false);
         btnSeleccionarImagenMod.addActionListener(e -> seleccionarImagenModificar());
 
@@ -601,6 +616,7 @@ public class VentanaProducto extends JFrame {
         gbc.gridx = 1;
         gbc.gridwidth = 3;
         JPanel panelCodigo = new JPanel(new BorderLayout(5, 0));
+        panelCodigo.setBackground(COLOR_FONDO_CENTRAL);
         panelCodigo.add(txtCodigoMod, BorderLayout.CENTER);
 
         JLabel lblLupa = new JLabel(CargadorProperties.obtenerComponentes("emoji.lupa"));
@@ -717,6 +733,7 @@ public class VentanaProducto extends JFrame {
 
         // Columna Derecha
         JPanel panelImagen = new JPanel(new GridBagLayout());
+        panelImagen.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gi = new GridBagConstraints();
         gi.insets = new Insets(5, 10, 0, 10);
         gi.anchor = GridBagConstraints.WEST;
@@ -771,6 +788,7 @@ public class VentanaProducto extends JFrame {
     private JPanel crearPanelEliminar() {
         // Wrapper centrado
         JPanel panelWrapper = new JPanel(new GridBagLayout());
+        panelWrapper.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gw = new GridBagConstraints();
         gw.gridx = 0;
         gw.gridy = 0;
@@ -779,14 +797,16 @@ public class VentanaProducto extends JFrame {
 
         // Panel con 2 columnas
         JPanel panelPrincipal = new JPanel(new GridBagLayout());
+        panelPrincipal.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gp = new GridBagConstraints();
         gp.insets = new Insets(0, 0, 0, 0);
         gp.anchor = GridBagConstraints.NORTHWEST;
 
         // Panel Izquierdo para los campos
         JPanel panelCampos = new JPanel(new GridBagLayout());
+        panelCampos.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 10, 10, 10);
+        gbc.insets = new Insets(5, 10, 0, 10);
         gbc.anchor = GridBagConstraints.WEST;
 
         // Componentes
@@ -871,6 +891,7 @@ public class VentanaProducto extends JFrame {
         gbc.gridx = 1;
         gbc.gridwidth = 3;
         JPanel panelCodigo = new JPanel(new BorderLayout(5, 0));
+        panelCodigo.setBackground(COLOR_FONDO_CENTRAL);
         panelCodigo.add(txtCodigoElim, BorderLayout.CENTER);
 
         JLabel lblLupa = new JLabel(CargadorProperties.obtenerComponentes("emoji.lupa"));
@@ -978,6 +999,7 @@ public class VentanaProducto extends JFrame {
 
         // Columna Derecha
         JPanel panelImagen = new JPanel(new GridBagLayout());
+        panelImagen.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gi = new GridBagConstraints();
         gi.insets = new Insets(5, 10, 0, 10);
         gi.anchor = GridBagConstraints.WEST;
@@ -1027,10 +1049,13 @@ public class VentanaProducto extends JFrame {
 
     private JPanel crearPanelConsultar() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.setBackground(COLOR_FONDO_CENTRAL);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // Panel superior con combo tipo de consulta CENTRADO
         JPanel panelTipo = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        panelTipo.setBackground(COLOR_FONDO_CENTRAL);
+
         comboTipoConsulta = new JComboBox<>(new String[] {
                 CargadorProperties.obtenerComponentes("combo.consulta.seleccione"),
                 CargadorProperties.obtenerComponentes("combo.consulta.general"),
@@ -1039,14 +1064,18 @@ public class VentanaProducto extends JFrame {
         estilizarComboBox(comboTipoConsulta);
         comboTipoConsulta.setPreferredSize(new Dimension(250, 30));
         comboTipoConsulta.addActionListener(e -> cambiarTipoConsulta());
+
         panelTipo.add(comboTipoConsulta);
         panel.add(panelTipo, BorderLayout.NORTH);
 
-        // Panel central (contiene búsqueda y tabla)
+        // Panel central (contiene búsqueda, tabla y paginación)
         JPanel panelCentral = new JPanel(new BorderLayout(5, 5));
+        panelCentral.setBackground(COLOR_FONDO_CENTRAL);
 
         // Panel de búsqueda CENTRADO
         panelBusqueda = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        panelBusqueda.setBackground(COLOR_FONDO_CENTRAL);
+
         txtBusqueda = new JTextField(20);
         estilizarCampoTexto(txtBusqueda);
         txtBusqueda.setPreferredSize(new Dimension(250, 25));
@@ -1089,13 +1118,15 @@ public class VentanaProducto extends JFrame {
         tablaResultados.setFont(FUENTE_BASE);
         tablaResultados.setForeground(COLOR_TEXTO_CAMPO);
 
-        // Estilizar header de la tabla
+        // Header
         tablaResultados.getTableHeader().setFont(new Font("Poppins", Font.BOLD, 13));
-        tablaResultados.getTableHeader().setBackground(COLOR_ENFASIS); // #ffa41c
-        tablaResultados.getTableHeader().setForeground(COLOR_TEXTO); // #4C57A9
+        tablaResultados.getTableHeader().setBackground(COLOR_ENFASIS);
+        tablaResultados.getTableHeader().setForeground(COLOR_TEXTO);
         tablaResultados.getTableHeader().setOpaque(true);
 
+        // Click para imagen
         tablaResultados.addMouseListener(new MouseAdapter() {
+            @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 1) {
                     int fila = tablaResultados.getSelectedRow();
@@ -1107,12 +1138,63 @@ public class VentanaProducto extends JFrame {
             }
         });
 
-        scrollTabla = new JScrollPane(tablaResultados);
-        scrollTabla.setBorder(new LineBorder(COLOR_BORDE, 1));
-        scrollTabla.getViewport().setBackground(COLOR_BLANCO);
-        scrollTabla.setVisible(false);
+        // ✅ Control total de ancho por código
+        tablaResultados.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
-        panelCentral.add(scrollTabla, BorderLayout.CENTER);
+        // ✅ Quitar franja blanca: el “espacio vacío” será crema
+        tablaResultados.setBackground(COLOR_FONDO_CENTRAL);
+
+        // ✅ Filas blancas (pero el fondo vacío crema)
+        DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (!isSelected) c.setBackground(Color.WHITE);
+                return c;
+            }
+        };
+        tablaResultados.setDefaultRenderer(Object.class, renderer);
+
+        // Crear JScrollPane para la tabla (PRIMERO crear scrollTabla)
+        scrollTabla = new JScrollPane(tablaResultados);
+        scrollTabla.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollTabla.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+        scrollTabla.setBorder(new LineBorder(COLOR_BORDE, 1));
+
+        // ✅ Fondo crema en el viewport
+        scrollTabla.setBackground(COLOR_FONDO_CENTRAL);
+        scrollTabla.getViewport().setBackground(COLOR_FONDO_CENTRAL);
+
+        scrollTabla.getViewport().addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                int totalWidth = scrollTabla.getViewport().getWidth();
+                int cols = tablaResultados.getColumnModel().getColumnCount();
+                if (cols <= 0) return;
+
+                int base = totalWidth / cols;
+                int resto = totalWidth % cols; // 👈 lo que sobra
+
+                for (int i = 0; i < cols; i++) {
+                    int w = base + (i == cols - 1 ? resto : 0); // 👈 última columna se come el resto
+                    tablaResultados.getColumnModel().getColumn(i).setPreferredWidth(Math.max(80, w));
+                }
+            }
+        });
+
+        // Panel contenedor: tabla pegada ARRIBA
+        panelTabla = new JPanel(new BorderLayout());
+        panelTabla.setBackground(COLOR_FONDO_CENTRAL);
+        panelTabla.add(scrollTabla, BorderLayout.NORTH);
+        panelTabla.setVisible(false);
+
+        panelCentral.add(panelTabla, BorderLayout.CENTER);
+
+        // Panel de paginación
+        panelPaginacion = crearPanelPaginacion();
+        panelPaginacion.setVisible(false);
+        panelCentral.add(panelPaginacion, BorderLayout.SOUTH);
 
         panel.add(panelCentral, BorderLayout.CENTER);
 
@@ -1120,6 +1202,184 @@ public class VentanaProducto extends JFrame {
         cargarParametrosBusqueda();
 
         return panel;
+    }
+
+
+    private JPanel crearPanelPaginacion() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        panel.setBackground(COLOR_FONDO_CENTRAL);
+
+        btnPrimero = crearBotonPaginacion("primero.png");
+        btnAnterior = crearBotonPaginacion("anterior.png");
+        btnSiguiente = crearBotonPaginacion("siguiente.png");
+        btnUltimo = crearBotonPaginacion("ultimo.png");
+
+        btnPrimero.addActionListener(e -> {
+            paginaActual = 0;
+            actualizarTablaPaginada();
+        });
+
+        btnAnterior.addActionListener(e -> {
+            if (paginaActual > 0) {
+                paginaActual--;
+                actualizarTablaPaginada();
+            }
+        });
+
+        btnSiguiente.addActionListener(e -> {
+            int filasPorPagina = obtenerFilasPorPagina();
+            if (productosPaginadosTotal != null
+                    && (paginaActual + 1) * filasPorPagina < productosPaginadosTotal.size()) {
+                paginaActual++;
+                actualizarTablaPaginada();
+            }
+        });
+
+        btnUltimo.addActionListener(e -> {
+            if (productosPaginadosTotal != null && !productosPaginadosTotal.isEmpty()) {
+                int filasPorPagina = obtenerFilasPorPagina();
+                paginaActual = (int) Math.ceil((double) productosPaginadosTotal.size() / filasPorPagina) - 1;
+                if (paginaActual < 0)
+                    paginaActual = 0;
+                actualizarTablaPaginada();
+            }
+        });
+
+        panel.add(btnPrimero);
+        panel.add(btnAnterior);
+        panel.add(btnSiguiente);
+        panel.add(btnUltimo);
+
+        return panel;
+    }
+
+    private JButton crearBotonPaginacion(String iconName) {
+        JButton btn = new JButton();
+        btn.setPreferredSize(new Dimension(50, 35));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBackground(COLOR_TEXTO);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createEmptyBorder());
+        btn.setContentAreaFilled(false);
+
+        // Cargar icono con escalado
+        try {
+            java.net.URL url = getClass().getResource("/resources/img/" + iconName);
+            if (url != null) {
+                ImageIcon icon = new ImageIcon(url);
+                Image img = icon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+                btn.setIcon(new ImageIcon(img));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // UI Personalizada para fondo redondeado y hover
+        btn.setUI(new javax.swing.plaf.basic.BasicButtonUI() {
+            @Override
+            public void paint(Graphics g, JComponent c) {
+                JButton button = (JButton) c;
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                if (!button.isEnabled()) {
+                    g2.setColor(new Color(200, 200, 200));
+                } else if (button.getModel().isRollover()) {
+                    g2.setColor(button.getBackground().brighter());
+                } else {
+                    g2.setColor(button.getBackground());
+                }
+
+                g2.fillRoundRect(0, 0, button.getWidth(), button.getHeight(), 10, 10);
+                g2.dispose();
+                super.paint(g, c);
+            }
+        });
+
+        return btn;
+    }
+
+    private int obtenerFilasPorPagina() {
+        if (panelBusqueda != null && panelBusqueda.isVisible()) {
+            return 15; // Consulta por parámetro
+        }
+        return 17; // Consulta general
+    }
+
+    private void actualizarTablaPaginada() {
+        modeloTabla.setRowCount(0);
+
+        if (productosPaginadosTotal == null || productosPaginadosTotal.isEmpty()) {
+            panelTabla.setVisible(false); // ✅ OCULTAR cuando no hay datos
+            if (btnPrimero != null) {
+                btnPrimero.setEnabled(false);
+                btnAnterior.setEnabled(false);
+                btnSiguiente.setEnabled(false);
+                btnUltimo.setEnabled(false);
+            }
+            return;
+        }
+
+        panelTabla.setVisible(true); // ✅ MOSTRAR cuando hay datos
+
+        int filasPorPagina = obtenerFilasPorPagina();
+        int totalRegistros = productosPaginadosTotal.size();
+        int totalPaginas = (int) Math.ceil((double) totalRegistros / filasPorPagina);
+
+        if (paginaActual >= totalPaginas)
+            paginaActual = totalPaginas - 1;
+        if (paginaActual < 0)
+            paginaActual = 0;
+
+        int inicio = paginaActual * filasPorPagina;
+        int fin = Math.min(inicio + filasPorPagina, totalRegistros);
+
+        // Llenar tabla con datos
+        for (int i = inicio; i < fin; i++) {
+            Producto p = productosPaginadosTotal.get(i);
+            modeloTabla.addRow(new Object[] {
+                    p.getCodigo(),
+                    p.getDescripcion(),
+                    p.getCategoria(),
+                    p.getNombreUmCompra(),
+                    p.getPrecioCompra(),
+                    p.getNombreUmVenta(),
+                    p.getPrecioVenta(),
+                    p.getSaldoIni(),
+                    p.getSaldoFin()
+            });
+        }
+
+        // ✅ AJUSTE DINÁMICO DE ALTURA (igual que VentanaFactura)
+        int filasActuales = fin - inicio;
+        int alturaFila = 25;
+        int alturaHeader = 35;
+        int alturaBorde = 2;
+        int alturaTotal = (filasActuales * alturaFila) + alturaHeader + alturaBorde;
+
+        // Ajustar scrollPane
+        scrollTabla.setPreferredSize(new Dimension(1300, alturaTotal));
+        scrollTabla.setMinimumSize(new Dimension(1300, alturaTotal));
+        scrollTabla.setMaximumSize(new Dimension(1300, alturaTotal));
+
+        // Ajustar panelTabla
+        panelTabla.setPreferredSize(new Dimension(1300, alturaTotal));
+        panelTabla.setMinimumSize(new Dimension(1300, alturaTotal));
+        panelTabla.setMaximumSize(new Dimension(1300, alturaTotal));
+
+        // Forzar actualización
+        scrollTabla.revalidate();
+        scrollTabla.repaint();
+        panelTabla.revalidate();
+        panelTabla.repaint();
+
+        // Actualizar estado de botones
+        if (btnPrimero != null) {
+            btnPrimero.setEnabled(paginaActual > 0);
+            btnAnterior.setEnabled(paginaActual > 0);
+            btnSiguiente.setEnabled(paginaActual < totalPaginas - 1);
+            btnUltimo.setEnabled(paginaActual < totalPaginas - 1);
+        }
     }
 
     private void cambiarPanel() {
@@ -1828,28 +2088,32 @@ public class VentanaProducto extends JFrame {
 
         if (CargadorProperties.obtenerComponentes("combo.consulta.general").equals(tipo)) {
             panelBusqueda.setVisible(false);
-            scrollTabla.setVisible(true);
+            panelTabla.setVisible(true);
             consultarGeneral();
         } else if (CargadorProperties.obtenerComponentes("combo.consulta.parametro").equals(tipo)) {
             panelBusqueda.setVisible(true);
-            scrollTabla.setVisible(true);
+            panelTabla.setVisible(true);
             modeloTabla.setRowCount(0);
+            productosPaginadosTotal = new ArrayList<>();
+            panelPaginacion.setVisible(false);
         } else {
             panelBusqueda.setVisible(false);
-            scrollTabla.setVisible(false);
+            panelTabla.setVisible(false);
+            panelPaginacion.setVisible(false);
+            productosPaginadosTotal = new ArrayList<>();
         }
-        
+
         panelContenedor.revalidate();
         panelContenedor.repaint();
     }
 
     private void consultarGeneral() {
         Producto pro = new Producto();
-        ArrayList<Producto> productos = pro.consultarTodos();
+        productosPaginadosTotal = pro.consultarTodos();
 
-        modeloTabla.setRowCount(0);
-
-        if (productos.isEmpty()) {
+        if (productosPaginadosTotal.isEmpty()) {
+            modeloTabla.setRowCount(0);
+            panelPaginacion.setVisible(false);
             personalizarPopup();
             JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("PD_I_004"),
@@ -1859,19 +2123,9 @@ public class VentanaProducto extends JFrame {
             return;
         }
 
-        for (Producto p : productos) {
-            modeloTabla.addRow(new Object[] {
-                    p.getCodigo(),
-                    p.getDescripcion(),
-                    p.getCategoria(),
-                    p.getNombreUmCompra(),
-                    p.getPrecioCompra(),
-                    p.getNombreUmVenta(),
-                    p.getPrecioVenta(),
-                    p.getSaldoIni(),
-                    p.getSaldoFin()
-            });
-        }
+        paginaActual = 0;
+        panelPaginacion.setVisible(true);
+        actualizarTablaPaginada();
     }
 
     private void configurarBusquedaTiempoReal() {
@@ -1904,6 +2158,8 @@ public class VentanaProducto extends JFrame {
 
         if (texto.isEmpty()) {
             modeloTabla.setRowCount(0);
+            productosPaginadosTotal = new ArrayList<>();
+            panelPaginacion.setVisible(false);
             return;
         }
 
@@ -1934,6 +2190,9 @@ public class VentanaProducto extends JFrame {
         }
 
         if (resultados.isEmpty()) {
+            modeloTabla.setRowCount(0);
+            productosPaginadosTotal = new ArrayList<>();
+            panelPaginacion.setVisible(false);
             personalizarPopup();
             JOptionPane.showMessageDialog(this,
                     CargadorProperties.obtenerMessages("PD_I_005"),
@@ -1943,21 +2202,10 @@ public class VentanaProducto extends JFrame {
             return;
         }
 
-        modeloTabla.setRowCount(0);
-
-        for (Producto p : resultados) {
-            modeloTabla.addRow(new Object[] {
-                    p.getCodigo(),
-                    p.getDescripcion(),
-                    p.getCategoria(),
-                    p.getNombreUmCompra(),
-                    p.getPrecioCompra(),
-                    p.getNombreUmVenta(),
-                    p.getPrecioVenta(),
-                    p.getSaldoIni(),
-                    p.getSaldoFin()
-            });
-        }
+        productosPaginadosTotal = resultados;
+        paginaActual = 0;
+        panelPaginacion.setVisible(true);
+        actualizarTablaPaginada();
     }
 
     private void mostrarPopupImagen(String codigo) {
@@ -1965,9 +2213,10 @@ public class VentanaProducto extends JFrame {
         Producto encontrado = pro.verificarPorCodigoDP(codigo);
 
         if (encontrado != null && encontrado.getImagen() != null && !encontrado.getImagen().isEmpty()) {
-            JDialog dialog = new JDialog(this, CargadorProperties.obtenerComponentes("popup.imagen.titulo") + codigo,
-                    true);
+            JDialog dialog = new JDialog(this, CargadorProperties.obtenerComponentes("popup.imagen.titulo") + codigo, true);
             dialog.setLayout(new BorderLayout(10, 10));
+
+            dialog.getContentPane().setBackground(COLOR_FONDO_CENTRAL);
 
             try {
                 String base = CargadorProperties.obtenerConfigProducto("img.base");
@@ -1977,10 +2226,10 @@ public class VentanaProducto extends JFrame {
                 if (archivoImagen.exists()) {
                     BufferedImage img = ImageIO.read(archivoImagen);
 
-                    int max = Integer.parseInt(CargadorProperties.obtenerConfigProducto("img.popup.max"));
-                    int maxWidth = max;
-                    int maxHeight = max;
+                    int maxWidth = 400;  // Ancho fijo del popup
+                    int maxHeight = 300; // Alto fijo del popup
 
+                    // Calcular escala para que la imagen quepa dentro del espacio
                     double scale = Math.min(
                             (double) maxWidth / img.getWidth(),
                             (double) maxHeight / img.getHeight());
@@ -1990,17 +2239,33 @@ public class VentanaProducto extends JFrame {
 
                     Image imagenEscalada = img.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
 
-                    JLabel lblImagen = new JLabel(new ImageIcon(imagenEscalada));
-                    lblImagen.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-                    dialog.add(lblImagen, BorderLayout.CENTER);
+                    // ✅ Panel contenedor con tamaño fijo
+                    JPanel panelImagen = new JPanel(new GridBagLayout());
+                    panelImagen.setBackground(COLOR_FONDO_CENTRAL);
+                    panelImagen.setPreferredSize(new Dimension(maxWidth, maxHeight));
+                    panelImagen.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
+                    JLabel lblImagen = new JLabel(new ImageIcon(imagenEscalada));
+                    lblImagen.setOpaque(false);
+                    panelImagen.add(lblImagen);
+
+                    dialog.add(panelImagen, BorderLayout.CENTER);
+
+                    // ✅ PANEL DE BOTÓN CON FONDO CORRECTO
                     JPanel panelBoton = new JPanel(new FlowLayout(FlowLayout.CENTER));
+                    panelBoton.setBackground(COLOR_FONDO_CENTRAL);
+
                     JButton btnCerrar = new JButton(CargadorProperties.obtenerComponentes("boton.cerrar"));
+                    estilizarBotonEliminar(btnCerrar);
+                    btnCerrar.setPreferredSize(new Dimension(120, 35));
                     btnCerrar.addActionListener(e -> dialog.dispose());
+
                     panelBoton.add(btnCerrar);
                     dialog.add(panelBoton, BorderLayout.SOUTH);
 
-                    dialog.pack();
+                    // ✅ TAMAÑO FIJO DEL DIALOG
+                    dialog.setSize(maxWidth + 40, maxHeight + 100); // +40 para márgenes, +100 para botón
+                    dialog.setResizable(false); // No redimensionable
                     dialog.setLocationRelativeTo(this);
                     dialog.setVisible(true);
                 } else {
@@ -2145,6 +2410,17 @@ public class VentanaProducto extends JFrame {
     private void estilizarBotonSecundario(JButton btn) {
         btn.setFont(FUENTE_BOTON);
         btn.setBackground(COLOR_TEXTO_SECUNDARIO);
+        btn.setForeground(COLOR_BLANCO);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(COLOR_TEXTO_SECUNDARIO, 0, true),
+                new EmptyBorder(8, 16, 8, 16)));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    }
+
+    private void estilizarBotonTercero(JButton btn) {
+        btn.setFont(FUENTE_BOTON);
+        btn.setBackground(COLOR_TEXTO);
         btn.setForeground(COLOR_BLANCO);
         btn.setFocusPainted(false);
         btn.setBorder(BorderFactory.createCompoundBorder(
