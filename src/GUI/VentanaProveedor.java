@@ -85,6 +85,8 @@ public class VentanaProveedor extends JFrame {
     private Timer timerBusqueda;
     private boolean validandoCedulaIna = false;
 
+    
+
     public VentanaProveedor() {
         configurarVentana();
         inicializarComponentes();
@@ -933,11 +935,11 @@ public class VentanaProveedor extends JFrame {
 
         String cedula = txtCedulaIng.getText().trim();
 
-        if (cedula.length() != 10 && cedula.length() != 13) {
-            String error = ValidacionesProveedor.validarCedula(cedula, false);
-            mostrarError(lblErrorCedulaIng, error);
-            return;
-        }
+          if (cedula.length() != 10 && cedula.length() != 13) {
+        String error = ValidacionesProveedor.validarCedula(cedula, false);
+        mostrarError(lblErrorCedulaIng, error);
+        return;
+    }
 
         String error = ValidacionesProveedor.validarCedula(cedula, false);
 
@@ -1260,128 +1262,134 @@ public class VentanaProveedor extends JFrame {
 
     // Carga datos de proveedor inactivo para reactivación (Ingreso)
     private void cargarProveedorInactivoParaReactivar(String cedula) {
-        Proveedor prv = new Proveedor();
-        Proveedor existente = prv.verificarDP(cedula);
+    Proveedor prv = new Proveedor();
+    Proveedor existente = prv.verificarDP(cedula);
 
-        if (existente != null) {
-            txtCedulaIng.setText(existente.getCedRuc());
-            txtNombreIng.setText(existente.getNombre());
-            txtTelefonoIng.setText(existente.getTelefono());
-            txtCelularIng.setText(existente.getCelular());
-            txtEmailIng.setText(existente.getEmail());
-            txtDireccionIng.setText(existente.getDireccion());
+    if (existente != null) {
 
-            for (int i = 0; i < comboCiudadIng.getItemCount(); i++) {
-                ItemCombo item = comboCiudadIng.getItemAt(i);
-                if (item.getId().equals(existente.getIdCiudad())) {
-                    comboCiudadIng.setSelectedIndex(i);
-                    break;
-                }
+        // ⬇️ TRIM para evitar espacios del CHAR en BD
+        txtCedulaIng.setText(existente.getCedRuc().trim());
+        txtNombreIng.setText(existente.getNombre());
+        txtTelefonoIng.setText(existente.getTelefono());
+        txtCelularIng.setText(existente.getCelular());
+        txtEmailIng.setText(existente.getEmail());
+        txtDireccionIng.setText(existente.getDireccion());
+
+        for (int i = 0; i < comboCiudadIng.getItemCount(); i++) {
+            ItemCombo item = comboCiudadIng.getItemAt(i);
+            if (item.getId().equals(existente.getIdCiudad())) {
+                comboCiudadIng.setSelectedIndex(i);
+                break;
             }
-
-            // modo reactivación
-            txtCedulaIng.setEnabled(false);
-
-            lblErrorCedulaIng.setText(" ");
-            lblErrorNombreIng.setText(" ");
-            lblErrorTelefonoIng.setText(" ");
-            lblErrorCelularIng.setText(" ");
-            lblErrorEmailIng.setText(" ");
-            lblErrorCiudadIng.setText(" ");
-            lblErrorDireccionIng.setText(" ");
-
-            validandoCedulaIna = false;
-
-            // Si quisieras mensaje tipo "Proveedor cargado. Revise y presione Guardar", agrega PV_I_005 en properties
-            // y usa:
-            // mostrarPopup(
-            //      CargadorProperties.obtenerMessages("PV_I_005"),
-            //      CargadorProperties.obtenerMessages("FC_C_006"),
-            //      JOptionPane.INFORMATION_MESSAGE
-            // );
-        } else {
-            txtCedulaIng.setText("");
-            txtCedulaIng.setEnabled(true);
-            validandoCedulaIna = false;
         }
+
+        // ⬇️ MODO REACTIVACIÓN: igual que en VentanaCliente
+        txtCedulaIng.setEnabled(false);
+
+        lblErrorCedulaIng.setText(" ");
+        lblErrorNombreIng.setText(" ");
+        lblErrorTelefonoIng.setText(" ");
+        lblErrorCelularIng.setText(" ");
+        lblErrorEmailIng.setText(" ");
+        lblErrorCiudadIng.setText(" ");
+        lblErrorDireccionIng.setText(" ");
+
+        validandoCedulaIna = false;
+
+        configurarEstiloPopups();
+        JOptionPane.showMessageDialog(
+                this,
+                CargadorProperties.obtenerMessages("PV_I_005"), // aquí puedes cambiar a un PV_I_00X
+                CargadorProperties.obtenerMessages("FC_C_006"),
+                JOptionPane.INFORMATION_MESSAGE
+        );
+    } else {
+        txtCedulaIng.setText("");
+        txtCedulaIng.setEnabled(true);
+        validandoCedulaIna = false;
     }
+}
+
 
     // Guardar proveedor (alta + reactivación) igual al modelo de Cliente
     private void guardarProveedor() {
-        ItemCombo ciudadSel = (ItemCombo) comboCiudadIng.getSelectedItem();
-        String idCiudad = ciudadSel != null ? ciudadSel.getId() : "";
+    ItemCombo ciudadSel = (ItemCombo) comboCiudadIng.getSelectedItem();
+    String idCiudad = ciudadSel != null ? ciudadSel.getId() : "";
 
-        String errorCedula = ValidacionesProveedor.validarCedula(txtCedulaIng.getText(), false);
-        String errorNombre = ValidacionesProveedor.validarNombre(txtNombreIng.getText());
-        String errorTelefono = ValidacionesProveedor.validarTelefono(txtTelefonoIng.getText());
-        String errorCelular = ValidacionesProveedor.validarCelular(txtCelularIng.getText());
-        String errorEmail = ValidacionesProveedor.validarEmail(txtEmailIng.getText());
-        String errorCiudad = ValidacionesProveedor.validarCiudad(idCiudad);
-        String errorDireccion = ValidacionesProveedor.validarDireccion(txtDireccionIng.getText());
+    // ⬇️ Importante: usar valor TRIM para todo
+    String cedula = txtCedulaIng.getText().trim();
 
-        mostrarError(lblErrorCedulaIng, "PROVEEDOR_INACTIVO".equals(errorCedula) ? null : errorCedula);
-        mostrarError(lblErrorNombreIng, errorNombre);
-        mostrarError(lblErrorTelefonoIng, errorTelefono);
-        mostrarError(lblErrorCelularIng, errorCelular);
-        mostrarError(lblErrorEmailIng, errorEmail);
-        mostrarError(lblErrorCiudadIng, errorCiudad);
-        mostrarError(lblErrorDireccionIng, errorDireccion);
+    String errorCedula = ValidacionesProveedor.validarCedula(cedula, false);
+    String errorNombre = ValidacionesProveedor.validarNombre(txtNombreIng.getText());
+    String errorTelefono = ValidacionesProveedor.validarTelefono(txtTelefonoIng.getText());
+    String errorCelular = ValidacionesProveedor.validarCelular(txtCelularIng.getText());
+    String errorEmail = ValidacionesProveedor.validarEmail(txtEmailIng.getText());
+    String errorCiudad = ValidacionesProveedor.validarCiudad(idCiudad);
+    String errorDireccion = ValidacionesProveedor.validarDireccion(txtDireccionIng.getText());
 
-        boolean hayErrores =
-                (errorCedula != null && !"PROVEEDOR_INACTIVO".equals(errorCedula)) ||
-                errorNombre != null ||
-                errorTelefono != null ||
-                errorCelular != null ||
-                errorEmail != null ||
-                errorCiudad != null ||
-                errorDireccion != null;
+    mostrarError(lblErrorCedulaIng, "PROVEEDOR_INACTIVO".equals(errorCedula) ? null : errorCedula);
+    mostrarError(lblErrorNombreIng, errorNombre);
+    mostrarError(lblErrorTelefonoIng, errorTelefono);
+    mostrarError(lblErrorCelularIng, errorCelular);
+    mostrarError(lblErrorEmailIng, errorEmail);
+    mostrarError(lblErrorCiudadIng, errorCiudad);
+    mostrarError(lblErrorDireccionIng, errorDireccion);
 
-        if (hayErrores) {
-            mostrarPopup(
-                    CargadorProperties.obtenerMessages("CL_A_015"),
-                    CargadorProperties.obtenerMessages("FC_C_005"),
-                    JOptionPane.WARNING_MESSAGE
-            );
-            return;
-        }
+    boolean hayErrores =
+            (errorCedula != null && !"PROVEEDOR_INACTIVO".equals(errorCedula)) ||
+            errorNombre != null ||
+            errorTelefono != null ||
+            errorCelular != null ||
+            errorEmail != null ||
+            errorCiudad != null ||
+            errorDireccion != null;
 
-        Proveedor prv = new Proveedor();
-        prv.setCedRuc(txtCedulaIng.getText().trim());
-        prv.setNombre(txtNombreIng.getText().trim());
-        prv.setTelefono(txtTelefonoIng.getText().trim());
-        prv.setCelular(txtCelularIng.getText().trim());
-        prv.setEmail(txtEmailIng.getText().trim());
-        prv.setIdCiudad(idCiudad);
-        prv.setDireccion(txtDireccionIng.getText().trim());
-
-        boolean exitoso;
-        if (!txtCedulaIng.isEnabled()) {
-            // Reactivación
-            exitoso = prv.reactivarDP();
-        } else {
-            // Alta / actualización normal (inserta o modifica según exista, igual Cliente)
-            exitoso = prv.grabarDP();
-        }
-
-        if (exitoso) {
-            String mensaje = !txtCedulaIng.isEnabled()
-                    ? CargadorProperties.obtenerMessages("PV_I_004") // Proveedor reactivado correctamente
-                    : CargadorProperties.obtenerMessages("PV_I_001"); // Proveedor registrado exitosamente
-
-            mostrarPopup(
-                    mensaje,
-                    CargadorProperties.obtenerMessages("FC_C_003"),
-                    JOptionPane.INFORMATION_MESSAGE
-            );
-            limpiarCamposIngresar();
-        } else {
-            mostrarPopup(
-                    CargadorProperties.obtenerMessages("PV_E_002"),
-                    CargadorProperties.obtenerMessages("FC_C_004"),
-                    JOptionPane.ERROR_MESSAGE
-            );
-        }
+    if (hayErrores) {
+        mostrarPopup(
+                CargadorProperties.obtenerMessages("CL_A_015"),
+                CargadorProperties.obtenerMessages("FC_C_005"),
+                JOptionPane.WARNING_MESSAGE
+        );
+        return;
     }
+
+    Proveedor prv = new Proveedor();
+    prv.setCedRuc(cedula); // ⬅️ ya viene sin espacios
+    prv.setNombre(txtNombreIng.getText().trim());
+    prv.setTelefono(txtTelefonoIng.getText().trim());
+    prv.setCelular(txtCelularIng.getText().trim());
+    prv.setEmail(txtEmailIng.getText().trim());
+    prv.setIdCiudad(idCiudad);
+    prv.setDireccion(txtDireccionIng.getText().trim());
+
+    boolean exitoso;
+    if (!txtCedulaIng.isEnabled()) {
+        // Reactivación
+        exitoso = prv.reactivarDP();
+    } else {
+        // Alta / actualización
+        exitoso = prv.grabarDP();
+    }
+
+    if (exitoso) {
+        String mensaje = !txtCedulaIng.isEnabled()
+                ? CargadorProperties.obtenerMessages("PV_I_004")
+                : CargadorProperties.obtenerMessages("PV_I_001");
+
+        mostrarPopup(
+                mensaje,
+                CargadorProperties.obtenerMessages("FC_C_003"),
+                JOptionPane.INFORMATION_MESSAGE
+        );
+        limpiarCamposIngresar();
+    } else {
+        mostrarPopup(
+                CargadorProperties.obtenerMessages("PV_E_002"),
+                CargadorProperties.obtenerMessages("FC_C_004"),
+                JOptionPane.ERROR_MESSAGE
+        );
+    }
+}
 
     private void buscarProveedorModificar() {
     String cedula = txtCedulaMod.getText().trim();
@@ -1844,26 +1852,26 @@ public class VentanaProveedor extends JFrame {
         }
     }
 
-    private void limpiarCamposIngresar() {
-        validandoCedulaIna = false;
+  private void limpiarCamposIngresar() {
+    validandoCedulaIna = false;
 
-        txtCedulaIng.setText("");
-        txtCedulaIng.setEnabled(true);
-        txtNombreIng.setText("");
-        txtTelefonoIng.setText("");
-        txtCelularIng.setText("");
-        txtEmailIng.setText("");
-        comboCiudadIng.setSelectedIndex(0);
-        txtDireccionIng.setText("");
+    txtCedulaIng.setText("");
+    txtCedulaIng.setEnabled(true);
+    txtNombreIng.setText("");
+    txtTelefonoIng.setText("");
+    txtCelularIng.setText("");
+    txtEmailIng.setText("");
+    comboCiudadIng.setSelectedIndex(0);
+    txtDireccionIng.setText("");
 
-        lblErrorCedulaIng.setText(" ");
-        lblErrorNombreIng.setText(" ");
-        lblErrorTelefonoIng.setText(" ");
-        lblErrorCelularIng.setText(" ");
-        lblErrorEmailIng.setText(" ");
-        lblErrorCiudadIng.setText(" ");
-        lblErrorDireccionIng.setText(" ");
-    }
+    lblErrorCedulaIng.setText(" ");
+    lblErrorNombreIng.setText(" ");
+    lblErrorTelefonoIng.setText(" ");
+    lblErrorCelularIng.setText(" ");
+    lblErrorEmailIng.setText(" ");
+    lblErrorCiudadIng.setText(" ");
+    lblErrorDireccionIng.setText(" ");
+}
 
     private void limpiarCamposModificar() {
         txtCedulaMod.setText("");
