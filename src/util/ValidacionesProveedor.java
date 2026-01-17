@@ -4,36 +4,45 @@ import DP.Proveedor;
 
 public class ValidacionesProveedor {
 
+    /**
+     * Devuelve:
+     *  - null                             → todo bien
+     *  - mensaje de error (PV_A_XXX)      → error de validación
+     *  - "PROVEEDOR_INACTIVO"             → existe en BD con estado INA
+     */
     public static String validarCedula(String cedRuc, boolean esModificar) {
-        if (cedRuc == null || cedRuc.trim().isEmpty()) {
-            return CargadorProperties.obtenerMessages("PV_A_004");
-        }
+    if (cedRuc == null || cedRuc.trim().isEmpty()) {
+        return CargadorProperties.obtenerMessages("PV_A_004"); // obligatorio
+    }
 
-        if (!cedRuc.matches("\\d{10}|\\d{13}")) {
-            return CargadorProperties.obtenerMessages("PV_A_005");
-        }
+    if (!cedRuc.matches("\\d{10}|\\d{13}")) {
+        return CargadorProperties.obtenerMessages("PV_A_005"); // 10 o 13 dígitos
+    }
 
-        // Si es RUC (13 dígitos), debe terminar en 001
-        if (cedRuc.length() == 13 && !cedRuc.endsWith("001")) {
-            return CargadorProperties.obtenerMessages("PV_A_015");
-        }
+    // Si es RUC (13 dígitos), debe terminar en 001
+    if (cedRuc.length() == 13 && !cedRuc.endsWith("001")) {
+        return CargadorProperties.obtenerMessages("PV_A_015");
+    }
 
-        // Solo en INGRESAR (esModificar = false) revisamos en BD si existe
-        if (!esModificar) {
-            Proveedor prv = new Proveedor();
-            Proveedor existe = prv.verificarDP(cedRuc);
-            if (existe != null) {
-                // Si está inactivo, devolvemos código especial para que la GUI maneje reactivación
-                if ("INA".equals(existe.getEstado())) {
-                    return "PROVEEDOR_INACTIVO";
-                }
-                // Si está activo, mensaje normal "proveedor ya existe"
+    // SOLO en ingreso (no modificar) revisamos si ya existe
+    if (!esModificar) {
+        Proveedor prv = new Proveedor();
+        Proveedor existe = prv.verificarDP(cedRuc);
+
+        if (existe != null) {
+            if ("INA".equals(existe.getEstado())) {
+                // Proveedor encontrado pero INACTIVO: devolvemos un código especial
+                // NO es mensaje para el usuario, es una "bandera" para la GUI
+                return "PROVEEDOR_INACTIVO";
+            } else {
+                // Ya existe y está activo
                 return CargadorProperties.obtenerMessages("PV_A_001");
             }
         }
-
-        return null;
     }
+
+    return null;
+}
 
     public static String validarNombre(String nombre) {
         if (nombre == null || nombre.trim().isEmpty()) {
@@ -51,7 +60,7 @@ public class ValidacionesProveedor {
     /**
      * Teléfono (label) → celular ecuatoriano:
      * - Obligatorio
-     * - Si no está vacío: debe tener exactamente 10 dígitos numéricos
+     * - Debe tener exactamente 10 dígitos numéricos
      * - Debe iniciar con 09
      */
     public static String validarTelefono(String telefono) {
@@ -73,7 +82,7 @@ public class ValidacionesProveedor {
     /**
      * Campo "celular" que usas como teléfono fijo por provincias:
      * - Obligatorio
-     * - Si no está vacío: debe tener exactamente 10 dígitos numéricos
+     * - Debe tener exactamente 10 dígitos numéricos
      * - Debe iniciar con 02, 03, 04, 05, 06 o 07
      */
     public static String validarCelular(String celular) {
@@ -134,7 +143,13 @@ public class ValidacionesProveedor {
                                       String ciudad,
                                       String direccion,
                                       boolean esModificar) {
-        return validarCedula(cedRuc, esModificar) == null &&
+        String errCed = validarCedula(cedRuc, esModificar);
+        // Para no aceptar inactivos como "válidos" en este helper
+        if ("PROVEEDOR_INACTIVO".equals(errCed)) {
+            return false;
+        }
+
+        return errCed == null &&
                validarNombre(nombre) == null &&
                validarTelefono(telefono) == null &&
                validarCelular(celular) == null &&
