@@ -18,25 +18,53 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import javax.imageio.ImageIO;
 import javax.swing.Timer;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.table.DefaultTableCellRenderer;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import javax.imageio.ImageIO;
+import javax.swing.Timer;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import javax.swing.SwingWorker;
 
+
 public class VentanaProducto extends JFrame {
-    
+
+    // Paleta de colores
+    private static final Color COLOR_PRIMARIO = new Color(255, 173, 51); // #FFAD33 - Naranja
+    private static final Color COLOR_SECUNDARIO = new Color(102, 151, 74); // #66974A - Verde
+    private static final Color COLOR_ACENTO = new Color(204, 20, 0); // #CC1400 - Rojo
+    private static final Color COLOR_TEXTO = new Color(76, 87, 169); // #4C57A9 - Azul tinta
+    private static final Color COLOR_FONDO_CENTRAL = new Color(255, 247, 227); // #fff7e3 - Fondo panel central
+    private static final Color COLOR_TEXTO_SECUNDARIO = new Color(153, 153, 153); // #999
+    private static final Color COLOR_BORDE = new Color(221, 221, 221); // #ddd
+    private static final Color COLOR_ENFASIS = new Color(255, 164, 28); // #ffa41c - Naranja énfasis
+    private static final Color COLOR_BLANCO = Color.WHITE;
+    private static final Color COLOR_TEXTO_CAMPO = Color.BLACK; // Negro para texto en campos
+
+    // Fuente principal - Poppins
+    private static Font FUENTE_TITULO;
+    private static Font FUENTE_SUBTITULO;
+    private static Font FUENTE_BASE;
+    private static Font FUENTE_LABEL;
+    private static Font FUENTE_BOTON;
+
     private CardLayout cardLayout;
     private JPanel panelContenedor;
-    
+
     private JComboBox<String> comboOpciones;
     private JLabel lblTituloSuperior;
-    
+
     private static final String PANEL_VACIO = "VACIO";
     private static final String PANEL_INGRESAR = "INGRESAR";
     private static final String PANEL_MODIFICAR = "MODIFICAR";
     private static final String PANEL_ELIMINAR = "ELIMINAR";
     private static final String PANEL_CONSULTAR = "CONSULTAR";
-    
+
     private JComboBox<ItemCombo> comboCategoriaIng, comboUmCompraIng, comboUmVentaIng;
     private JTextField txtCodigoIng, txtDescripcionIng, txtPrecioCompraIng, txtPrecioVentaIng;
     private JLabel lblImagenPreviewIng, lblErrorCategoriaIng, lblErrorCodigoIng;
@@ -44,7 +72,7 @@ public class VentanaProducto extends JFrame {
     private JLabel lblErrorUmVentaIng, lblErrorPrecioVentaIng, lblErrorImagenIng;
     private JButton btnSeleccionarImagenIng;
     private String rutaImagenSeleccionadaIng = "";
-    
+
     private JTextField txtCodigoMod, txtDescripcionMod, txtPrecioCompraMod, txtPrecioVentaMod;
     private JComboBox<ItemCombo> comboUmCompraMod, comboUmVentaMod;
     private JLabel lblImagenPreviewMod;
@@ -53,13 +81,13 @@ public class VentanaProducto extends JFrame {
     private JButton btnGuardarMod, btnSeleccionarImagenMod;
     private String rutaImagenSeleccionadaMod = "";
     private String codigoProductoActual = "";
-    
+
     private JTextField txtCodigoElim, txtDescripcionElim, txtCategoriaElim;
     private JTextField txtUmCompraElim, txtPrecioCompraElim, txtUmVentaElim;
     private JTextField txtPrecioVentaElim, txtSaldoIniElim, txtSaldoFinElim;
     private JLabel lblImagenPreviewElim;
     private JButton btnEliminar;
-    
+
     private JComboBox<String> comboTipoConsulta;
     private JComboBox<ItemCombo> comboParametroBusqueda;
     private JTextField txtBusqueda;
@@ -68,57 +96,94 @@ public class VentanaProducto extends JFrame {
     private JScrollPane scrollTabla;
     private JPanel panelBusqueda;
     private Timer timerBusqueda;
-    
+
+    // Variables de paginación
+    private JPanel panelPaginacion;
+    private JPanel panelTabla;
+    private JButton btnPrimero, btnAnterior, btnSiguiente, btnUltimo;
+    private ArrayList<Producto> productosPaginadosTotal = new ArrayList<>();
+    private int paginaActual = 0;
+
     public VentanaProducto() {
+        FUENTE_TITULO = cargarFuente("/resources/fonts/Poppins-Bold.ttf", Font.BOLD, 32f);
+        FUENTE_SUBTITULO = cargarFuente("/resources/fonts/Poppins-Bold.ttf", Font.BOLD, 24f);
+        FUENTE_BASE = cargarFuente("/resources/fonts/Poppins-Regular.ttf", Font.PLAIN, 14f);
+        FUENTE_LABEL = cargarFuente("/resources/fonts/Poppins-Regular.ttf", Font.PLAIN, 13f);
+        FUENTE_BOTON = cargarFuente("/resources/fonts/Poppins-Bold.ttf", Font.BOLD, 13f);
+
         configurarVentana();
         inicializarComponentes();
         configurarLayout();
     }
-    
+
     private void configurarVentana() {
         setTitle(CargadorProperties.obtenerComponentes("ventana.productos.titulo"));
-        setExtendedState(JFrame.MAXIMIZED_BOTH); 
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
+        try {
+            setIconImage(new ImageIcon(getClass().getResource("/resources/img/logo-removebg.png")).getImage());
+        } catch (Exception e) {
+            System.err.println("No se pudo cargar el favicon");
+        }
+        getContentPane().setBackground(COLOR_BLANCO);
     }
-    
+
     private void inicializarComponentes() {
         cardLayout = new CardLayout();
         panelContenedor = new JPanel(cardLayout);
-        
-        comboOpciones = new JComboBox<>(new String[]{
-            CargadorProperties.obtenerComponentes("combo.opciones.seleccione"),
-            CargadorProperties.obtenerComponentes("combo.opciones.ingresar"),
-            CargadorProperties.obtenerComponentes("combo.opciones.modificar"),
-            CargadorProperties.obtenerComponentes("combo.opciones.eliminar"),
-            CargadorProperties.obtenerComponentes("combo.opciones.consultar")
+
+        comboOpciones = new JComboBox<>(new String[] {
+                CargadorProperties.obtenerComponentes("combo.opciones.seleccione"),
+                CargadorProperties.obtenerComponentes("combo.opciones.ingresar"),
+                CargadorProperties.obtenerComponentes("combo.opciones.modificar"),
+                CargadorProperties.obtenerComponentes("combo.opciones.eliminar"),
+                CargadorProperties.obtenerComponentes("combo.opciones.consultar")
         });
-        
+
         comboOpciones.addActionListener(e -> cambiarPanel());
-        
+
         panelContenedor.add(crearPanelVacio(), PANEL_VACIO);
         panelContenedor.add(crearPanelIngresar(), PANEL_INGRESAR);
         panelContenedor.add(crearPanelModificar(), PANEL_MODIFICAR);
         panelContenedor.add(crearPanelEliminar(), PANEL_ELIMINAR);
         panelContenedor.add(crearPanelConsultar(), PANEL_CONSULTAR);
     }
-    
+
     private void configurarLayout() {
         setLayout(new BorderLayout(10, 10));
 
         JPanel panelSuperior = new JPanel(new BorderLayout());
-        panelSuperior.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+        panelSuperior.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
+        panelSuperior.setBackground(COLOR_PRIMARIO);
 
         JPanel panelFilaCombo = new JPanel(new BorderLayout());
+        panelFilaCombo.setBackground(COLOR_PRIMARIO);
+
+        JPanel panelIzquierda = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
+        panelIzquierda.setBackground(COLOR_PRIMARIO);
+        try {
+            ImageIcon iconoOriginal = new ImageIcon(getClass().getResource("/resources/img/logo.jpg"));
+            Image imagenEscalada = iconoOriginal.getImage().getScaledInstance(30, 30, Image.SCALE_SMOOTH);
+            JLabel lblLogo = new JLabel(new ImageIcon(imagenEscalada));
+            panelIzquierda.add(lblLogo);
+        } catch (Exception e) {
+            System.err.println("No se pudo cargar el logo");
+        }
+        panelFilaCombo.add(panelIzquierda, BorderLayout.WEST);
+
         JPanel panelDerecha = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
-        comboOpciones.setPreferredSize(new Dimension(260, 30));
+        panelDerecha.setBackground(COLOR_PRIMARIO);
+        estilizarComboBox(comboOpciones);
+        comboOpciones.setPreferredSize(new Dimension(260, 35));
         panelDerecha.add(comboOpciones);
         panelFilaCombo.add(panelDerecha, BorderLayout.EAST);
 
         JPanel panelFilaTitulo = new JPanel(new BorderLayout());
+        panelFilaTitulo.setBackground(COLOR_PRIMARIO);
         lblTituloSuperior = new JLabel("", SwingConstants.CENTER);
-        lblTituloSuperior.setFont(new Font("Arial", Font.BOLD, 42));
-        lblTituloSuperior.setForeground(Color.DARK_GRAY);
+        lblTituloSuperior.setFont(FUENTE_TITULO);
+        lblTituloSuperior.setForeground(COLOR_TEXTO);
         panelFilaTitulo.add(lblTituloSuperior, BorderLayout.CENTER);
 
         panelSuperior.add(panelFilaCombo, BorderLayout.NORTH);
@@ -128,79 +193,107 @@ public class VentanaProducto extends JFrame {
         add(panelContenedor, BorderLayout.CENTER);
 
         JPanel panelInferior = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        panelInferior.setBackground(COLOR_PRIMARIO);
         JButton btnVolver = new JButton(CargadorProperties.obtenerComponentes("boton.volver"));
+        estilizarBotonSecundario(btnVolver);
         btnVolver.addActionListener(e -> volverAlMenu());
         panelInferior.add(btnVolver);
         add(panelInferior, BorderLayout.SOUTH);
     }
- 
+
     private JPanel crearPanelVacio() {
         JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gbc = new GridBagConstraints();
-        
+
         JLabel lblTitulo = new JLabel(CargadorProperties.obtenerComponentes("ventana.productos.titulo.vacio"));
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 48));
-        lblTitulo.setForeground(Color.DARK_GRAY);
-        
+        lblTitulo.setFont(new Font("Poppins", Font.BOLD, 48));
+        lblTitulo.setForeground(COLOR_PRIMARIO);
+
         gbc.gridx = 0;
         gbc.gridy = 0;
         panel.add(lblTitulo, gbc);
-        
+
         return panel;
     }
-    
+
     private JPanel crearPanelIngresar() {
-        //Wrapper centrado
+        // Wrapper centrado
         JPanel panelWrapper = new JPanel(new GridBagLayout());
+        panelWrapper.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gw = new GridBagConstraints();
         gw.gridx = 0;
         gw.gridy = 0;
         gw.insets = new Insets(0, 0, 0, 0);
         gw.anchor = GridBagConstraints.NORTH;
 
-        //Panel con 2 columnas
+        // Panel con 2 columnas
         JPanel panelPrincipal = new JPanel(new GridBagLayout());
+        panelPrincipal.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gp = new GridBagConstraints();
         gp.insets = new Insets(0, 0, 0, 0);
         gp.anchor = GridBagConstraints.NORTHWEST;
 
-        //Panel Izquierdo para los campos
+        // Panel Izquierdo para los campos
         JPanel panelCampos = new JPanel(new GridBagLayout());
+        panelCampos.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 0, 10);
         gbc.anchor = GridBagConstraints.WEST;
 
-        //Componentes
+        // Componentes
         comboCategoriaIng = new JComboBox<>();
-        comboCategoriaIng.setPreferredSize(new Dimension(350, 28));
+        estilizarComboBox(comboCategoriaIng);
+        comboCategoriaIng.setPreferredSize(new Dimension(350, 32));
+        comboCategoriaIng.setMinimumSize(new Dimension(350, 32));
+        comboCategoriaIng.setMaximumSize(new Dimension(350, 32));
 
         txtCodigoIng = new JTextField();
-        txtCodigoIng.setPreferredSize(new Dimension(350, 28));
-        txtCodigoIng.setEnabled(false);
+        estilizarCampoTexto(txtCodigoIng);
+        txtCodigoIng.setPreferredSize(new Dimension(350, 32));
+        txtCodigoIng.setMinimumSize(new Dimension(350, 32));
+        txtCodigoIng.setMaximumSize(new Dimension(350, 32));
 
         txtDescripcionIng = new JTextField();
-        txtDescripcionIng.setPreferredSize(new Dimension(350, 28));
+        estilizarCampoTexto(txtDescripcionIng);
+        txtDescripcionIng.setPreferredSize(new Dimension(350, 32));
+        txtDescripcionIng.setMinimumSize(new Dimension(350, 32));
+        txtDescripcionIng.setMaximumSize(new Dimension(350, 32));
 
         comboUmCompraIng = new JComboBox<>();
-        comboUmCompraIng.setPreferredSize(new Dimension(350, 28));
+        estilizarComboBox(comboUmCompraIng);
+        comboUmCompraIng.setPreferredSize(new Dimension(350, 32));
+        comboUmCompraIng.setMinimumSize(new Dimension(350, 32));
+        comboUmCompraIng.setMaximumSize(new Dimension(350, 32));
 
         txtPrecioCompraIng = new JTextField();
-        txtPrecioCompraIng.setPreferredSize(new Dimension(350, 28));
+        estilizarCampoTexto(txtPrecioCompraIng);
+        txtPrecioCompraIng.setPreferredSize(new Dimension(350, 32));
+        txtPrecioCompraIng.setMinimumSize(new Dimension(350, 32));
+        txtPrecioCompraIng.setMaximumSize(new Dimension(350, 32));
 
         comboUmVentaIng = new JComboBox<>();
-        comboUmVentaIng.setPreferredSize(new Dimension(350, 28));
+        estilizarComboBox(comboUmVentaIng);
+        comboUmVentaIng.setPreferredSize(new Dimension(350, 32));
+        comboUmVentaIng.setMinimumSize(new Dimension(350, 32));
+        comboUmVentaIng.setMaximumSize(new Dimension(350, 32));
 
         txtPrecioVentaIng = new JTextField();
-        txtPrecioVentaIng.setPreferredSize(new Dimension(350, 28));
+        estilizarCampoTexto(txtPrecioVentaIng);
+        txtPrecioVentaIng.setPreferredSize(new Dimension(350, 32));
+        txtPrecioVentaIng.setMinimumSize(new Dimension(350, 32));
+        txtPrecioVentaIng.setMaximumSize(new Dimension(350, 32));
 
-        lblImagenPreviewIng = new JLabel(CargadorProperties.obtenerComponentes("imagen.sin.imagen"), SwingConstants.CENTER);
+        lblImagenPreviewIng = new JLabel(CargadorProperties.obtenerComponentes("imagen.sin.imagen"),
+                SwingConstants.CENTER);
         lblImagenPreviewIng.setPreferredSize(new Dimension(200, 234));
         lblImagenPreviewIng.setBorder(BorderFactory.createLineBorder(Color.GRAY));
 
         btnSeleccionarImagenIng = new JButton(CargadorProperties.obtenerComponentes("boton.seleccionar.imagen"));
+        estilizarBotonTercero(btnSeleccionarImagenIng);
         btnSeleccionarImagenIng.addActionListener(e -> seleccionarImagenIngresar());
 
-        //Labels error
+        // Labels error
         lblErrorCategoriaIng = crearLabelError();
         lblErrorCategoriaIng.setPreferredSize(new Dimension(350, 20));
 
@@ -225,7 +318,7 @@ public class VentanaProducto extends JFrame {
         lblErrorImagenIng = crearLabelError();
         lblErrorImagenIng.setPreferredSize(new Dimension(200, 20));
 
-        //Metodos de carga y validación
+        // Metodos de carga y validación
         cargarCategorias(comboCategoriaIng);
         cargarUnidadesMedida(comboUmCompraIng);
         cargarUnidadesMedida(comboUmVentaIng);
@@ -233,206 +326,270 @@ public class VentanaProducto extends JFrame {
         configurarValidacionesIngresar();
         comboCategoriaIng.addActionListener(e -> generarCodigoAutomatico());
 
-        //Columna Izquierda
+        // Columna Izquierda
         int fila = 0;
 
-        //Categoría
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.categoria")), gbc);
-
+        // Categoría
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblCategoriaIng = new JLabel(CargadorProperties.obtenerComponentes("label.categoria"));
+        lblCategoriaIng.setFont(FUENTE_LABEL);
+        lblCategoriaIng.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblCategoriaIng, gbc);
         gbc.gridx = 1;
         panelCampos.add(comboCategoriaIng, gbc);
 
         fila++;
-        gbc.gridx = 1; gbc.gridy = fila;
+        gbc.gridx = 1;
+        gbc.gridy = fila;
         gbc.insets = new Insets(0, 10, 0, 10);
         panelCampos.add(lblErrorCategoriaIng, gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
 
-        //Codigo
+        // Codigo
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.codigo")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblCodigoIng = new JLabel(CargadorProperties.obtenerComponentes("label.codigo"));
+        lblCodigoIng.setFont(FUENTE_LABEL);
+        lblCodigoIng.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblCodigoIng, gbc);
         gbc.gridx = 1;
+        txtCodigoIng.setEnabled(false);
         panelCampos.add(txtCodigoIng, gbc);
 
         fila++;
-        gbc.gridx = 1; gbc.gridy = fila;
+        gbc.gridx = 1;
+        gbc.gridy = fila;
         gbc.insets = new Insets(0, 10, 0, 10);
         panelCampos.add(lblErrorCodigoIng, gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
 
-        //Descripcion
+        // Descripcion
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.descripcion")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblDescripciónIng = new JLabel(CargadorProperties.obtenerComponentes("label.descripcion"));
+        lblDescripciónIng.setFont(FUENTE_LABEL);
+        lblDescripciónIng.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblDescripciónIng, gbc);
         gbc.gridx = 1;
         panelCampos.add(txtDescripcionIng, gbc);
 
         fila++;
-        gbc.gridx = 1; gbc.gridy = fila;
+        gbc.gridx = 1;
+        gbc.gridy = fila;
         gbc.insets = new Insets(0, 10, 0, 10);
         panelCampos.add(lblErrorDescripcionIng, gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
 
-        //Unidad compra
+        // Unidad compra
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.um.compra")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblUMCompraIng = new JLabel(CargadorProperties.obtenerComponentes("label.um.compra"));
+        lblUMCompraIng.setFont(FUENTE_LABEL);
+        lblUMCompraIng.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblUMCompraIng, gbc);
         gbc.gridx = 1;
         panelCampos.add(comboUmCompraIng, gbc);
 
         fila++;
-        gbc.gridx = 1; gbc.gridy = fila;
+        gbc.gridx = 1;
+        gbc.gridy = fila;
         gbc.insets = new Insets(0, 10, 0, 10);
         panelCampos.add(lblErrorUmCompraIng, gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
 
-        //Precio compra
+        // Precio compra
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.precio.compra")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblPrecioCompraIng = new JLabel(CargadorProperties.obtenerComponentes("label.precio.compra"));
+        lblPrecioCompraIng.setFont(FUENTE_LABEL);
+        lblPrecioCompraIng.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblPrecioCompraIng, gbc);
         gbc.gridx = 1;
         panelCampos.add(txtPrecioCompraIng, gbc);
 
         fila++;
-        gbc.gridx = 1; gbc.gridy = fila;
+        gbc.gridx = 1;
+        gbc.gridy = fila;
         gbc.insets = new Insets(0, 10, 0, 10);
         panelCampos.add(lblErrorPrecioCompraIng, gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
 
-        //Unidad venta
+        // Unidad venta
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.um.venta")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblUMVentaIng = new JLabel(CargadorProperties.obtenerComponentes("label.um.venta"));
+        lblUMVentaIng.setFont(FUENTE_LABEL);
+        lblUMVentaIng.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblUMVentaIng, gbc);
         gbc.gridx = 1;
         panelCampos.add(comboUmVentaIng, gbc);
 
         fila++;
-        gbc.gridx = 1; gbc.gridy = fila;
+        gbc.gridx = 1;
+        gbc.gridy = fila;
         gbc.insets = new Insets(0, 10, 0, 10);
         panelCampos.add(lblErrorUmVentaIng, gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
 
-        //Precio venta
+        // Precio venta
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.precio.venta")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblPrecioVentaIng = new JLabel(CargadorProperties.obtenerComponentes("label.precio.venta"));
+        lblPrecioVentaIng.setFont(FUENTE_LABEL);
+        lblPrecioVentaIng.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblPrecioVentaIng, gbc);
         gbc.gridx = 1;
         panelCampos.add(txtPrecioVentaIng, gbc);
 
         fila++;
-        gbc.gridx = 1; gbc.gridy = fila;
+        gbc.gridx = 1;
+        gbc.gridy = fila;
         gbc.insets = new Insets(0, 10, 0, 10);
         panelCampos.add(lblErrorPrecioVentaIng, gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
 
-        //Columna Derecha
+        // Columna Derecha
         JPanel panelImagen = new JPanel(new GridBagLayout());
+        panelImagen.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gi = new GridBagConstraints();
         gi.insets = new Insets(5, 10, 0, 10);
         gi.anchor = GridBagConstraints.WEST;
 
-        //Imagen
-        gi.gridx = 0; gi.gridy = 0;
-        panelImagen.add(new JLabel(CargadorProperties.obtenerComponentes("label.imagen")), gi);
-
-        gi.gridx = 1; gi.gridy = 0;
+        // Imagen
+        gi.gridx = 0;
+        gi.gridy = 0;
+        JLabel lblImagenIng = new JLabel(CargadorProperties.obtenerComponentes("label.imagen"));
+        lblImagenIng.setFont(FUENTE_LABEL);
+        lblImagenIng.setForeground(COLOR_TEXTO);
+        panelImagen.add(lblImagenIng, gi);
+        gi.gridx = 1;
+        gi.gridy = 0;
         panelImagen.add(btnSeleccionarImagenIng, gi);
 
-        gi.gridx = 1; gi.gridy = 1;
+        gi.gridx = 1;
+        gi.gridy = 1;
         gi.insets = new Insets(0, 10, 0, 10);
         panelImagen.add(lblErrorImagenIng, gi);
         gi.insets = new Insets(10, 10, 0, 10);
 
-        gi.gridx = 1; gi.gridy = 2;
+        gi.gridx = 1;
+        gi.gridy = 2;
         panelImagen.add(lblImagenPreviewIng, gi);
 
-        //Guardar
+        // Guardar
         JButton btnGuardar = new JButton(CargadorProperties.obtenerComponentes("boton.guardar"));
+        estilizarBotonPrimario(btnGuardar);
+        btnGuardar.setPreferredSize(new Dimension(120, 35));
         btnGuardar.addActionListener(e -> guardarProducto());
 
-        gi.gridx = 1; gi.gridy = 3;
+        gi.gridx = 1;
+        gi.gridy = 3;
         gi.anchor = GridBagConstraints.EAST;
         gi.insets = new Insets(30, 10, 0, 10);
         panelImagen.add(btnGuardar, gi);
 
-        //Combinar columnas
-        gp.gridx = 0; gp.gridy = 0;
+        // Combinar columnas
+        gp.gridx = 0;
+        gp.gridy = 0;
         gp.weightx = 1;
         panelPrincipal.add(panelCampos, gp);
 
-        gp.gridx = 1; gp.gridy = 0;
+        gp.gridx = 1;
+        gp.gridy = 0;
         gp.weightx = 0;
-        gp.insets = new Insets(0, 40, 0, 0); 
+        gp.insets = new Insets(0, 40, 0, 0);
         panelPrincipal.add(panelImagen, gp);
 
-        //Centrar con el wrapper
+        // Centrar con el wrapper
         panelWrapper.add(panelPrincipal, gw);
 
         return panelWrapper;
     }
 
     private JPanel crearPanelModificar() {
-        //Wrapper centrado
+        // Wrapper centrado
         JPanel panelWrapper = new JPanel(new GridBagLayout());
+        panelWrapper.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gw = new GridBagConstraints();
         gw.gridx = 0;
         gw.gridy = 0;
         gw.insets = new Insets(0, 0, 0, 0);
         gw.anchor = GridBagConstraints.NORTH;
 
-        //Panel con 2 columnas
+        // Panel con 2 columnas
         JPanel panelPrincipal = new JPanel(new GridBagLayout());
+        panelPrincipal.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gp = new GridBagConstraints();
         gp.insets = new Insets(0, 0, 0, 0);
         gp.anchor = GridBagConstraints.NORTHWEST;
 
-        //Panel Izquierdo para los campos
+        // Panel Izquierdo para los campos
         JPanel panelCampos = new JPanel(new GridBagLayout());
+        panelCampos.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 0, 10);
         gbc.anchor = GridBagConstraints.WEST;
 
-        //Componentes
+        // Componentes
         txtCodigoMod = new JTextField();
-        txtCodigoMod.setPreferredSize(new Dimension(350, 28));
+        estilizarCampoTexto(txtCodigoMod);
+        txtCodigoMod.setPreferredSize(new Dimension(350, 32));
+        txtCodigoMod.setMinimumSize(new Dimension(350, 32));
+        txtCodigoMod.setMaximumSize(new Dimension(350, 32));
 
         txtDescripcionMod = new JTextField();
-        txtDescripcionMod.setPreferredSize(new Dimension(350, 28));
+        estilizarCampoTexto(txtDescripcionMod);
+        txtDescripcionMod.setPreferredSize(new Dimension(350, 32));
+        txtDescripcionMod.setMinimumSize(new Dimension(350, 32));
+        txtDescripcionMod.setMaximumSize(new Dimension(350, 32));
         txtDescripcionMod.setEnabled(false);
 
         comboUmCompraMod = new JComboBox<>();
-        comboUmCompraMod.setPreferredSize(new Dimension(350, 28));
+        estilizarComboBox(comboUmCompraMod);
+        comboUmCompraMod.setPreferredSize(new Dimension(350, 32));
+        comboUmCompraMod.setMinimumSize(new Dimension(350, 32));
+        comboUmCompraMod.setMaximumSize(new Dimension(350, 32));
         comboUmCompraMod.setEnabled(false);
 
         txtPrecioCompraMod = new JTextField();
-        txtPrecioCompraMod.setPreferredSize(new Dimension(350, 28));
+        estilizarCampoTexto(txtPrecioCompraMod);
+        txtPrecioCompraMod.setPreferredSize(new Dimension(350, 32));
+        txtPrecioCompraMod.setMinimumSize(new Dimension(350, 32));
+        txtPrecioCompraMod.setMaximumSize(new Dimension(350, 32));
         txtPrecioCompraMod.setEnabled(false);
 
         comboUmVentaMod = new JComboBox<>();
-        comboUmVentaMod.setPreferredSize(new Dimension(350, 28));
+        estilizarComboBox(comboUmVentaMod);
+        comboUmVentaMod.setPreferredSize(new Dimension(350, 32));
+        comboUmVentaMod.setMinimumSize(new Dimension(350, 32));
+        comboUmVentaMod.setMaximumSize(new Dimension(350, 32));
         comboUmVentaMod.setEnabled(false);
 
         txtPrecioVentaMod = new JTextField();
-        txtPrecioVentaMod.setPreferredSize(new Dimension(350, 28));
+        estilizarCampoTexto(txtPrecioVentaMod);
+        txtPrecioVentaMod.setPreferredSize(new Dimension(350, 32));
+        txtPrecioVentaMod.setMinimumSize(new Dimension(350, 32));
+        txtPrecioVentaMod.setMaximumSize(new Dimension(350, 32));
         txtPrecioVentaMod.setEnabled(false);
 
-        lblImagenPreviewMod = new JLabel(CargadorProperties.obtenerComponentes("imagen.sin.imagen"), SwingConstants.CENTER);
+        lblImagenPreviewMod = new JLabel(CargadorProperties.obtenerComponentes("imagen.sin.imagen"),
+                SwingConstants.CENTER);
         lblImagenPreviewMod.setPreferredSize(new Dimension(200, 245));
         lblImagenPreviewMod.setBorder(BorderFactory.createLineBorder(Color.GRAY));
 
         btnSeleccionarImagenMod = new JButton(CargadorProperties.obtenerComponentes("boton.cambiar.imagen"));
+        estilizarBotonTercero(btnSeleccionarImagenMod);
         btnSeleccionarImagenMod.setEnabled(false);
         btnSeleccionarImagenMod.addActionListener(e -> seleccionarImagenModificar());
 
-        //Labels error
+        // Labels error
         lblErrorCodigoMod = crearLabelError();
         lblErrorCodigoMod.setPreferredSize(new Dimension(350, 20));
 
@@ -451,21 +608,25 @@ public class VentanaProducto extends JFrame {
         lblErrorPrecioVentaMod = crearLabelError();
         lblErrorPrecioVentaMod.setPreferredSize(new Dimension(365, 20));
 
-        //Metodos de carga y validación
+        // Metodos de carga y validación
         cargarUnidadesMedida(comboUmCompraMod);
         cargarUnidadesMedida(comboUmVentaMod);
         configurarValidacionesModificar();
 
-        //Columna Izquierda
+        // Columna Izquierda
         int fila = 0;
 
-        //Código con botón Buscar
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.codigo")), gbc);
-
+        // Código con botón Buscar
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblCodigoMod = new JLabel(CargadorProperties.obtenerComponentes("label.codigo"));
+        lblCodigoMod.setFont(FUENTE_LABEL);
+        lblCodigoMod.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblCodigoMod, gbc);
         gbc.gridx = 1;
         gbc.gridwidth = 3;
         JPanel panelCodigo = new JPanel(new BorderLayout(5, 0));
+        panelCodigo.setBackground(COLOR_FONDO_CENTRAL);
         panelCodigo.add(txtCodigoMod, BorderLayout.CENTER);
 
         JLabel lblLupa = new JLabel(CargadorProperties.obtenerComponentes("emoji.lupa"));
@@ -484,183 +645,245 @@ public class VentanaProducto extends JFrame {
         gbc.gridwidth = 1;
 
         fila++;
-        gbc.gridx = 1; gbc.gridy = fila;
+        gbc.gridx = 1;
+        gbc.gridy = fila;
         gbc.insets = new Insets(0, 10, 0, 10);
         panelCampos.add(lblErrorCodigoMod, gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
 
-        //Descripción
+        // Descripción
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.descripcion")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblDescripciónMod = new JLabel(CargadorProperties.obtenerComponentes("label.descripcion"));
+        lblDescripciónMod.setFont(FUENTE_LABEL);
+        lblDescripciónMod.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblDescripciónMod, gbc);
         gbc.gridx = 1;
         panelCampos.add(txtDescripcionMod, gbc);
 
         fila++;
-        gbc.gridx = 1; gbc.gridy = fila;
+        gbc.gridx = 1;
+        gbc.gridy = fila;
         gbc.insets = new Insets(0, 10, 0, 10);
         panelCampos.add(lblErrorDescripcionMod, gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
 
-        //Unidad compra
+        // Unidad compra
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.um.compra")
-), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblUMCompraMod = new JLabel(CargadorProperties.obtenerComponentes("label.um.compra"));
+        lblUMCompraMod.setFont(FUENTE_LABEL);
+        lblUMCompraMod.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblUMCompraMod, gbc);
         gbc.gridx = 1;
         panelCampos.add(comboUmCompraMod, gbc);
 
         fila++;
-        gbc.gridx = 1; gbc.gridy = fila;
+        gbc.gridx = 1;
+        gbc.gridy = fila;
         gbc.insets = new Insets(0, 10, 0, 10);
         panelCampos.add(lblErrorUmCompraMod, gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
 
-        //Precio compra
+        // Precio compra
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.precio.compra")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblPrecioCompraMod = new JLabel(CargadorProperties.obtenerComponentes("label.precio.compra"));
+        lblPrecioCompraMod.setFont(FUENTE_LABEL);
+        lblPrecioCompraMod.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblPrecioCompraMod, gbc);
         gbc.gridx = 1;
         panelCampos.add(txtPrecioCompraMod, gbc);
 
         fila++;
-        gbc.gridx = 1; gbc.gridy = fila;
+        gbc.gridx = 1;
+        gbc.gridy = fila;
         gbc.insets = new Insets(0, 10, 0, 10);
         panelCampos.add(lblErrorPrecioCompraMod, gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
 
-        //Unidad venta
+        // Unidad venta
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.um.venta")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblUMVentaMod = new JLabel(CargadorProperties.obtenerComponentes("label.um.venta"));
+        lblUMVentaMod.setFont(FUENTE_LABEL);
+        lblUMVentaMod.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblUMVentaMod, gbc);
         gbc.gridx = 1;
         panelCampos.add(comboUmVentaMod, gbc);
 
         fila++;
-        gbc.gridx = 1; gbc.gridy = fila;
+        gbc.gridx = 1;
+        gbc.gridy = fila;
         gbc.insets = new Insets(0, 10, 0, 10);
         panelCampos.add(lblErrorUmVentaMod, gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
 
-        //Precio venta
+        // Precio venta
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.precio.venta")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblPrecioVentaMod = new JLabel(CargadorProperties.obtenerComponentes("label.precio.venta"));
+        lblPrecioVentaMod.setFont(FUENTE_LABEL);
+        lblPrecioVentaMod.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblPrecioVentaMod, gbc);
         gbc.gridx = 1;
         panelCampos.add(txtPrecioVentaMod, gbc);
 
         fila++;
-        gbc.gridx = 1; gbc.gridy = fila;
+        gbc.gridx = 1;
+        gbc.gridy = fila;
         gbc.insets = new Insets(0, 10, 0, 10);
         panelCampos.add(lblErrorPrecioVentaMod, gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
 
-        //Columna Derecha
+        // Columna Derecha
         JPanel panelImagen = new JPanel(new GridBagLayout());
+        panelImagen.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gi = new GridBagConstraints();
         gi.insets = new Insets(5, 10, 0, 10);
         gi.anchor = GridBagConstraints.WEST;
 
-        //Imagen
-        gi.gridx = 0; gi.gridy = 0;
-        panelImagen.add(new JLabel(CargadorProperties.obtenerComponentes("label.imagen")), gi);
-
-        gi.gridx = 1; gi.gridy = 0;
+        // Imagen
+        gi.gridx = 0;
+        gi.gridy = 0;
+        JLabel lblImagenMod = new JLabel(CargadorProperties.obtenerComponentes("label.imagen"));
+        lblImagenMod.setFont(FUENTE_LABEL);
+        lblImagenMod.setForeground(COLOR_TEXTO);
+        panelImagen.add(lblImagenMod, gi);
+        gi.gridx = 1;
+        gi.gridy = 0;
         panelImagen.add(btnSeleccionarImagenMod, gi);
 
-        gi.gridx = 1; gi.gridy = 1;
+        gi.gridx = 1;
+        gi.gridy = 1;
         gi.insets = new Insets(10, 10, 0, 10);
         panelImagen.add(lblImagenPreviewMod, gi);
 
-        //Guardar
+        // Guardar
         btnGuardarMod = new JButton(CargadorProperties.obtenerComponentes("boton.guardar"));
+        estilizarBotonPrimario(btnGuardarMod);
+        btnGuardarMod.setPreferredSize(new Dimension(120, 35));
         btnGuardarMod.setEnabled(false);
         btnGuardarMod.addActionListener(e -> modificarProducto());
 
-        gi.gridx = 1; gi.gridy = 2;
+        gi.gridx = 1;
+        gi.gridy = 2;
         gi.anchor = GridBagConstraints.EAST;
         gi.insets = new Insets(30, 10, 0, 10);
         panelImagen.add(btnGuardarMod, gi);
 
-        //Combinar columnas
-        gp.gridx = 0; gp.gridy = 0;
+        // Combinar columnas
+        gp.gridx = 0;
+        gp.gridy = 0;
         gp.weightx = 1;
         panelPrincipal.add(panelCampos, gp);
 
-        gp.gridx = 1; gp.gridy = 0;
+        gp.gridx = 1;
+        gp.gridy = 0;
         gp.weightx = 0;
         gp.insets = new Insets(0, 40, 0, 0);
         panelPrincipal.add(panelImagen, gp);
 
-        //Centrar con el wrapper
+        // Centrar con el wrapper
         panelWrapper.add(panelPrincipal, gw);
 
         return panelWrapper;
     }
-    
+
     private JPanel crearPanelEliminar() {
-        //Wrapper centrado
+        // Wrapper centrado
         JPanel panelWrapper = new JPanel(new GridBagLayout());
+        panelWrapper.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gw = new GridBagConstraints();
         gw.gridx = 0;
         gw.gridy = 0;
         gw.insets = new Insets(0, 0, 0, 0);
         gw.anchor = GridBagConstraints.NORTH;
 
-        //Panel con 2 columnas
+        // Panel con 2 columnas
         JPanel panelPrincipal = new JPanel(new GridBagLayout());
+        panelPrincipal.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gp = new GridBagConstraints();
         gp.insets = new Insets(0, 0, 0, 0);
         gp.anchor = GridBagConstraints.NORTHWEST;
 
-        //Panel Izquierdo para los campos
+        // Panel Izquierdo para los campos
         JPanel panelCampos = new JPanel(new GridBagLayout());
+        panelCampos.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 10, 10, 10);
+        gbc.insets = new Insets(5, 10, 0, 10);
         gbc.anchor = GridBagConstraints.WEST;
 
-        //Componentes
+        // Componentes
         txtCodigoElim = new JTextField();
-        txtCodigoElim.setPreferredSize(new Dimension(350, 28));
+        estilizarCampoTexto(txtCodigoElim);
+        txtCodigoElim.setPreferredSize(new Dimension(350, 32));
+        txtCodigoElim.setMinimumSize(new Dimension(350, 32));
+        txtCodigoElim.setMaximumSize(new Dimension(350, 32));
 
         txtDescripcionElim = new JTextField();
-        txtDescripcionElim.setPreferredSize(new Dimension(350, 28));
+        estilizarCampoTexto(txtDescripcionElim);
+        txtDescripcionElim.setPreferredSize(new Dimension(350, 32));
+        txtDescripcionElim.setMinimumSize(new Dimension(350, 32));
+        txtDescripcionElim.setMaximumSize(new Dimension(350, 32));
         txtDescripcionElim.setEnabled(false);
 
         txtCategoriaElim = new JTextField();
-        txtCategoriaElim.setPreferredSize(new Dimension(350, 28));
+        estilizarCampoTexto(txtCategoriaElim);
+        txtCategoriaElim.setPreferredSize(new Dimension(350, 32));
+        txtCategoriaElim.setMinimumSize(new Dimension(350, 32));
+        txtCategoriaElim.setMaximumSize(new Dimension(350, 32));
         txtCategoriaElim.setEnabled(false);
 
         txtUmCompraElim = new JTextField();
-        txtUmCompraElim.setPreferredSize(new Dimension(350, 28));
+        estilizarCampoTexto(txtUmCompraElim);
+        txtUmCompraElim.setPreferredSize(new Dimension(350, 32));
+        txtUmCompraElim.setMinimumSize(new Dimension(350, 32));
+        txtUmCompraElim.setMaximumSize(new Dimension(350, 32));
         txtUmCompraElim.setEnabled(false);
 
         txtPrecioCompraElim = new JTextField();
-        txtPrecioCompraElim.setPreferredSize(new Dimension(350, 28));
+        estilizarCampoTexto(txtPrecioCompraElim);
+        txtPrecioCompraElim.setPreferredSize(new Dimension(350, 32));
+        txtPrecioCompraElim.setMinimumSize(new Dimension(350, 32));
+        txtPrecioCompraElim.setMaximumSize(new Dimension(350, 32));
         txtPrecioCompraElim.setEnabled(false);
 
         txtUmVentaElim = new JTextField();
-        txtUmVentaElim.setPreferredSize(new Dimension(350, 28));
+        estilizarCampoTexto(txtUmVentaElim);
+        txtUmVentaElim.setPreferredSize(new Dimension(350, 32));
+        txtUmVentaElim.setMinimumSize(new Dimension(350, 32));
+        txtUmVentaElim.setMaximumSize(new Dimension(350, 32));
         txtUmVentaElim.setEnabled(false);
 
         txtPrecioVentaElim = new JTextField();
-        txtPrecioVentaElim.setPreferredSize(new Dimension(350, 28));
+        estilizarCampoTexto(txtPrecioVentaElim);
+        txtPrecioVentaElim.setPreferredSize(new Dimension(350, 32));
+        txtPrecioVentaElim.setMinimumSize(new Dimension(350, 32));
+        txtPrecioVentaElim.setMaximumSize(new Dimension(350, 32));
         txtPrecioVentaElim.setEnabled(false);
 
         txtSaldoIniElim = new JTextField();
-        txtSaldoIniElim.setPreferredSize(new Dimension(350, 28));
+        estilizarCampoTexto(txtSaldoIniElim);
+        txtSaldoIniElim.setPreferredSize(new Dimension(350, 32));
+        txtSaldoIniElim.setMinimumSize(new Dimension(350, 32));
+        txtSaldoIniElim.setMaximumSize(new Dimension(350, 32));
         txtSaldoIniElim.setEnabled(false);
 
         txtSaldoFinElim = new JTextField();
-        txtSaldoFinElim.setPreferredSize(new Dimension(350, 28));
+        estilizarCampoTexto(txtSaldoFinElim);
+        txtSaldoFinElim.setPreferredSize(new Dimension(350, 32));
+        txtSaldoFinElim.setMinimumSize(new Dimension(350, 32));
+        txtSaldoFinElim.setMaximumSize(new Dimension(350, 32));
         txtSaldoFinElim.setEnabled(false);
 
-        lblImagenPreviewElim = new JLabel(CargadorProperties.obtenerComponentes("imagen.sin.imagen"), SwingConstants.CENTER);
+        lblImagenPreviewElim = new JLabel(CargadorProperties.obtenerComponentes("imagen.sin.imagen"),
+                SwingConstants.CENTER);
         lblImagenPreviewElim.setPreferredSize(new Dimension(230, 290));
         lblImagenPreviewElim.setBorder(BorderFactory.createLineBorder(Color.GRAY));
 
@@ -668,13 +891,17 @@ public class VentanaProducto extends JFrame {
         int fila = 0;
 
         // Código con lupa
-        gbc.gridx = 0; gbc.gridy = fila;
+        gbc.gridx = 0;
+        gbc.gridy = fila;
         gbc.gridwidth = 1;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.codigo")), gbc);
-
+        JLabel lblCodigoEli = new JLabel(CargadorProperties.obtenerComponentes("label.codigo"));
+        lblCodigoEli.setFont(FUENTE_LABEL);
+        lblCodigoEli.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblCodigoEli, gbc);
         gbc.gridx = 1;
         gbc.gridwidth = 3;
         JPanel panelCodigo = new JPanel(new BorderLayout(5, 0));
+        panelCodigo.setBackground(COLOR_FONDO_CENTRAL);
         panelCodigo.add(txtCodigoElim, BorderLayout.CENTER);
 
         JLabel lblLupa = new JLabel(CargadorProperties.obtenerComponentes("emoji.lupa"));
@@ -694,98 +921,132 @@ public class VentanaProducto extends JFrame {
 
         // Descripción
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.descripcion")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblDescripciónEli = new JLabel(CargadorProperties.obtenerComponentes("label.descripcion"));
+        lblDescripciónEli.setFont(FUENTE_LABEL);
+        lblDescripciónEli.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblDescripciónEli, gbc);
         gbc.gridx = 1;
         panelCampos.add(txtDescripcionElim, gbc);
 
         // Categoría
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.categoria")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblCategoriaEli = new JLabel(CargadorProperties.obtenerComponentes("label.categoria"));
+        lblCategoriaEli.setFont(FUENTE_LABEL);
+        lblCategoriaEli.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblCategoriaEli, gbc);
         gbc.gridx = 1;
         panelCampos.add(txtCategoriaElim, gbc);
 
         // Unidad compra
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.um.compra")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblUMCompraEli = new JLabel(CargadorProperties.obtenerComponentes("label.um.compra"));
+        lblUMCompraEli.setFont(FUENTE_LABEL);
+        lblUMCompraEli.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblUMCompraEli, gbc);
         gbc.gridx = 1;
         panelCampos.add(txtUmCompraElim, gbc);
 
         // Precio compra
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.precio.compra")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblPrecioCompraEli = new JLabel(CargadorProperties.obtenerComponentes("label.precio.compra"));
+        lblPrecioCompraEli.setFont(FUENTE_LABEL);
+        lblPrecioCompraEli.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblPrecioCompraEli, gbc);
         gbc.gridx = 1;
         panelCampos.add(txtPrecioCompraElim, gbc);
 
         // Unidad venta
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.um.venta")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblUMVentaEli = new JLabel(CargadorProperties.obtenerComponentes("label.um.venta"));
+        lblUMVentaEli.setFont(FUENTE_LABEL);
+        lblUMVentaEli.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblUMVentaEli, gbc);
         gbc.gridx = 1;
         panelCampos.add(txtUmVentaElim, gbc);
 
         // Precio venta
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.precio.venta")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblPrecioVentaEli = new JLabel(CargadorProperties.obtenerComponentes("label.precio.venta"));
+        lblPrecioVentaEli.setFont(FUENTE_LABEL);
+        lblPrecioVentaEli.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblPrecioVentaEli, gbc);
         gbc.gridx = 1;
         panelCampos.add(txtPrecioVentaElim, gbc);
 
         // Saldo Inicial
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.saldo.inicial")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblSaldoIniMod = new JLabel(CargadorProperties.obtenerComponentes("label.saldo.inicial"));
+        lblSaldoIniMod.setFont(FUENTE_LABEL);
+        lblSaldoIniMod.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblSaldoIniMod, gbc);
         gbc.gridx = 1;
         panelCampos.add(txtSaldoIniElim, gbc);
 
         // Saldo Final
         fila++;
-        gbc.gridx = 0; gbc.gridy = fila;
-        panelCampos.add(new JLabel(CargadorProperties.obtenerComponentes("label.saldo.final")), gbc);
-
+        gbc.gridx = 0;
+        gbc.gridy = fila;
+        JLabel lblSaldoFinMod = new JLabel(CargadorProperties.obtenerComponentes("label.saldo.final"));
+        lblSaldoFinMod.setFont(FUENTE_LABEL);
+        lblSaldoFinMod.setForeground(COLOR_TEXTO);
+        panelCampos.add(lblSaldoFinMod, gbc);
         gbc.gridx = 1;
         panelCampos.add(txtSaldoFinElim, gbc);
 
         // Columna Derecha
         JPanel panelImagen = new JPanel(new GridBagLayout());
+        panelImagen.setBackground(COLOR_FONDO_CENTRAL);
         GridBagConstraints gi = new GridBagConstraints();
         gi.insets = new Insets(5, 10, 0, 10);
         gi.anchor = GridBagConstraints.WEST;
 
         // Imagen
-        gi.gridx = 0; gi.gridy = 0;
-        panelImagen.add(new JLabel(CargadorProperties.obtenerComponentes("label.imagen")), gi);
-
-        gi.gridx = 0; gi.gridy = 1;
+        gi.gridx = 0;
+        gi.gridy = 0;
+        JLabel lblImagenEli = new JLabel(CargadorProperties.obtenerComponentes("label.imagen"));
+        lblImagenEli.setFont(FUENTE_LABEL);
+        lblImagenEli.setForeground(COLOR_TEXTO);
+        panelImagen.add(lblImagenEli, gi);
+        gi.gridx = 0;
+        gi.gridy = 1;
         gi.insets = new Insets(10, 10, 0, 10);
         panelImagen.add(lblImagenPreviewElim, gi);
 
         // Eliminar
         btnEliminar = new JButton(CargadorProperties.obtenerComponentes("boton.eliminar"));
+        estilizarBotonEliminar(btnEliminar);
+        btnEliminar.setPreferredSize(new Dimension(120, 35));
         btnEliminar.setEnabled(false);
         btnEliminar.addActionListener(e -> eliminarProducto());
 
-        gi.gridx = 0; gi.gridy = 2;
+        gi.gridx = 0;
+        gi.gridy = 2;
         gi.anchor = GridBagConstraints.EAST;
         gi.insets = new Insets(30, 10, 0, 10);
         panelImagen.add(btnEliminar, gi);
 
         // Combinar columnas
-        gp.gridx = 0; gp.gridy = 0;
+        gp.gridx = 0;
+        gp.gridy = 0;
         gp.weightx = 1;
         panelPrincipal.add(panelCampos, gp);
 
-        gp.gridx = 1; gp.gridy = 0;
+        gp.gridx = 1;
+        gp.gridy = 0;
         gp.weightx = 0;
         gp.insets = new Insets(0, 40, 0, 0);
         panelPrincipal.add(panelImagen, gp);
@@ -795,33 +1056,43 @@ public class VentanaProducto extends JFrame {
 
         return panelWrapper;
     }
-    
+
     private JPanel crearPanelConsultar() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.setBackground(COLOR_FONDO_CENTRAL);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // Panel superior con combo tipo de consulta CENTRADO
         JPanel panelTipo = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-        comboTipoConsulta = new JComboBox<>(new String[]{
-            CargadorProperties.obtenerComponentes("combo.consulta.seleccione"),
-            CargadorProperties.obtenerComponentes("combo.consulta.general"),
-            CargadorProperties.obtenerComponentes("combo.consulta.parametro")
+        panelTipo.setBackground(COLOR_FONDO_CENTRAL);
+
+        comboTipoConsulta = new JComboBox<>(new String[] {
+                CargadorProperties.obtenerComponentes("combo.consulta.seleccione"),
+                CargadorProperties.obtenerComponentes("combo.consulta.general"),
+                CargadorProperties.obtenerComponentes("combo.consulta.parametro")
         });
+        estilizarComboBox(comboTipoConsulta);
         comboTipoConsulta.setPreferredSize(new Dimension(250, 30));
         comboTipoConsulta.addActionListener(e -> cambiarTipoConsulta());
+
         panelTipo.add(comboTipoConsulta);
         panel.add(panelTipo, BorderLayout.NORTH);
 
-        // Panel central (contiene búsqueda y tabla)
+        // Panel central (contiene búsqueda, tabla y paginación)
         JPanel panelCentral = new JPanel(new BorderLayout(5, 5));
+        panelCentral.setBackground(COLOR_FONDO_CENTRAL);
 
         // Panel de búsqueda CENTRADO
         panelBusqueda = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        panelBusqueda.setBackground(COLOR_FONDO_CENTRAL);
+
         txtBusqueda = new JTextField(20);
+        estilizarCampoTexto(txtBusqueda);
         txtBusqueda.setPreferredSize(new Dimension(250, 25));
         txtBusqueda.setToolTipText(CargadorProperties.obtenerComponentes("tooltip.busqueda"));
 
         comboParametroBusqueda = new JComboBox<>();
+        estilizarComboBox(comboParametroBusqueda);
         comboParametroBusqueda.setPreferredSize(new Dimension(200, 25));
 
         panelBusqueda.add(new JLabel(CargadorProperties.obtenerComponentes("label.buscar")));
@@ -833,15 +1104,15 @@ public class VentanaProducto extends JFrame {
 
         // Tabla de resultados
         String[] columnas = {
-            CargadorProperties.obtenerComponentes("tabla.col.codigo"), 
-            CargadorProperties.obtenerComponentes("tabla.col.descripcion"), 
-            CargadorProperties.obtenerComponentes("tabla.col.categoria"), 
-            CargadorProperties.obtenerComponentes("tabla.col.um.compra"), 
-            CargadorProperties.obtenerComponentes("tabla.col.precio.compra"), 
-            CargadorProperties.obtenerComponentes("tabla.col.um.venta"), 
-            CargadorProperties.obtenerComponentes("tabla.col.precio.venta"), 
-            CargadorProperties.obtenerComponentes("tabla.col.saldo.inicial"),
-            CargadorProperties.obtenerComponentes("tabla.col.saldo.final")
+                CargadorProperties.obtenerComponentes("tabla.col.codigo"),
+                CargadorProperties.obtenerComponentes("tabla.col.descripcion"),
+                CargadorProperties.obtenerComponentes("tabla.col.categoria"),
+                CargadorProperties.obtenerComponentes("tabla.col.um.compra"),
+                CargadorProperties.obtenerComponentes("tabla.col.precio.compra"),
+                CargadorProperties.obtenerComponentes("tabla.col.um.venta"),
+                CargadorProperties.obtenerComponentes("tabla.col.precio.venta"),
+                CargadorProperties.obtenerComponentes("tabla.col.saldo.inicial"),
+                CargadorProperties.obtenerComponentes("tabla.col.saldo.final")
         };
 
         modeloTabla = new DefaultTableModel(columnas, 0) {
@@ -854,8 +1125,18 @@ public class VentanaProducto extends JFrame {
         tablaResultados = new JTable(modeloTabla);
         tablaResultados.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tablaResultados.setRowHeight(25);
+        tablaResultados.setFont(FUENTE_BASE);
+        tablaResultados.setForeground(COLOR_TEXTO_CAMPO);
 
+        // Header
+        tablaResultados.getTableHeader().setFont(new Font("Poppins", Font.BOLD, 13));
+        tablaResultados.getTableHeader().setBackground(COLOR_ENFASIS);
+        tablaResultados.getTableHeader().setForeground(COLOR_TEXTO);
+        tablaResultados.getTableHeader().setOpaque(true);
+
+        // Click para imagen
         tablaResultados.addMouseListener(new MouseAdapter() {
+            @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 1) {
                     int fila = tablaResultados.getSelectedRow();
@@ -867,10 +1148,63 @@ public class VentanaProducto extends JFrame {
             }
         });
 
-        scrollTabla = new JScrollPane(tablaResultados);
-        scrollTabla.setVisible(false);
+        // ✅ Control total de ancho por código
+        tablaResultados.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
-        panelCentral.add(scrollTabla, BorderLayout.CENTER);
+        // ✅ Quitar franja blanca: el “espacio vacío” será crema
+        tablaResultados.setBackground(COLOR_FONDO_CENTRAL);
+
+        // ✅ Filas blancas (pero el fondo vacío crema)
+        DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (!isSelected) c.setBackground(Color.WHITE);
+                return c;
+            }
+        };
+        tablaResultados.setDefaultRenderer(Object.class, renderer);
+
+        // Crear JScrollPane para la tabla (PRIMERO crear scrollTabla)
+        scrollTabla = new JScrollPane(tablaResultados);
+        scrollTabla.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollTabla.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+        scrollTabla.setBorder(new LineBorder(COLOR_BORDE, 1));
+
+        // ✅ Fondo crema en el viewport
+        scrollTabla.setBackground(COLOR_FONDO_CENTRAL);
+        scrollTabla.getViewport().setBackground(COLOR_FONDO_CENTRAL);
+
+        scrollTabla.getViewport().addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                int totalWidth = scrollTabla.getViewport().getWidth();
+                int cols = tablaResultados.getColumnModel().getColumnCount();
+                if (cols <= 0) return;
+
+                int base = totalWidth / cols;
+                int resto = totalWidth % cols; // 👈 lo que sobra
+
+                for (int i = 0; i < cols; i++) {
+                    int w = base + (i == cols - 1 ? resto : 0); // 👈 última columna se come el resto
+                    tablaResultados.getColumnModel().getColumn(i).setPreferredWidth(Math.max(80, w));
+                }
+            }
+        });
+
+        // Panel contenedor: tabla pegada ARRIBA
+        panelTabla = new JPanel(new BorderLayout());
+        panelTabla.setBackground(COLOR_FONDO_CENTRAL);
+        panelTabla.add(scrollTabla, BorderLayout.NORTH);
+        panelTabla.setVisible(false);
+
+        panelCentral.add(panelTabla, BorderLayout.CENTER);
+
+        // Panel de paginación
+        panelPaginacion = crearPanelPaginacion();
+        panelPaginacion.setVisible(false);
+        panelCentral.add(panelPaginacion, BorderLayout.SOUTH);
 
         panel.add(panelCentral, BorderLayout.CENTER);
 
@@ -879,87 +1213,274 @@ public class VentanaProducto extends JFrame {
 
         return panel;
     }
-    
+
+
+    private JPanel crearPanelPaginacion() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        panel.setBackground(COLOR_FONDO_CENTRAL);
+
+        btnPrimero = crearBotonPaginacion("primero.png");
+        btnAnterior = crearBotonPaginacion("anterior.png");
+        btnSiguiente = crearBotonPaginacion("siguiente.png");
+        btnUltimo = crearBotonPaginacion("ultimo.png");
+
+        btnPrimero.addActionListener(e -> {
+            paginaActual = 0;
+            actualizarTablaPaginada();
+        });
+
+        btnAnterior.addActionListener(e -> {
+            if (paginaActual > 0) {
+                paginaActual--;
+                actualizarTablaPaginada();
+            }
+        });
+
+        btnSiguiente.addActionListener(e -> {
+            int filasPorPagina = obtenerFilasPorPagina();
+            if (productosPaginadosTotal != null
+                    && (paginaActual + 1) * filasPorPagina < productosPaginadosTotal.size()) {
+                paginaActual++;
+                actualizarTablaPaginada();
+            }
+        });
+
+        btnUltimo.addActionListener(e -> {
+            if (productosPaginadosTotal != null && !productosPaginadosTotal.isEmpty()) {
+                int filasPorPagina = obtenerFilasPorPagina();
+                paginaActual = (int) Math.ceil((double) productosPaginadosTotal.size() / filasPorPagina) - 1;
+                if (paginaActual < 0)
+                    paginaActual = 0;
+                actualizarTablaPaginada();
+            }
+        });
+
+        panel.add(btnPrimero);
+        panel.add(btnAnterior);
+        panel.add(btnSiguiente);
+        panel.add(btnUltimo);
+
+        return panel;
+    }
+
+    private JButton crearBotonPaginacion(String iconName) {
+        JButton btn = new JButton();
+        btn.setPreferredSize(new Dimension(50, 35));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBackground(COLOR_TEXTO);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createEmptyBorder());
+        btn.setContentAreaFilled(false);
+
+        // Cargar icono con escalado
+        try {
+            java.net.URL url = getClass().getResource("/resources/img/" + iconName);
+            if (url != null) {
+                ImageIcon icon = new ImageIcon(url);
+                Image img = icon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+                btn.setIcon(new ImageIcon(img));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // UI Personalizada para fondo redondeado y hover
+        btn.setUI(new javax.swing.plaf.basic.BasicButtonUI() {
+            @Override
+            public void paint(Graphics g, JComponent c) {
+                JButton button = (JButton) c;
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                if (!button.isEnabled()) {
+                    g2.setColor(new Color(200, 200, 200));
+                } else if (button.getModel().isRollover()) {
+                    g2.setColor(button.getBackground().brighter());
+                } else {
+                    g2.setColor(button.getBackground());
+                }
+
+                g2.fillRoundRect(0, 0, button.getWidth(), button.getHeight(), 10, 10);
+                g2.dispose();
+                super.paint(g, c);
+            }
+        });
+
+        return btn;
+    }
+
+    private int obtenerFilasPorPagina() {
+        if (panelBusqueda != null && panelBusqueda.isVisible()) {
+            return 15; // Consulta por parámetro
+        }
+        return 17; // Consulta general
+    }
+
+    private void actualizarTablaPaginada() {
+        modeloTabla.setRowCount(0);
+
+        if (productosPaginadosTotal == null || productosPaginadosTotal.isEmpty()) {
+            panelTabla.setVisible(false); // ✅ OCULTAR cuando no hay datos
+            if (btnPrimero != null) {
+                btnPrimero.setEnabled(false);
+                btnAnterior.setEnabled(false);
+                btnSiguiente.setEnabled(false);
+                btnUltimo.setEnabled(false);
+            }
+            return;
+        }
+
+        panelTabla.setVisible(true); // ✅ MOSTRAR cuando hay datos
+
+        int filasPorPagina = obtenerFilasPorPagina();
+        int totalRegistros = productosPaginadosTotal.size();
+        int totalPaginas = (int) Math.ceil((double) totalRegistros / filasPorPagina);
+
+        if (paginaActual >= totalPaginas)
+            paginaActual = totalPaginas - 1;
+        if (paginaActual < 0)
+            paginaActual = 0;
+
+        int inicio = paginaActual * filasPorPagina;
+        int fin = Math.min(inicio + filasPorPagina, totalRegistros);
+
+        // Llenar tabla con datos
+        for (int i = inicio; i < fin; i++) {
+            Producto p = productosPaginadosTotal.get(i);
+            modeloTabla.addRow(new Object[] {
+                    p.getCodigo(),
+                    p.getDescripcion(),
+                    p.getCategoria(),
+                    p.getNombreUmCompra(),
+                    p.getPrecioCompra(),
+                    p.getNombreUmVenta(),
+                    p.getPrecioVenta(),
+                    p.getSaldoIni(),
+                    p.getSaldoFin()
+            });
+        }
+
+        // ✅ AJUSTE DINÁMICO DE ALTURA (igual que VentanaFactura)
+        int filasActuales = fin - inicio;
+        int alturaFila = 25;
+        int alturaHeader = 35;
+        int alturaBorde = 2;
+        int alturaTotal = (filasActuales * alturaFila) + alturaHeader + alturaBorde;
+
+        // Ajustar scrollPane
+        scrollTabla.setPreferredSize(new Dimension(1300, alturaTotal));
+        scrollTabla.setMinimumSize(new Dimension(1300, alturaTotal));
+        scrollTabla.setMaximumSize(new Dimension(1300, alturaTotal));
+
+        // Ajustar panelTabla
+        panelTabla.setPreferredSize(new Dimension(1300, alturaTotal));
+        panelTabla.setMinimumSize(new Dimension(1300, alturaTotal));
+        panelTabla.setMaximumSize(new Dimension(1300, alturaTotal));
+
+        // Forzar actualización
+        scrollTabla.revalidate();
+        scrollTabla.repaint();
+        panelTabla.revalidate();
+        panelTabla.repaint();
+
+        // Actualizar estado de botones
+        if (btnPrimero != null) {
+            btnPrimero.setEnabled(paginaActual > 0);
+            btnAnterior.setEnabled(paginaActual > 0);
+            btnSiguiente.setEnabled(paginaActual < totalPaginas - 1);
+            btnUltimo.setEnabled(paginaActual < totalPaginas - 1);
+        }
+    }
+
     private void cambiarPanel() {
         int seleccion = comboOpciones.getSelectedIndex();
 
         switch (seleccion) {
-            case 1: //Ingresar
+            case 1: // Ingresar
                 cardLayout.show(panelContenedor, PANEL_INGRESAR);
                 lblTituloSuperior.setText(CargadorProperties.obtenerComponentes("ventana.productos.titulo.ingresar"));
                 limpiarCamposIngresar();
                 break;
-            case 2: //Modificar
+            case 2: // Modificar
                 cardLayout.show(panelContenedor, PANEL_MODIFICAR);
                 lblTituloSuperior.setText(CargadorProperties.obtenerComponentes("ventana.productos.titulo.modificar"));
                 limpiarCamposModificar();
                 break;
-            case 3: //Eliminar
+            case 3: // Eliminar
                 cardLayout.show(panelContenedor, PANEL_ELIMINAR);
                 lblTituloSuperior.setText(CargadorProperties.obtenerComponentes("ventana.productos.titulo.eliminar"));
                 limpiarCamposEliminar();
                 break;
-            case 4: //Consultar
+            case 4: // Consultar
                 cardLayout.show(panelContenedor, PANEL_CONSULTAR);
                 lblTituloSuperior.setText(CargadorProperties.obtenerComponentes("ventana.productos.titulo.consultar"));
                 comboTipoConsulta.setSelectedIndex(0);
                 break;
-            default: 
+            default:
                 cardLayout.show(panelContenedor, PANEL_VACIO);
                 lblTituloSuperior.setText(CargadorProperties.obtenerComponentes("ventana.productos.titulo"));
                 break;
         }
     }
-     
-    //Vuelve al panel vacío
+
+    // Vuelve al panel vacío
     private void volverAlMenu() {
-        this.dispose();             
+        this.dispose();
         new MenuPrincipal().setVisible(true);
     }
-    
+
     private JLabel crearLabelError() {
-        JLabel label = new JLabel(" ");
-        label.setForeground(Color.RED);
-        label.setFont(new Font("Arial", Font.PLAIN, 11));
-        return label;
+        JLabel lbl = new JLabel(" ");
+        lbl.setForeground(COLOR_ACENTO);
+        lbl.setFont(new Font("Poppins", Font.PLAIN, 11));
+        lbl.setPreferredSize(new Dimension(350, 20));
+        lbl.setMinimumSize(new Dimension(350, 20));
+        lbl.setMaximumSize(new Dimension(350, 20));
+        lbl.setVerticalAlignment(SwingConstants.BOTTOM);
+        return lbl;
     }
-    
+
     private void cargarCategorias(JComboBox<ItemCombo> combo) {
         Producto pro = new Producto();
         ArrayList<ItemCombo> categorias = pro.obtenerCategoriasDP();
-        
+
         combo.removeAllItems();
         combo.addItem(new ItemCombo("", "Seleccione..."));
-        
+
         for (ItemCombo cat : categorias) {
             combo.addItem(cat);
         }
     }
-    
+
     private void cargarUnidadesMedida(JComboBox<ItemCombo> combo) {
         Producto pro = new Producto();
         ArrayList<ItemCombo> unidades = pro.obtenerUnidadesMedidaDP();
-        
+
         combo.removeAllItems();
         combo.addItem(new ItemCombo("", "Seleccione..."));
-        
+
         for (ItemCombo um : unidades) {
             combo.addItem(um);
         }
     }
-    
+
     private void cargarParametrosBusqueda() {
         comboParametroBusqueda.removeAllItems();
-        comboParametroBusqueda.addItem(new ItemCombo("codigo", CargadorProperties.obtenerComponentes("combo.param.codigo")));
-        comboParametroBusqueda.addItem(new ItemCombo("descripcion", CargadorProperties.obtenerComponentes("combo.param.descripcion")));
-        comboParametroBusqueda.addItem(new ItemCombo("categoria", CargadorProperties.obtenerComponentes("combo.param.categoria")));
-        comboParametroBusqueda.addItem(new ItemCombo("um_compra", CargadorProperties.obtenerComponentes("combo.param.um.compra")));
-        comboParametroBusqueda.addItem(new ItemCombo("um_venta", CargadorProperties.obtenerComponentes("combo.param.um.venta")));
+        comboParametroBusqueda
+                .addItem(new ItemCombo("codigo", CargadorProperties.obtenerComponentes("combo.param.codigo")));
+        comboParametroBusqueda.addItem(
+                new ItemCombo("descripcion", CargadorProperties.obtenerComponentes("combo.param.descripcion")));
+        comboParametroBusqueda
+                .addItem(new ItemCombo("categoria", CargadorProperties.obtenerComponentes("combo.param.categoria")));
+        comboParametroBusqueda
+                .addItem(new ItemCombo("um_compra", CargadorProperties.obtenerComponentes("combo.param.um.compra")));
+        comboParametroBusqueda
+                .addItem(new ItemCombo("um_venta", CargadorProperties.obtenerComponentes("combo.param.um.venta")));
     }
-    
+
     private void generarCodigoAutomatico() {
         ItemCombo categoriaSeleccionada = (ItemCombo) comboCategoriaIng.getSelectedItem();
-        
+
         if (categoriaSeleccionada != null && !categoriaSeleccionada.getId().isEmpty()) {
             Producto pro = new Producto();
             pro.setIdCategoria(categoriaSeleccionada.getId());
@@ -978,213 +1499,257 @@ public class VentanaProducto extends JFrame {
             label.setText(" ");
         }
     }
-    
+
     private void configurarValidacionesIngresar() {
         comboCategoriaIng.addActionListener(e -> validarCategoriaIngresar());
-        
+
         txtDescripcionIng.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { validarDescripcionIngresar(); }
-            public void removeUpdate(DocumentEvent e) { validarDescripcionIngresar(); }
-            public void changedUpdate(DocumentEvent e) { validarDescripcionIngresar(); }
+            public void insertUpdate(DocumentEvent e) {
+                validarDescripcionIngresar();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                validarDescripcionIngresar();
+            }
+
+            public void changedUpdate(DocumentEvent e) {
+                validarDescripcionIngresar();
+            }
         });
-        
+
         comboUmCompraIng.addActionListener(e -> validarUmCompraIngresar());
-        
+
         txtPrecioCompraIng.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { validarPrecioCompraIngresar(); }
-            public void removeUpdate(DocumentEvent e) { validarPrecioCompraIngresar(); }
-            public void changedUpdate(DocumentEvent e) { validarPrecioCompraIngresar(); }
+            public void insertUpdate(DocumentEvent e) {
+                validarPrecioCompraIngresar();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                validarPrecioCompraIngresar();
+            }
+
+            public void changedUpdate(DocumentEvent e) {
+                validarPrecioCompraIngresar();
+            }
         });
-        
+
         comboUmVentaIng.addActionListener(e -> validarUmVentaIngresar());
-        
+
         txtPrecioVentaIng.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { validarPrecioVentaIngresar(); }
-            public void removeUpdate(DocumentEvent e) { validarPrecioVentaIngresar(); }
-            public void changedUpdate(DocumentEvent e) { validarPrecioVentaIngresar(); }
+            public void insertUpdate(DocumentEvent e) {
+                validarPrecioVentaIngresar();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                validarPrecioVentaIngresar();
+            }
+
+            public void changedUpdate(DocumentEvent e) {
+                validarPrecioVentaIngresar();
+            }
         });
     }
-    
+
     private void validarCategoriaIngresar() {
         ItemCombo categoria = (ItemCombo) comboCategoriaIng.getSelectedItem();
         String error = ValidacionesProducto.validarCategoria(categoria != null ? categoria.getId() : "");
-        
+
         if (error != null) {
             lblErrorCategoriaIng.setText(error);
         } else {
             lblErrorCategoriaIng.setText(" ");
         }
     }
-    
+
     private void validarDescripcionIngresar() {
         String error = ValidacionesProducto.validarDescripcion(txtDescripcionIng.getText(), false);
-        
+
         if (error != null) {
             lblErrorDescripcionIng.setText(error);
         } else {
             lblErrorDescripcionIng.setText(" ");
         }
     }
-    
+
     private void validarUmCompraIngresar() {
         ItemCombo um = (ItemCombo) comboUmCompraIng.getSelectedItem();
         String error = ValidacionesProducto.validarUnidadMedida(um != null ? um.getId() : "", "compra");
-        
+
         if (error != null) {
             lblErrorUmCompraIng.setText(error);
         } else {
             lblErrorUmCompraIng.setText(" ");
         }
     }
-    
+
     private void validarPrecioCompraIngresar() {
         String error = ValidacionesProducto.validarPrecioCompra(txtPrecioCompraIng.getText());
-        
+
         if (error != null) {
             lblErrorPrecioCompraIng.setText(error);
         } else {
             lblErrorPrecioCompraIng.setText(" ");
         }
     }
-    
+
     private void validarUmVentaIngresar() {
         ItemCombo um = (ItemCombo) comboUmVentaIng.getSelectedItem();
         String error = ValidacionesProducto.validarUnidadMedida(um != null ? um.getId() : "", "venta");
-        
+
         if (error != null) {
             lblErrorUmVentaIng.setText(error);
         } else {
             lblErrorUmVentaIng.setText(" ");
         }
     }
-    
+
     private void validarPrecioVentaIngresar() {
         String error = ValidacionesProducto.validarPrecioVenta(
-            txtPrecioVentaIng.getText(), 
-            txtPrecioCompraIng.getText()
-        );
-        
+                txtPrecioVentaIng.getText(),
+                txtPrecioCompraIng.getText());
+
         if (error != null) {
             lblErrorPrecioVentaIng.setText(error);
         } else {
             lblErrorPrecioVentaIng.setText(" ");
         }
     }
-    
+
     private void configurarValidacionesModificar() {
         txtDescripcionMod.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { validarDescripcionModificar(); }
-            public void removeUpdate(DocumentEvent e) { validarDescripcionModificar(); }
-            public void changedUpdate(DocumentEvent e) { validarDescripcionModificar(); }
+            public void insertUpdate(DocumentEvent e) {
+                validarDescripcionModificar();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                validarDescripcionModificar();
+            }
+
+            public void changedUpdate(DocumentEvent e) {
+                validarDescripcionModificar();
+            }
         });
-        
+
         comboUmCompraMod.addActionListener(e -> validarUmCompraModificar());
-        
+
         txtPrecioCompraMod.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { validarPrecioCompraModificar(); }
-            public void removeUpdate(DocumentEvent e) { validarPrecioCompraModificar(); }
-            public void changedUpdate(DocumentEvent e) { validarPrecioCompraModificar(); }
+            public void insertUpdate(DocumentEvent e) {
+                validarPrecioCompraModificar();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                validarPrecioCompraModificar();
+            }
+
+            public void changedUpdate(DocumentEvent e) {
+                validarPrecioCompraModificar();
+            }
         });
-        
+
         comboUmVentaMod.addActionListener(e -> validarUmVentaModificar());
-        
+
         txtPrecioVentaMod.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { validarPrecioVentaModificar(); }
-            public void removeUpdate(DocumentEvent e) { validarPrecioVentaModificar(); }
-            public void changedUpdate(DocumentEvent e) { validarPrecioVentaModificar(); }
+            public void insertUpdate(DocumentEvent e) {
+                validarPrecioVentaModificar();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                validarPrecioVentaModificar();
+            }
+
+            public void changedUpdate(DocumentEvent e) {
+                validarPrecioVentaModificar();
+            }
         });
     }
-    
+
     private void validarDescripcionModificar() {
         String error = ValidacionesProducto.validarDescripcion(txtDescripcionMod.getText(), true);
-        
+
         if (error != null) {
             lblErrorDescripcionMod.setText(error);
         } else {
             lblErrorDescripcionMod.setText(" ");
         }
     }
-    
+
     private void validarUmCompraModificar() {
         ItemCombo um = (ItemCombo) comboUmCompraMod.getSelectedItem();
         String error = ValidacionesProducto.validarUnidadMedida(um != null ? um.getId() : "", "compra");
-        
+
         if (error != null) {
             lblErrorUmCompraMod.setText(error);
         } else {
             lblErrorUmCompraMod.setText(" ");
         }
     }
-    
+
     private void validarPrecioCompraModificar() {
         String error = ValidacionesProducto.validarPrecioCompra(txtPrecioCompraMod.getText());
-        
+
         if (error != null) {
             lblErrorPrecioCompraMod.setText(error);
         } else {
             lblErrorPrecioCompraMod.setText(" ");
         }
     }
-    
+
     private void validarUmVentaModificar() {
         ItemCombo um = (ItemCombo) comboUmVentaMod.getSelectedItem();
         String error = ValidacionesProducto.validarUnidadMedida(um != null ? um.getId() : "", "venta");
-        
+
         if (error != null) {
             lblErrorUmVentaMod.setText(error);
         } else {
             lblErrorUmVentaMod.setText(" ");
         }
     }
-    
+
     private void validarPrecioVentaModificar() {
         String error = ValidacionesProducto.validarPrecioVenta(
-            txtPrecioVentaMod.getText(), 
-            txtPrecioCompraMod.getText()
-        );
-        
+                txtPrecioVentaMod.getText(),
+                txtPrecioCompraMod.getText());
+
         if (error != null) {
             lblErrorPrecioVentaMod.setText(error);
         } else {
             lblErrorPrecioVentaMod.setText(" ");
         }
     }
-    
+
     private void seleccionarImagenIngresar() {
         JFileChooser fileChooser = new JFileChooser();
         FileNameExtensionFilter filter = new FileNameExtensionFilter(
-            CargadorProperties.obtenerComponentes("file.chooser.filtro.imagenes"), "jpg", "jpeg", "png", "gif"
-        );
+                CargadorProperties.obtenerComponentes("file.chooser.filtro.imagenes"), "jpg", "jpeg", "png", "gif");
         fileChooser.setFileFilter(filter);
-        
+
         int resultado = fileChooser.showOpenDialog(this);
-        
+
         if (resultado == JFileChooser.APPROVE_OPTION) {
             File archivoSeleccionado = fileChooser.getSelectedFile();
             rutaImagenSeleccionadaIng = archivoSeleccionado.getAbsolutePath();
-            
+
             mostrarPreviewImagen(rutaImagenSeleccionadaIng, lblImagenPreviewIng);
             lblErrorImagenIng.setText(" ");
         }
     }
-    
+
     private void seleccionarImagenModificar() {
         JFileChooser fileChooser = new JFileChooser();
         FileNameExtensionFilter filter = new FileNameExtensionFilter(
-            CargadorProperties.obtenerComponentes("file.chooser.filtro.imagenes"), "jpg", "jpeg", "png", "gif"
-        );
+                CargadorProperties.obtenerComponentes("file.chooser.filtro.imagenes"), "jpg", "jpeg", "png", "gif");
         fileChooser.setFileFilter(filter);
-        
+
         int resultado = fileChooser.showOpenDialog(this);
-        
+
         if (resultado == JFileChooser.APPROVE_OPTION) {
             File archivoSeleccionado = fileChooser.getSelectedFile();
             rutaImagenSeleccionadaMod = archivoSeleccionado.getAbsolutePath();
-            
+
             mostrarPreviewImagen(rutaImagenSeleccionadaMod, lblImagenPreviewMod);
         }
     }
-    
+
     private void mostrarPreviewImagen(String rutaImagen, JLabel lblPreview) {
         try {
             BufferedImage img = ImageIO.read(new File(rutaImagen));
@@ -1196,178 +1761,174 @@ public class VentanaProducto extends JFrame {
             e.printStackTrace();
         }
     }
-    
+
     private void cargarImagenDesdeRuta(String rutaRelativa, JLabel lblPreview) {
-        //Obtener Properties
-        String textoSinImagen = CargadorProperties.obtenerComponentes("imagen.sin.imagen");
-        String textoCargando = CargadorProperties.obtenerComponentes("imagen.cargando");
-        String textoError = CargadorProperties.obtenerComponentes("imagen.error.cargar");
-        
-        if (rutaRelativa == null || rutaRelativa.trim().isEmpty()) {
-            lblPreview.setIcon(null);
-            lblPreview.setText(textoSinImagen);
-            return;
+
+    // ✅ Si viene vacío, mostrar sin imagen
+    if (rutaRelativa == null || rutaRelativa.trim().isEmpty()) {
+        lblPreview.setIcon(null);
+        lblPreview.setText(CargadorProperties.obtenerComponentes("imagen.sin.imagen"));
+        return;
+    }
+
+    lblPreview.setText("Cargando...");
+    lblPreview.setIcon(null);
+
+    new SwingWorker<ImageIcon, Void>() {
+
+        @Override
+        protected ImageIcon doInBackground() throws Exception {
+
+            String baseStorage = CargadorProperties.obtenerConfigProducto("img.server.base");
+            String urlCompleta = baseStorage + "/" + rutaRelativa;
+
+            // ✅ Leer imagen desde URL del servidor
+            BufferedImage img = ImageIO.read(new URL(urlCompleta));
+            if (img == null) return null;
+
+            int w = Integer.parseInt(CargadorProperties.obtenerConfigProducto("img.preview.w"));
+            int h = Integer.parseInt(CargadorProperties.obtenerConfigProducto("img.preview.h"));
+
+            Image imagenEscalada = img.getScaledInstance(w, h, Image.SCALE_SMOOTH);
+            return new ImageIcon(imagenEscalada);
         }
 
-        lblPreview.setText(textoCargando);
-        lblPreview.setIcon(null);
+        @Override
+        protected void done() {
+            try {
+                ImageIcon icon = get();
 
-        new SwingWorker<ImageIcon, Void>() {
-            @Override
-            protected ImageIcon doInBackground() throws Exception {
-                String baseStorage = CargadorProperties.obtenerConfigProducto("img.server.base");
-                String separator = CargadorProperties.obtenerConfigProducto("img.url.separator");
-                String urlCompleta = baseStorage + separator + rutaRelativa;
-
-                //Leer imagen desde URL del servidor
-                BufferedImage img = ImageIO.read(new URL(urlCompleta));
-                if (img == null) return null;
-
-                int w = Integer.parseInt(CargadorProperties.obtenerConfigProducto("img.preview.w"));
-                int h = Integer.parseInt(CargadorProperties.obtenerConfigProducto("img.preview.h"));
-
-                Image imagenEscalada = img.getScaledInstance(w, h, Image.SCALE_SMOOTH);
-                return new ImageIcon(imagenEscalada);
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    ImageIcon icon = get();
-
-                    if (icon != null) {
-                        lblPreview.setIcon(icon);
-                        lblPreview.setText("");
-                    } else {
-                        lblPreview.setIcon(null);
-                        lblPreview.setText(textoSinImagen);
-                    }
-
-                } catch (Exception e) {
+                if (icon != null) {
+                    lblPreview.setIcon(icon);
+                    lblPreview.setText("");
+                } else {
                     lblPreview.setIcon(null);
-                    lblPreview.setText(textoError);
-                    e.printStackTrace();
+                    lblPreview.setText(CargadorProperties.obtenerComponentes("imagen.sin.imagen"));
                 }
+
+            } catch (Exception e) {
+                lblPreview.setIcon(null);
+                lblPreview.setText(CargadorProperties.obtenerComponentes("imagen.error.cargar"));
+                e.printStackTrace();
             }
-        }.execute();
-    }
-    
+        }
+
+    }.execute();
+}
+
+
     private String copiarImagenAProyecto(String rutaOrigen) {
         return subirImagenAServidor(rutaOrigen);
     }
-
     private String subirImagenAServidor(String rutaOrigen) {
-        //Obtener properties 
-        String urlServidor = CargadorProperties.obtenerConfigBD("server.upload.url");
-        String token = CargadorProperties.obtenerConfigBD("server.upload.token");
-        String boundaryPrefix = CargadorProperties.obtenerConfigBD("server.upload.boundary.prefix");
-        String boundary = boundaryPrefix + System.currentTimeMillis() + boundaryPrefix;
-        String lineEnd = CargadorProperties.obtenerConfigBD("server.upload.line.end");
-        String twoHyphens = CargadorProperties.obtenerConfigBD("server.upload.two.hyphens");
-        String mimeDefault = CargadorProperties.obtenerConfigBD("server.upload.mime.default");
-        String userAgent = CargadorProperties.obtenerConfigBD("server.upload.user.agent");
-        String fieldName = CargadorProperties.obtenerConfigBD("server.upload.field.name");
-        String responseKey = CargadorProperties.obtenerConfigBD("server.upload.response.key");
 
-        int connectTimeout = Integer.parseInt(CargadorProperties.obtenerConfigBD("server.upload.connect.timeout"));
-        int readTimeout = Integer.parseInt(CargadorProperties.obtenerConfigBD("server.upload.read.timeout"));
+    String urlServidor = CargadorProperties.obtenerConfigBD("server.upload.url");
+    String token = CargadorProperties.obtenerConfigBD("server.upload.token");
 
-        String errorTitulo = CargadorProperties.obtenerComponentes("FC_C_004");
-        String errorArchivoNoExiste = CargadorProperties.obtenerMessages("PD_E_006");
-        String errorRespuestaInvalida = CargadorProperties.obtenerMessages("PD_E_007");
-        String errorSubiendo = CargadorProperties.obtenerMessages("PD_E_008");
-        String errorGeneral = CargadorProperties.obtenerMessages("PD_E_009");
+    String boundary = "===" + System.currentTimeMillis() + "===";
+    String lineEnd = "\r\n";
+    String twoHyphens = "--";
 
-        try {
-            File archivo = new File(rutaOrigen);
+    try {
+        File archivo = new File(rutaOrigen);
 
-            if (!archivo.exists()) {
-                JOptionPane.showMessageDialog(this,
-                    errorArchivoNoExiste + rutaOrigen,
-                    errorTitulo,
-                    JOptionPane.ERROR_MESSAGE);
-                return null;
-            }
-
-            String fileName = archivo.getName();
-            String mimeType = Files.probeContentType(archivo.toPath());
-            if (mimeType == null) mimeType = mimeDefault;
-
-            HttpURLConnection conn = (HttpURLConnection) new URL(urlServidor).openConnection();
-            conn.setDoOutput(true);
-            conn.setDoInput(true);
-            conn.setUseCaches(false);
-            conn.setRequestMethod("POST");
-
-            conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-            conn.setRequestProperty("X-JAVA-TOKEN", token);
-            conn.setRequestProperty("User-Agent", userAgent);
-
-            conn.setConnectTimeout(connectTimeout);
-            conn.setReadTimeout(readTimeout);
-
-            try (DataOutputStream request = new DataOutputStream(conn.getOutputStream())) {
-                request.writeBytes(twoHyphens + boundary + lineEnd);
-                request.writeBytes("Content-Disposition: form-data; name=\"" + fieldName + "\"; filename=\"" + fileName + "\"" + lineEnd);
-                request.writeBytes("Content-Type: " + mimeType + lineEnd);
-                request.writeBytes(lineEnd);
-
-                Files.copy(archivo.toPath(), request);
-
-                request.writeBytes(lineEnd);
-                request.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
-                request.flush();
-            }
-
-            int responseCode = conn.getResponseCode();
-            InputStream is = (responseCode >= 200 && responseCode < 300) ? conn.getInputStream() : conn.getErrorStream();
-
-            String response = new BufferedReader(new InputStreamReader(is))
-                    .lines()
-                    .reduce("", (acc, line) -> acc + line);
-
-            System.out.println("UPLOAD HTTP " + responseCode + " -> " + response);
-
-            if (responseCode >= 200 && responseCode < 300) {
-                int idx = response.indexOf(responseKey);
-                if (idx != -1) {
-                    int start = idx + responseKey.length();
-                    int end = response.indexOf("\"", start);
-
-                    String ruta = response.substring(start, end);
-                    ruta = ruta.replace("\\/", "/");
-
-                    return ruta;
-                } else {
-                    JOptionPane.showMessageDialog(this,
-                        errorRespuestaInvalida + response,
-                        errorTitulo,
-                        JOptionPane.ERROR_MESSAGE);
-                    return null;
-                }
-            } else {
-                JOptionPane.showMessageDialog(this,
-                    errorSubiendo + responseCode + "\n" + response,
-                    errorTitulo,
-                    JOptionPane.ERROR_MESSAGE);
-                return null;
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (!archivo.exists()) {
             JOptionPane.showMessageDialog(this,
-                errorGeneral + e.getMessage(),
-                errorTitulo,
+                "El archivo de imagen no existe:\n" + rutaOrigen,
+                "Error",
                 JOptionPane.ERROR_MESSAGE);
             return null;
         }
+
+        String fileName = archivo.getName();
+        String mimeType = Files.probeContentType(archivo.toPath());
+        if (mimeType == null) mimeType = "application/octet-stream";
+
+        HttpURLConnection conn = (HttpURLConnection) new URL(urlServidor).openConnection();
+        conn.setDoOutput(true);
+        conn.setDoInput(true);
+        conn.setUseCaches(false);
+        conn.setRequestMethod("POST");
+
+        conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+        conn.setRequestProperty("X-JAVA-TOKEN", token);
+
+        // ✅ Evita bloqueos Cloudflare
+        conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+
+        // ✅ Timeouts
+        conn.setConnectTimeout(15000);
+        conn.setReadTimeout(20000);
+
+        // ✅ Escribir el multipart
+        try (DataOutputStream request = new DataOutputStream(conn.getOutputStream())) {
+
+            request.writeBytes(twoHyphens + boundary + lineEnd);
+            request.writeBytes("Content-Disposition: form-data; name=\"imagen\"; filename=\"" + fileName + "\"" + lineEnd);
+            request.writeBytes("Content-Type: " + mimeType + lineEnd);
+            request.writeBytes(lineEnd);
+
+            Files.copy(archivo.toPath(), request);
+
+            request.writeBytes(lineEnd);
+            request.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+            request.flush();
+        }
+
+        int responseCode = conn.getResponseCode();
+        InputStream is = (responseCode >= 200 && responseCode < 300) ? conn.getInputStream() : conn.getErrorStream();
+
+        String response = new BufferedReader(new InputStreamReader(is))
+                .lines()
+                .reduce("", (acc, line) -> acc + line);
+
+        System.out.println("UPLOAD HTTP " + responseCode + " -> " + response);
+
+        if (responseCode >= 200 && responseCode < 300) {
+            int idx = response.indexOf("\"ruta\":\"");
+            if (idx != -1) {
+                int start = idx + 8;
+                int end = response.indexOf("\"", start);
+
+                String ruta = response.substring(start, end);
+
+                // ✅ CORRIGE: productos\/uuid.png -> productos/uuid.png
+                ruta = ruta.replace("\\/", "/");
+
+                return ruta;
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Respuesta inválida del servidor (no trae ruta).\n" + response,
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return null;
+            }
+        } else {
+            JOptionPane.showMessageDialog(this,
+                "Error subiendo imagen.\nHTTP " + responseCode + "\n" + response,
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this,
+            "Error subiendo imagen: " + e.getMessage(),
+            "Error",
+            JOptionPane.ERROR_MESSAGE);
+        return null;
     }
-    
+}
+
+
+
+
     private void guardarProducto() {
         ItemCombo categoria = (ItemCombo) comboCategoriaIng.getSelectedItem();
         ItemCombo umCompra = (ItemCombo) comboUmCompraIng.getSelectedItem();
         ItemCombo umVenta = (ItemCombo) comboUmVentaIng.getSelectedItem();
-        
+
         String idCategoria = categoria != null ? categoria.getId() : "";
         String codigo = txtCodigoIng.getText().trim();
         String descripcion = txtDescripcionIng.getText().trim();
@@ -1375,7 +1936,7 @@ public class VentanaProducto extends JFrame {
         String precioCompra = txtPrecioCompraIng.getText().trim();
         String idUmVenta = umVenta != null ? umVenta.getId() : "";
         String precioVenta = txtPrecioVentaIng.getText().trim();
-        
+
         String errorCategoria = ValidacionesProducto.validarCategoria(idCategoria);
         String errorCodigo = ValidacionesProducto.validarCodigo(codigo);
         String errorDescripcion = ValidacionesProducto.validarDescripcion(descripcion, false);
@@ -1384,7 +1945,7 @@ public class VentanaProducto extends JFrame {
         String errorUmVenta = ValidacionesProducto.validarUnidadMedida(idUmVenta, "venta");
         String errorPrecioVenta = ValidacionesProducto.validarPrecioVenta(precioVenta, precioCompra);
         String errorImagen = ValidacionesProducto.validarImagen(rutaImagenSeleccionadaIng);
-        
+
         mostrarError(lblErrorCategoriaIng, errorCategoria);
         mostrarError(lblErrorCodigoIng, errorCodigo);
         mostrarError(lblErrorDescripcionIng, errorDescripcion);
@@ -1394,29 +1955,31 @@ public class VentanaProducto extends JFrame {
         mostrarError(lblErrorPrecioVentaIng, errorPrecioVenta);
         mostrarError(lblErrorImagenIng, errorImagen);
 
-        boolean hayErrores = errorCategoria != null || 
-                             errorCodigo != null || 
-                             errorDescripcion != null || 
-                             errorUmCompra != null || 
-                             errorPrecioCompra != null || 
-                             errorUmVenta != null || 
-                             errorPrecioVenta != null || 
-                             errorImagen != null;
+        boolean hayErrores = errorCategoria != null ||
+                errorCodigo != null ||
+                errorDescripcion != null ||
+                errorUmCompra != null ||
+                errorPrecioCompra != null ||
+                errorUmVenta != null ||
+                errorPrecioVenta != null ||
+                errorImagen != null;
 
         if (hayErrores) {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
-                CargadorProperties.obtenerMessages("PD_A_013"),
-                CargadorProperties.obtenerMessages("FC_C_005"),
-                JOptionPane.WARNING_MESSAGE);
+                    CargadorProperties.obtenerMessages("PD_A_013"),
+                    CargadorProperties.obtenerMessages("FC_C_005"),
+                    JOptionPane.WARNING_MESSAGE);
+            restaurarEstilosPopup();
             return;
         }
-        
+
         String rutaImagenGuardada = copiarImagenAProyecto(rutaImagenSeleccionadaIng);
-        
+
         if (rutaImagenGuardada == null) {
             return;
         }
-        
+
         Producto pro = new Producto();
         pro.setCodigo(codigo);
         pro.setDescripcion(descripcion);
@@ -1426,42 +1989,48 @@ public class VentanaProducto extends JFrame {
         pro.setUmVenta(idUmVenta);
         pro.setPrecioVenta(Double.parseDouble(precioVenta));
         pro.setImagen(rutaImagenGuardada);
-        
+
         if (pro.grabarDP()) {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
-                CargadorProperties.obtenerMessages("PD_I_001"),
-                CargadorProperties.obtenerMessages("FC_C_003"),
-                JOptionPane.INFORMATION_MESSAGE);
+                    CargadorProperties.obtenerMessages("PD_I_001"),
+                    CargadorProperties.obtenerMessages("FC_C_003"),
+                    JOptionPane.INFORMATION_MESSAGE);
+            restaurarEstilosPopup();
             limpiarCamposIngresar();
         } else {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
-                CargadorProperties.obtenerMessages("PD_E_001"),
-                CargadorProperties.obtenerMessages("FC_C_004"),
-                JOptionPane.ERROR_MESSAGE);
+                    CargadorProperties.obtenerMessages("PD_E_001"),
+                    CargadorProperties.obtenerMessages("FC_C_004"),
+                    JOptionPane.ERROR_MESSAGE);
+            restaurarEstilosPopup();
         }
     }
-    
+
     private void buscarProductoModificar() {
         String codigo = txtCodigoMod.getText().trim();
-        
+
         if (codigo.isEmpty()) {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
-                CargadorProperties.obtenerMessages("PD_A_014"),
-                CargadorProperties.obtenerMessages("FC_C_005"),
-                JOptionPane.WARNING_MESSAGE);
+                    CargadorProperties.obtenerMessages("PD_A_014"),
+                    CargadorProperties.obtenerMessages("FC_C_005"),
+                    JOptionPane.WARNING_MESSAGE);
+            restaurarEstilosPopup();
             return;
         }
-        
+
         Producto pro = new Producto();
         Producto encontrado = pro.verificarPorCodigoDP(codigo);
-        
+
         if (encontrado != null) {
             codigoProductoActual = encontrado.getCodigo();
-            
+
             txtDescripcionMod.setText(encontrado.getDescripcion());
             txtPrecioCompraMod.setText(String.valueOf(encontrado.getPrecioCompra()));
             txtPrecioVentaMod.setText(String.valueOf(encontrado.getPrecioVenta()));
-            
+
             for (int i = 0; i < comboUmCompraMod.getItemCount(); i++) {
                 ItemCombo item = comboUmCompraMod.getItemAt(i);
                 if (item.getId().equals(encontrado.getUmCompra())) {
@@ -1469,7 +2038,7 @@ public class VentanaProducto extends JFrame {
                     break;
                 }
             }
-            
+
             for (int i = 0; i < comboUmVentaMod.getItemCount(); i++) {
                 ItemCombo item = comboUmVentaMod.getItemAt(i);
                 if (item.getId().equals(encontrado.getUmVenta())) {
@@ -1477,12 +2046,12 @@ public class VentanaProducto extends JFrame {
                     break;
                 }
             }
-            
+
             cargarImagenDesdeRuta(encontrado.getImagen(), lblImagenPreviewMod);
             rutaImagenSeleccionadaMod = "";
-            
-            txtCodigoMod.setEnabled(false); 
-            
+
+            txtCodigoMod.setEnabled(false);
+
             txtDescripcionMod.setEnabled(true);
             comboUmCompraMod.setEnabled(true);
             txtPrecioCompraMod.setEnabled(true);
@@ -1491,33 +2060,37 @@ public class VentanaProducto extends JFrame {
             btnSeleccionarImagenMod.setEnabled(true);
             btnGuardarMod.setEnabled(true);
         } else {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
-                CargadorProperties.obtenerMessages("PD_A_015"),
-                CargadorProperties.obtenerMessages("FC_C_006"),
-                JOptionPane.INFORMATION_MESSAGE);
+                    CargadorProperties.obtenerMessages("PD_A_015"),
+                    CargadorProperties.obtenerMessages("FC_C_006"),
+                    JOptionPane.INFORMATION_MESSAGE);
+            restaurarEstilosPopup();
         }
     }
-    
+
     private void modificarProducto() {
         ItemCombo umCompra = (ItemCombo) comboUmCompraMod.getSelectedItem();
         ItemCombo umVenta = (ItemCombo) comboUmVentaMod.getSelectedItem();
-        
+
         String descripcion = txtDescripcionMod.getText().trim();
         String idUmCompra = umCompra != null ? umCompra.getId() : "";
         String precioCompra = txtPrecioCompraMod.getText().trim();
         String idUmVenta = umVenta != null ? umVenta.getId() : "";
         String precioVenta = txtPrecioVentaMod.getText().trim();
-        
-        if (!ValidacionesProducto.validarTodoModificar(descripcion, idUmCompra, 
-                                                        precioCompra, idUmVenta, 
-                                                        precioVenta)) {
+
+        if (!ValidacionesProducto.validarTodoModificar(descripcion, idUmCompra,
+                precioCompra, idUmVenta,
+                precioVenta)) {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
-                CargadorProperties.obtenerMessages("PD_A_013"),
-                CargadorProperties.obtenerMessages("FC_C_005"),
-                JOptionPane.WARNING_MESSAGE);
+                    CargadorProperties.obtenerMessages("PD_A_013"),
+                    CargadorProperties.obtenerMessages("FC_C_005"),
+                    JOptionPane.WARNING_MESSAGE);
+            restaurarEstilosPopup();
             return;
         }
-        
+
         Producto pro = new Producto();
         pro.setCodigo(codigoProductoActual);
         pro.setDescripcion(descripcion);
@@ -1525,7 +2098,7 @@ public class VentanaProducto extends JFrame {
         pro.setPrecioCompra(Double.parseDouble(precioCompra));
         pro.setUmVenta(idUmVenta);
         pro.setPrecioVenta(Double.parseDouble(precioVenta));
-        
+
         String rutaImagen;
         if (!rutaImagenSeleccionadaMod.isEmpty()) {
             rutaImagen = copiarImagenAProyecto(rutaImagenSeleccionadaMod);
@@ -1536,37 +2109,43 @@ public class VentanaProducto extends JFrame {
             Producto actual = pro.verificarPorCodigoDP(codigoProductoActual);
             rutaImagen = actual.getImagen();
         }
-        
+
         pro.setImagen(rutaImagen);
-        
+
         if (pro.grabarDP()) {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
-                CargadorProperties.obtenerMessages("PD_I_002"),
-                CargadorProperties.obtenerMessages("FC_C_003"),
-                JOptionPane.INFORMATION_MESSAGE);
+                    CargadorProperties.obtenerMessages("PD_I_002"),
+                    CargadorProperties.obtenerMessages("FC_C_003"),
+                    JOptionPane.INFORMATION_MESSAGE);
+            restaurarEstilosPopup();
             limpiarCamposModificar();
         } else {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
-                CargadorProperties.obtenerMessages("PD_E_003"),
-                CargadorProperties.obtenerMessages("FC_C_004"),
-                JOptionPane.ERROR_MESSAGE);
+                    CargadorProperties.obtenerMessages("PD_E_003"),
+                    CargadorProperties.obtenerMessages("FC_C_004"),
+                    JOptionPane.ERROR_MESSAGE);
+            restaurarEstilosPopup();
         }
     }
-    
+
     private void buscarProductoEliminar() {
         String codigo = txtCodigoElim.getText().trim();
-        
+
         if (codigo.isEmpty()) {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
-                CargadorProperties.obtenerMessages("PD_A_014"),
-                CargadorProperties.obtenerMessages("FC_C_005"),
-                JOptionPane.WARNING_MESSAGE);
+                    CargadorProperties.obtenerMessages("PD_A_014"),
+                    CargadorProperties.obtenerMessages("FC_C_005"),
+                    JOptionPane.WARNING_MESSAGE);
+            restaurarEstilosPopup();
             return;
         }
-        
+
         Producto pro = new Producto();
         Producto encontrado = pro.verificarPorCodigoDP(codigo);
-        
+
         if (encontrado != null) {
             txtDescripcionElim.setText(encontrado.getDescripcion());
             txtCategoriaElim.setText(encontrado.getCategoria());
@@ -1576,116 +2155,133 @@ public class VentanaProducto extends JFrame {
             txtPrecioVentaElim.setText(String.valueOf(encontrado.getPrecioVenta()));
             txtSaldoIniElim.setText(String.valueOf(encontrado.getSaldoIni()));
             txtSaldoFinElim.setText(String.valueOf(encontrado.getSaldoFin()));
-            
+
             cargarImagenDesdeRuta(encontrado.getImagen(), lblImagenPreviewElim);
-            
+
             btnEliminar.setEnabled(true);
         } else {
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
-                CargadorProperties.obtenerMessages("PD_A_015"),
-                CargadorProperties.obtenerMessages("FC_C_006"),
-                JOptionPane.INFORMATION_MESSAGE);
+                    CargadorProperties.obtenerMessages("PD_A_015"),
+                    CargadorProperties.obtenerMessages("FC_C_006"),
+                    JOptionPane.INFORMATION_MESSAGE);
+            restaurarEstilosPopup();
         }
     }
-    
+
     private void eliminarProducto() {
         int confirm = JOptionPane.showConfirmDialog(this,
-            CargadorProperties.obtenerMessages("PD_C_001") + txtDescripcionElim.getText() + CargadorProperties.obtenerMessages("PD_C_002"), 
-            CargadorProperties.obtenerMessages("FC_A_008"),
-            JOptionPane.YES_NO_OPTION);
-        
+                CargadorProperties.obtenerMessages("PD_C_001") + txtDescripcionElim.getText()
+                        + CargadorProperties.obtenerMessages("PD_C_002"),
+                CargadorProperties.obtenerMessages("FC_A_008"),
+                JOptionPane.YES_NO_OPTION);
+
         if (confirm == JOptionPane.YES_OPTION) {
             Producto pro = new Producto();
             pro.setCodigo(txtCodigoElim.getText().trim());
-            
+
             if (pro.eliminarDP()) {
+                personalizarPopup();
                 JOptionPane.showMessageDialog(this,
-                    CargadorProperties.obtenerMessages("PD_I_003"),
-                    CargadorProperties.obtenerMessages("FC_C_003"),
-                    JOptionPane.INFORMATION_MESSAGE);
+                        CargadorProperties.obtenerMessages("PD_I_003"),
+                        CargadorProperties.obtenerMessages("FC_C_003"),
+                        JOptionPane.INFORMATION_MESSAGE);
+                restaurarEstilosPopup();
                 limpiarCamposEliminar();
             } else {
+                personalizarPopup();
                 JOptionPane.showMessageDialog(this,
-                    CargadorProperties.obtenerMessages("PD_E_004"),
-                    CargadorProperties.obtenerMessages("FC_C_004"),
-                    JOptionPane.ERROR_MESSAGE);
+                        CargadorProperties.obtenerMessages("PD_E_004"),
+                        CargadorProperties.obtenerMessages("FC_C_004"),
+                        JOptionPane.ERROR_MESSAGE);
+                restaurarEstilosPopup();
             }
         }
     }
-    
+
     private void cambiarTipoConsulta() {
         String tipo = (String) comboTipoConsulta.getSelectedItem();
-        
+
         if (CargadorProperties.obtenerComponentes("combo.consulta.general").equals(tipo)) {
             panelBusqueda.setVisible(false);
-            scrollTabla.setVisible(true);
+            panelTabla.setVisible(true);
             consultarGeneral();
         } else if (CargadorProperties.obtenerComponentes("combo.consulta.parametro").equals(tipo)) {
             panelBusqueda.setVisible(true);
-            scrollTabla.setVisible(true);
+            panelTabla.setVisible(true);
             modeloTabla.setRowCount(0);
+            productosPaginadosTotal = new ArrayList<>();
+            panelPaginacion.setVisible(false);
         } else {
             panelBusqueda.setVisible(false);
-            scrollTabla.setVisible(false);
+            panelTabla.setVisible(false);
+            panelPaginacion.setVisible(false);
+            productosPaginadosTotal = new ArrayList<>();
         }
+
+        panelContenedor.revalidate();
+        panelContenedor.repaint();
     }
-    
+
     private void consultarGeneral() {
         Producto pro = new Producto();
-        ArrayList<Producto> productos = pro.consultarTodos();
-        
-        modeloTabla.setRowCount(0);
+        productosPaginadosTotal = pro.consultarTodos();
 
-        if (productos.isEmpty()) {
+        if (productosPaginadosTotal.isEmpty()) {
+            modeloTabla.setRowCount(0);
+            panelPaginacion.setVisible(false);
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
-                CargadorProperties.obtenerMessages("PD_I_004"),
-                CargadorProperties.obtenerMessages("FC_C_006"),
-                JOptionPane.INFORMATION_MESSAGE);
+                    CargadorProperties.obtenerMessages("PD_I_004"),
+                    CargadorProperties.obtenerMessages("FC_C_006"),
+                    JOptionPane.INFORMATION_MESSAGE);
+            restaurarEstilosPopup();
             return;
         }
-        
-        for (Producto p : productos) {
-            modeloTabla.addRow(new Object[]{
-                p.getCodigo(),
-                p.getDescripcion(),
-                p.getCategoria(),
-                p.getNombreUmCompra(),
-                p.getPrecioCompra(),
-                p.getNombreUmVenta(),
-                p.getPrecioVenta(),
-                p.getSaldoIni(),
-                p.getSaldoFin()
-            });
-        }
+
+        paginaActual = 0;
+        panelPaginacion.setVisible(true);
+        actualizarTablaPaginada();
     }
-    
+
     private void configurarBusquedaTiempoReal() {
         timerBusqueda = new Timer(300, e -> realizarBusqueda());
         timerBusqueda.setRepeats(false);
-        
+
         txtBusqueda.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { reiniciarTimer(); }
-            public void removeUpdate(DocumentEvent e) { reiniciarTimer(); }
-            public void changedUpdate(DocumentEvent e) { reiniciarTimer(); }
+            public void insertUpdate(DocumentEvent e) {
+                reiniciarTimer();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                reiniciarTimer();
+            }
+
+            public void changedUpdate(DocumentEvent e) {
+                reiniciarTimer();
+            }
         });
-        
+
         comboParametroBusqueda.addActionListener(e -> realizarBusqueda());
     }
-    
+
     private void reiniciarTimer() {
         timerBusqueda.restart();
     }
-    
+
     private void realizarBusqueda() {
         String texto = txtBusqueda.getText().trim();
 
         if (texto.isEmpty()) {
             modeloTabla.setRowCount(0);
+            productosPaginadosTotal = new ArrayList<>();
+            panelPaginacion.setVisible(false);
             return;
         }
 
         ItemCombo parametro = (ItemCombo) comboParametroBusqueda.getSelectedItem();
-        if (parametro == null) return;
+        if (parametro == null)
+            return;
 
         String idParametro = parametro.getId();
         Producto pro = new Producto();
@@ -1709,136 +2305,121 @@ public class VentanaProducto extends JFrame {
                 break;
         }
 
-        modeloTabla.setRowCount(0);
-
         if (resultados.isEmpty()) {
+            modeloTabla.setRowCount(0);
+            productosPaginadosTotal = new ArrayList<>();
+            panelPaginacion.setVisible(false);
+            personalizarPopup();
             JOptionPane.showMessageDialog(this,
-                CargadorProperties.obtenerMessages("PD_I_004"),
-                CargadorProperties.obtenerMessages("FC_C_006"),
-                JOptionPane.INFORMATION_MESSAGE);
+                    CargadorProperties.obtenerMessages("PD_I_005"),
+                    CargadorProperties.obtenerMessages("FC_C_006"),
+                    JOptionPane.INFORMATION_MESSAGE);
+            restaurarEstilosPopup();
             return;
         }
 
-        for (Producto p : resultados) {
-            modeloTabla.addRow(new Object[]{
-                p.getCodigo(),
-                p.getDescripcion(),
-                p.getCategoria(),
-                p.getNombreUmCompra(),
-                p.getPrecioCompra(),
-                p.getNombreUmVenta(),
-                p.getPrecioVenta(),
-                p.getSaldoIni(),
-                p.getSaldoFin()
-            });
-        }
+        productosPaginadosTotal = resultados;
+        paginaActual = 0;
+        panelPaginacion.setVisible(true);
+        actualizarTablaPaginada();
     }
-        
-    private void mostrarPopupImagen(String codigo) {
-        Producto pro = new Producto();
-        Producto encontrado = pro.verificarPorCodigoDP(codigo);
 
-        if (encontrado == null || encontrado.getImagen() == null || encontrado.getImagen().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                CargadorProperties.obtenerMessages("PD_A_019"),
-                CargadorProperties.obtenerMessages("FC_C_006"),
-                JOptionPane.INFORMATION_MESSAGE);
-            return;
+   private void mostrarPopupImagen(String codigo) {
+    Producto pro = new Producto();
+    Producto encontrado = pro.verificarPorCodigoDP(codigo);
+
+    if (encontrado == null || encontrado.getImagen() == null || encontrado.getImagen().trim().isEmpty()) {
+        JOptionPane.showMessageDialog(this,
+            CargadorProperties.obtenerMessages("PD_A_019"),
+            CargadorProperties.obtenerMessages("FC_C_006"),
+            JOptionPane.INFORMATION_MESSAGE);
+        return;
+    }
+
+    // ✅ Crear el dialog desde el inicio
+    JDialog dialog = new JDialog(this, CargadorProperties.obtenerComponentes("popup.imagen.titulo") + codigo, true);
+    dialog.setLayout(new BorderLayout(10, 10));
+
+    // ✅ Label temporal mientras carga
+    JLabel lblCargando = new JLabel("Cargando imagen...", SwingConstants.CENTER);
+    lblCargando.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+    dialog.add(lblCargando, BorderLayout.CENTER);
+
+    JPanel panelBoton = new JPanel(new FlowLayout(FlowLayout.CENTER));
+    JButton btnCerrar = new JButton(CargadorProperties.obtenerComponentes("boton.cerrar"));
+    btnCerrar.addActionListener(e -> dialog.dispose());
+    panelBoton.add(btnCerrar);
+    dialog.add(panelBoton, BorderLayout.SOUTH);
+
+    dialog.setSize(500, 500);
+    dialog.setLocationRelativeTo(this);
+
+    // ✅ Cargar imagen en segundo plano
+    new SwingWorker<ImageIcon, Void>() {
+
+        @Override
+        protected ImageIcon doInBackground() throws Exception {
+
+            String baseStorage = CargadorProperties.obtenerConfigProducto("img.server.base");
+            String urlCompleta = baseStorage + "/" + encontrado.getImagen(); // productos/uuid.jpg
+
+            BufferedImage img = ImageIO.read(new URL(urlCompleta));
+            if (img == null) return null;
+
+            int max = Integer.parseInt(CargadorProperties.obtenerConfigProducto("img.popup.max"));
+            int maxWidth = max;
+            int maxHeight = max;
+
+            double scale = Math.min(
+                (double) maxWidth / img.getWidth(),
+                (double) maxHeight / img.getHeight()
+            );
+
+            int newWidth = (int) (img.getWidth() * scale);
+            int newHeight = (int) (img.getHeight() * scale);
+
+            Image imagenEscalada = img.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+            return new ImageIcon(imagenEscalada);
         }
 
-        String tituloPopup = CargadorProperties.obtenerComponentes("popup.imagen.titulo");
-        String textoCargando = CargadorProperties.obtenerComponentes("popup.imagen.cargando");
-        String textoError = CargadorProperties.obtenerComponentes("popup.imagen.error.cargar");
-        String textoCerrar = CargadorProperties.obtenerComponentes("boton.cerrar");
+        @Override
+        protected void done() {
+            try {
+                ImageIcon icon = get();
 
-        int dialogWidth = Integer.parseInt(CargadorProperties.obtenerConfigProducto("popup.dialog.width"));
-        int dialogHeight = Integer.parseInt(CargadorProperties.obtenerConfigProducto("popup.dialog.height"));
-        int borderTop = Integer.parseInt(CargadorProperties.obtenerConfigProducto("popup.dialog.border.top"));
-        int borderLeft = Integer.parseInt(CargadorProperties.obtenerConfigProducto("popup.dialog.border.left"));
-        int borderBottom = Integer.parseInt(CargadorProperties.obtenerConfigProducto("popup.dialog.border.bottom"));
-        int borderRight = Integer.parseInt(CargadorProperties.obtenerConfigProducto("popup.dialog.border.right"));
-        int labelPadding = Integer.parseInt(CargadorProperties.obtenerConfigProducto("popup.label.border.padding"));
+                dialog.getContentPane().remove(lblCargando);
 
-        JDialog dialog = new JDialog(this, tituloPopup + codigo, true);
-        dialog.setLayout(new BorderLayout(borderTop, borderTop));
+                if (icon != null) {
+                    JLabel lblImagen = new JLabel(icon);
+                    lblImagen.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+                    dialog.add(lblImagen, BorderLayout.CENTER);
+                } else {
+                    JLabel lblError = new JLabel("No se pudo cargar la imagen.", SwingConstants.CENTER);
+                    lblError.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+                    dialog.add(lblError, BorderLayout.CENTER);
+                }
 
-        JLabel lblCargando = new JLabel(textoCargando, SwingConstants.CENTER);
-        lblCargando.setBorder(BorderFactory.createEmptyBorder(labelPadding, labelPadding, labelPadding, labelPadding));
-        dialog.add(lblCargando, BorderLayout.CENTER);
+                dialog.revalidate();
+                dialog.repaint();
 
-        JPanel panelBoton = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        JButton btnCerrar = new JButton(textoCerrar);
-        btnCerrar.addActionListener(e -> dialog.dispose());
-        panelBoton.add(btnCerrar);
-        dialog.add(panelBoton, BorderLayout.SOUTH);
-
-        dialog.setSize(dialogWidth, dialogHeight);
-        dialog.setLocationRelativeTo(this);
-
-        //Cargar imagen en segundo plano
-        new SwingWorker<ImageIcon, Void>() {
-
-            @Override
-            protected ImageIcon doInBackground() throws Exception {
-                String baseStorage = CargadorProperties.obtenerConfigProducto("img.server.base");
-                String separator = CargadorProperties.obtenerConfigProducto("img.url.separator");
-                String urlCompleta = baseStorage + separator + encontrado.getImagen();
-
-                BufferedImage img = ImageIO.read(new URL(urlCompleta));
-                if (img == null) return null;
-
-                int max = Integer.parseInt(CargadorProperties.obtenerConfigProducto("img.popup.max"));
-                int maxWidth = max;
-                int maxHeight = max;
-
-                double scale = Math.min(
-                    (double) maxWidth / img.getWidth(),
-                    (double) maxHeight / img.getHeight()
-                );
-
-                int newWidth = (int) (img.getWidth() * scale);
-                int newHeight = (int) (img.getHeight() * scale);
-
-                Image imagenEscalada = img.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
-                return new ImageIcon(imagenEscalada);
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    ImageIcon icon = get();
-
-                    dialog.getContentPane().remove(lblCargando);
-
-                    if (icon != null) {
-                        JLabel lblImagen = new JLabel(icon);
-                        lblImagen.setBorder(BorderFactory.createEmptyBorder(borderTop, borderLeft, borderBottom, borderRight));
-                        dialog.add(lblImagen, BorderLayout.CENTER);
-                    } else {
-                        JLabel lblError = new JLabel(textoError, SwingConstants.CENTER);
-                        lblError.setBorder(BorderFactory.createEmptyBorder(labelPadding, labelPadding, labelPadding, labelPadding));
-                        dialog.add(lblError, BorderLayout.CENTER);
-                    }
-
-                    dialog.revalidate();
-                    dialog.repaint();
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    JOptionPane.showMessageDialog(dialog,
-                        CargadorProperties.obtenerMessages("PD_A_017"),
-                        CargadorProperties.obtenerMessages("FC_C_004"),
-                        JOptionPane.ERROR_MESSAGE);
-                    dialog.dispose();
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(dialog,
+                    CargadorProperties.obtenerMessages("PD_A_017"),
+                    CargadorProperties.obtenerMessages("FC_C_004"),
+                    JOptionPane.ERROR_MESSAGE);
+                dialog.dispose();
                 }
             }
 
         }.execute();
 
-        dialog.setVisible(true);
+    // ✅ Mostrar el dialog (modal)
+    dialog.setVisible(true);
     }
-    
-    
+
+
+
     private void limpiarCamposIngresar() {
         comboCategoriaIng.setSelectedIndex(0);
         txtCodigoIng.setText("");
@@ -1850,7 +2431,7 @@ public class VentanaProducto extends JFrame {
         lblImagenPreviewIng.setIcon(null);
         lblImagenPreviewIng.setText(CargadorProperties.obtenerComponentes("imagen.sin.imagen"));
         rutaImagenSeleccionadaIng = "";
-        
+
         lblErrorCategoriaIng.setText(" ");
         lblErrorCodigoIng.setText(" ");
         lblErrorDescripcionIng.setText(" ");
@@ -1860,7 +2441,7 @@ public class VentanaProducto extends JFrame {
         lblErrorPrecioVentaIng.setText(" ");
         lblErrorImagenIng.setText(" ");
     }
-    
+
     private void limpiarCamposModificar() {
         txtCodigoMod.setText("");
         txtDescripcionMod.setText("");
@@ -1872,16 +2453,16 @@ public class VentanaProducto extends JFrame {
         lblImagenPreviewMod.setText(CargadorProperties.obtenerComponentes("imagen.sin.imagen"));
         rutaImagenSeleccionadaMod = "";
         codigoProductoActual = "";
-        
+
         txtCodigoMod.setEnabled(true);
-        
+
         txtDescripcionMod.setEnabled(false);
         comboUmCompraMod.setEnabled(false);
         txtPrecioCompraMod.setEnabled(false);
         comboUmVentaMod.setEnabled(false);
         txtPrecioVentaMod.setEnabled(false);
         btnSeleccionarImagenMod.setEnabled(false);
-        
+
         btnGuardarMod.setEnabled(false);
         lblErrorCodigoMod.setText(" ");
         lblErrorDescripcionMod.setText(" ");
@@ -1890,7 +2471,7 @@ public class VentanaProducto extends JFrame {
         lblErrorUmVentaMod.setText(" ");
         lblErrorPrecioVentaMod.setText(" ");
     }
-    
+
     private void limpiarCamposEliminar() {
         txtCodigoElim.setText("");
         txtDescripcionElim.setText("");
@@ -1903,7 +2484,187 @@ public class VentanaProducto extends JFrame {
         txtSaldoFinElim.setText("");
         lblImagenPreviewElim.setIcon(null);
         lblImagenPreviewElim.setText(CargadorProperties.obtenerComponentes("imagen.sin.imagen"));
-        
+
         btnEliminar.setEnabled(false);
+    }
+
+    // Métodos de estilización
+    private void estilizarBotonPrimario(JButton btn) {
+        btn.setFont(FUENTE_BOTON);
+        btn.setBackground(COLOR_SECUNDARIO);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(COLOR_SECUNDARIO, 0, true),
+                new EmptyBorder(8, 16, 8, 16)));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // Configurar el UI para forzar el color del texto
+        btn.setUI(new javax.swing.plaf.basic.BasicButtonUI() {
+            @Override
+            public void paint(Graphics g, JComponent c) {
+                JButton button = (JButton) c;
+                Graphics2D g2 = (Graphics2D) g.create();
+
+                // Dibujar el fondo
+                g2.setColor(button.getBackground());
+                g2.fillRoundRect(0, 0, button.getWidth(), button.getHeight(), 0, 0);
+
+                // Dibujar el texto en BLANCO
+                g2.setColor(COLOR_BLANCO);
+                g2.setFont(button.getFont());
+                FontMetrics fm = g2.getFontMetrics();
+                int x = (button.getWidth() - fm.stringWidth(button.getText())) / 2;
+                int y = (button.getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2.drawString(button.getText(), x, y);
+
+                g2.dispose();
+            }
+        });
+
+        btn.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent evt) {
+                btn.setBackground(new Color(82, 121, 54));
+            }
+
+            public void mouseExited(MouseEvent evt) {
+                btn.setBackground(COLOR_SECUNDARIO);
+            }
+        });
+    }
+
+    private void estilizarBotonSecundario(JButton btn) {
+        btn.setFont(FUENTE_BOTON);
+        btn.setBackground(COLOR_TEXTO_SECUNDARIO);
+        btn.setForeground(COLOR_BLANCO);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(COLOR_TEXTO_SECUNDARIO, 0, true),
+                new EmptyBorder(8, 16, 8, 16)));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    }
+
+    private void estilizarBotonTercero(JButton btn) {
+        btn.setFont(FUENTE_BOTON);
+        btn.setBackground(COLOR_TEXTO);
+        btn.setForeground(COLOR_BLANCO);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(COLOR_TEXTO_SECUNDARIO, 0, true),
+                new EmptyBorder(8, 16, 8, 16)));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    }
+
+    private void estilizarCampoTexto(JTextField campo) {
+        campo.setFont(FUENTE_BASE);
+        campo.setForeground(COLOR_TEXTO_CAMPO); // Negro para texto en campos
+        campo.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(COLOR_BORDE, 1, true),
+                new EmptyBorder(4, 8, 4, 8)));
+    }
+
+    private void estilizarComboBox(JComboBox<?> combo) {
+        combo.setFont(FUENTE_BASE);
+        combo.setForeground(COLOR_TEXTO); // #4C57A9 para labels
+        combo.setBackground(COLOR_BLANCO);
+        combo.setBorder(new LineBorder(COLOR_BORDE, 1, true));
+    }
+
+    // Método para estilizar botón eliminar (rojo)
+    private void estilizarBotonEliminar(JButton btn) {
+        btn.setFont(FUENTE_BOTON);
+        btn.setBackground(COLOR_ACENTO);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(COLOR_ACENTO, 0, true),
+                new EmptyBorder(8, 16, 8, 16)));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // Configurar el UI para forzar el color del texto
+        btn.setUI(new javax.swing.plaf.basic.BasicButtonUI() {
+            @Override
+            public void paint(Graphics g, JComponent c) {
+                JButton button = (JButton) c;
+                Graphics2D g2 = (Graphics2D) g.create();
+
+                // Dibujar el fondo
+                g2.setColor(button.getBackground());
+                g2.fillRoundRect(0, 0, button.getWidth(), button.getHeight(), 0, 0);
+
+                // Dibujar el texto en BLANCO
+                g2.setColor(COLOR_BLANCO);
+                g2.setFont(button.getFont());
+                FontMetrics fm = g2.getFontMetrics();
+                int x = (button.getWidth() - fm.stringWidth(button.getText())) / 2;
+                int y = (button.getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2.drawString(button.getText(), x, y);
+
+                g2.dispose();
+            }
+        });
+
+        btn.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent evt) {
+                btn.setBackground(new Color(170, 15, 0));
+            }
+
+            public void mouseExited(MouseEvent evt) {
+                btn.setBackground(COLOR_ACENTO);
+            }
+        });
+    }
+
+    // ============================================
+    // MÉTODOS PARA PERSONALIZAR POPUPS (JOptionPane)
+    // ============================================
+
+    /**
+     * Personaliza el JOptionPane con la paleta de colores y tipografía del sistema
+     * Debe llamarse ANTES de mostrar cualquier JOptionPane
+     */
+    private void personalizarPopup() {
+        // Configurar fuente Poppins para todos los componentes del popup
+        UIManager.put("OptionPane.messageFont", FUENTE_BASE);
+        UIManager.put("OptionPane.buttonFont", FUENTE_BOTON);
+
+        // Configurar colores del panel principal
+        UIManager.put("OptionPane.background", COLOR_FONDO_CENTRAL);
+        UIManager.put("Panel.background", COLOR_FONDO_CENTRAL);
+
+        // Configurar colores de los botones
+        UIManager.put("Button.background", COLOR_SECUNDARIO);
+        UIManager.put("Button.foreground", COLOR_BLANCO);
+        UIManager.put("Button.select", new Color(82, 121, 54)); // Hover color
+        UIManager.put("Button.focus", new Color(82, 121, 54));
+
+        // Configurar texto del mensaje
+        UIManager.put("OptionPane.messageForeground", COLOR_TEXTO_CAMPO);
+    }
+
+    /**
+     * Restaura los valores por defecto de UIManager después de mostrar el popup
+     */
+    private void restaurarEstilosPopup() {
+        UIManager.put("OptionPane.messageFont", null);
+        UIManager.put("OptionPane.buttonFont", null);
+        UIManager.put("OptionPane.background", null);
+        UIManager.put("Panel.background", null);
+        UIManager.put("Button.background", null);
+        UIManager.put("Button.foreground", null);
+        UIManager.put("Button.select", null);
+        UIManager.put("Button.focus", null);
+        UIManager.put("OptionPane.messageForeground", null);
+    }
+
+    private Font cargarFuente(String ruta, int estilo, float tamaño) {
+        try {
+            Font fuente = Font.createFont(Font.TRUETYPE_FONT,
+                    getClass().getResourceAsStream(ruta));
+            return fuente.deriveFont(estilo, tamaño);
+        } catch (Exception e) {
+            System.err.println("No se pudo cargar la fuente Poppins desde: " + ruta);
+            e.printStackTrace();
+            // Fuente de respaldo si Poppins no se carga
+            return new Font("SansSerif", estilo, (int) tamaño);
+        }
     }
 }
