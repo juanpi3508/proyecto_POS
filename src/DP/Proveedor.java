@@ -20,6 +20,7 @@ public class Proveedor {
         this.estado = "ACT";
     }
     
+    // Getters
     public String getIdProveedor() {
         return idProveedor;
     }
@@ -60,6 +61,7 @@ public class Proveedor {
         return estado;
     }
     
+    // Setters
     public void setIdProveedor(String idProveedor) {
         this.idProveedor = idProveedor;
     }
@@ -100,6 +102,8 @@ public class Proveedor {
         this.estado = estado;
     }
     
+    // ==== Métodos de negocio (DP → MD) ====
+    
     public Proveedor verificarDP(String cedRuc) {
         ProveedorMD prvMD = new ProveedorMD();
         return prvMD.verificarMD(cedRuc);
@@ -110,9 +114,15 @@ public class Proveedor {
         return prvMD.eliminar(this);
     }
     
+    public boolean reactivarDP() {
+        ProveedorMD prvMD = new ProveedorMD();
+        return prvMD.reactivar(this);
+    }
+    
     public boolean grabarDP() {
         ProveedorMD prvMD = new ProveedorMD();
         Proveedor existe = prvMD.verificarMD(this.cedRuc);
+        
         if (existe == null) {
             return prvMD.insertar(this);
         } else {
@@ -165,6 +175,7 @@ public class Proveedor {
         return prvMD.obtenerCiudades();
     }
     
+    // Adicional para consulta específica (factura, etc.)
     public Proveedor verificarPorIdDP(String idProveedor) {
         ProveedorMD prvMD = new ProveedorMD();
         return prvMD.verificarPorIdMD(idProveedor);
