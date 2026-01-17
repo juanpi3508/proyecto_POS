@@ -1,6 +1,7 @@
 package GUI;
 
 import DP.Proveedor;
+import GUI.ItemCombo;
 import util.CargadorProperties;
 import util.ValidacionesProveedor;
 import javax.swing.*;
@@ -74,7 +75,15 @@ public class VentanaProveedor extends JFrame {
     private JScrollPane scrollTabla;
     private JPanel panelBusqueda;
 
+    // PAGINACIÓN
+    private JPanel panelPaginacion;
+    private JPanel panelTabla;
+    private JButton btnPrimero, btnAnterior, btnSiguiente, btnUltimo;
+    private ArrayList<Proveedor> proveedoresPaginadosTotal = new ArrayList<>();
+    private int paginaActual = 0;
+
     private Timer timerBusqueda;
+    private boolean validandoCedulaIna = false;
 
     public VentanaProveedor() {
         configurarVentana();
@@ -820,10 +829,43 @@ public class VentanaProveedor extends JFrame {
         tablaResultados.getTableHeader().setForeground(COLOR_TEXTO);
         tablaResultados.getTableHeader().setOpaque(true);
 
-        scrollTabla = new JScrollPane(tablaResultados);
-        scrollTabla.setVisible(false);
+        tablaResultados.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        tablaResultados.setBackground(COLOR_BLANCO);
 
-        panelCentral.add(scrollTabla, BorderLayout.CENTER);
+        scrollTabla = new JScrollPane(tablaResultados);
+        scrollTabla.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollTabla.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+        scrollTabla.setBorder(new LineBorder(COLOR_BORDE, 1));
+        scrollTabla.setBackground(COLOR_FONDO_CENTRAL);
+        scrollTabla.getViewport().setBackground(COLOR_FONDO_CENTRAL);
+
+        scrollTabla.getViewport().addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                int totalWidth = scrollTabla.getViewport().getWidth();
+                int cols = tablaResultados.getColumnModel().getColumnCount();
+                if (cols <= 0) return;
+
+                int base = totalWidth / cols;
+                int resto = totalWidth % cols;
+
+                for (int i = 0; i < cols; i++) {
+                    int w = base + (i == cols - 1 ? resto : 0);
+                    tablaResultados.getColumnModel().getColumn(i).setPreferredWidth(Math.max(80, w));
+                }
+            }
+        });
+
+        panelTabla = new JPanel(new BorderLayout());
+        panelTabla.setBackground(COLOR_FONDO_CENTRAL);
+        panelTabla.add(scrollTabla, BorderLayout.NORTH);
+        panelTabla.setVisible(false);
+
+        panelCentral.add(panelTabla, BorderLayout.CENTER);
+
+        panelPaginacion = crearPanelPaginacion();
+        panelPaginacion.setVisible(false);
+        panelCentral.add(panelPaginacion, BorderLayout.SOUTH);
 
         panel.add(panelCentral, BorderLayout.CENTER);
 
@@ -883,9 +925,45 @@ public class VentanaProveedor extends JFrame {
         });
     }
 
+    // Cedula INGRESAR con lógica de reactivación (igual Cliente)
     private void validarCedulaIng() {
-        String error = ValidacionesProveedor.validarCedula(txtCedulaIng.getText(), false);
-        mostrarError(lblErrorCedulaIng, error);
+        if (validandoCedulaIna) {
+            return;
+        }
+
+        String cedula = txtCedulaIng.getText().trim();
+
+        if (cedula.length() != 10 && cedula.length() != 13) {
+            String error = ValidacionesProveedor.validarCedula(cedula, false);
+            mostrarError(lblErrorCedulaIng, error);
+            return;
+        }
+
+        String error = ValidacionesProveedor.validarCedula(cedula, false);
+
+        if ("PROVEEDOR_INACTIVO".equals(error)) {
+            // No mostramos error debajo, el popup explicará
+            mostrarError(lblErrorCedulaIng, null);
+
+            validandoCedulaIna = true;
+
+            SwingUtilities.invokeLater(() -> {
+                int opcion = mostrarPopupConfirmacion(
+                        CargadorProperties.obtenerMessages("PV_C_002"),   // "El proveedor está inactivo. ¿Desea reactivarlo?"
+                        CargadorProperties.obtenerMessages("FC_A_008")    // título confirmación
+                );
+
+                if (opcion == JOptionPane.YES_OPTION) {
+                    cargarProveedorInactivoParaReactivar(cedula);
+                } else {
+                    txtCedulaIng.setText("");
+                    lblErrorCedulaIng.setText(" ");
+                    validandoCedulaIna = false;
+                }
+            });
+        } else {
+            mostrarError(lblErrorCedulaIng, error);
+        }
     }
 
     private void validarNombreIng() {
@@ -1149,31 +1227,86 @@ public class VentanaProveedor extends JFrame {
         }
     }
 
-   private void cambiarTipoConsulta() {
+    private void cambiarTipoConsulta() {
         String tipo = (String) comboTipoConsulta.getSelectedItem();
 
         if (CargadorProperties.obtenerComponentes("combo.consulta.general").equals(tipo)) {
             panelBusqueda.setVisible(false);
-            scrollTabla.setVisible(true);
+            panelTabla.setVisible(true);
             consultarGeneral();
         } else if (CargadorProperties.obtenerComponentes("combo.consulta.parametro").equals(tipo)) {
             panelBusqueda.setVisible(true);
-            scrollTabla.setVisible(true);
+            panelTabla.setVisible(true);
             modeloTabla.setRowCount(0);
+            proveedoresPaginadosTotal = new ArrayList<>();
+            paginaActual = 0;
+            panelPaginacion.setVisible(false);
         } else {
             panelBusqueda.setVisible(false);
-            scrollTabla.setVisible(false);
+            panelTabla.setVisible(false);
+            panelPaginacion.setVisible(false);
+            proveedoresPaginadosTotal = new ArrayList<>();
+            paginaActual = 0;
         }
 
-        // Forzar refresco visual
         panelContenedor.revalidate();
         panelContenedor.repaint();
     }
+
     private void volverAlMenu() {
         this.dispose();
         new MenuPrincipal().setVisible(true);
     }
 
+    // Carga datos de proveedor inactivo para reactivación (Ingreso)
+    private void cargarProveedorInactivoParaReactivar(String cedula) {
+        Proveedor prv = new Proveedor();
+        Proveedor existente = prv.verificarDP(cedula);
+
+        if (existente != null) {
+            txtCedulaIng.setText(existente.getCedRuc());
+            txtNombreIng.setText(existente.getNombre());
+            txtTelefonoIng.setText(existente.getTelefono());
+            txtCelularIng.setText(existente.getCelular());
+            txtEmailIng.setText(existente.getEmail());
+            txtDireccionIng.setText(existente.getDireccion());
+
+            for (int i = 0; i < comboCiudadIng.getItemCount(); i++) {
+                ItemCombo item = comboCiudadIng.getItemAt(i);
+                if (item.getId().equals(existente.getIdCiudad())) {
+                    comboCiudadIng.setSelectedIndex(i);
+                    break;
+                }
+            }
+
+            // modo reactivación
+            txtCedulaIng.setEnabled(false);
+
+            lblErrorCedulaIng.setText(" ");
+            lblErrorNombreIng.setText(" ");
+            lblErrorTelefonoIng.setText(" ");
+            lblErrorCelularIng.setText(" ");
+            lblErrorEmailIng.setText(" ");
+            lblErrorCiudadIng.setText(" ");
+            lblErrorDireccionIng.setText(" ");
+
+            validandoCedulaIna = false;
+
+            // Si quisieras mensaje tipo "Proveedor cargado. Revise y presione Guardar", agrega PV_I_005 en properties
+            // y usa:
+            // mostrarPopup(
+            //      CargadorProperties.obtenerMessages("PV_I_005"),
+            //      CargadorProperties.obtenerMessages("FC_C_006"),
+            //      JOptionPane.INFORMATION_MESSAGE
+            // );
+        } else {
+            txtCedulaIng.setText("");
+            txtCedulaIng.setEnabled(true);
+            validandoCedulaIna = false;
+        }
+    }
+
+    // Guardar proveedor (alta + reactivación) igual al modelo de Cliente
     private void guardarProveedor() {
         ItemCombo ciudadSel = (ItemCombo) comboCiudadIng.getSelectedItem();
         String idCiudad = ciudadSel != null ? ciudadSel.getId() : "";
@@ -1186,7 +1319,7 @@ public class VentanaProveedor extends JFrame {
         String errorCiudad = ValidacionesProveedor.validarCiudad(idCiudad);
         String errorDireccion = ValidacionesProveedor.validarDireccion(txtDireccionIng.getText());
 
-        mostrarError(lblErrorCedulaIng, errorCedula);
+        mostrarError(lblErrorCedulaIng, "PROVEEDOR_INACTIVO".equals(errorCedula) ? null : errorCedula);
         mostrarError(lblErrorNombreIng, errorNombre);
         mostrarError(lblErrorTelefonoIng, errorTelefono);
         mostrarError(lblErrorCelularIng, errorCelular);
@@ -1194,14 +1327,21 @@ public class VentanaProveedor extends JFrame {
         mostrarError(lblErrorCiudadIng, errorCiudad);
         mostrarError(lblErrorDireccionIng, errorDireccion);
 
-        boolean hayErrores = errorCedula != null || errorNombre != null || errorTelefono != null ||
-                errorCelular != null || errorEmail != null || errorCiudad != null || errorDireccion != null;
+        boolean hayErrores =
+                (errorCedula != null && !"PROVEEDOR_INACTIVO".equals(errorCedula)) ||
+                errorNombre != null ||
+                errorTelefono != null ||
+                errorCelular != null ||
+                errorEmail != null ||
+                errorCiudad != null ||
+                errorDireccion != null;
 
         if (hayErrores) {
-            JOptionPane.showMessageDialog(this,
+            mostrarPopup(
                     CargadorProperties.obtenerMessages("CL_A_015"),
                     CargadorProperties.obtenerMessages("FC_C_005"),
-                    JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.WARNING_MESSAGE
+            );
             return;
         }
 
@@ -1214,75 +1354,101 @@ public class VentanaProveedor extends JFrame {
         prv.setIdCiudad(idCiudad);
         prv.setDireccion(txtDireccionIng.getText().trim());
 
-        boolean exitoso = prv.grabarDP();
+        boolean exitoso;
+        if (!txtCedulaIng.isEnabled()) {
+            // Reactivación
+            exitoso = prv.reactivarDP();
+        } else {
+            // Alta / actualización normal (inserta o modifica según exista, igual Cliente)
+            exitoso = prv.grabarDP();
+        }
 
         if (exitoso) {
-            JOptionPane.showMessageDialog(this,
-                    CargadorProperties.obtenerMessages("PV_I_001"),
+            String mensaje = !txtCedulaIng.isEnabled()
+                    ? CargadorProperties.obtenerMessages("PV_I_004") // Proveedor reactivado correctamente
+                    : CargadorProperties.obtenerMessages("PV_I_001"); // Proveedor registrado exitosamente
+
+            mostrarPopup(
+                    mensaje,
                     CargadorProperties.obtenerMessages("FC_C_003"),
-                    JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.INFORMATION_MESSAGE
+            );
             limpiarCamposIngresar();
         } else {
-            JOptionPane.showMessageDialog(this,
+            mostrarPopup(
                     CargadorProperties.obtenerMessages("PV_E_002"),
                     CargadorProperties.obtenerMessages("FC_C_004"),
-                    JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.ERROR_MESSAGE
+            );
         }
     }
 
     private void buscarProveedorModificar() {
-        String cedula = txtCedulaMod.getText().trim();
-        if (cedula.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    CargadorProperties.obtenerMessages("CL_A_013"),
-                    CargadorProperties.obtenerMessages("FC_C_005"),
-                    JOptionPane.WARNING_MESSAGE);
+    String cedula = txtCedulaMod.getText().trim();
+
+    // 1) Validación básica: cédula vacía
+    if (cedula.isEmpty()) {
+        mostrarPopup(
+                CargadorProperties.obtenerMessages("CL_A_013"),   // "Ingrese una cédula para buscar"
+                CargadorProperties.obtenerMessages("FC_C_005"),   // "Advertencia"
+                JOptionPane.WARNING_MESSAGE
+        );
+        return;
+    }
+
+    Proveedor prv = new Proveedor();
+    Proveedor encontrado = prv.verificarDP(cedula);
+
+    // 2) Si lo encuentra en BD
+    if (encontrado != null) {
+
+        // 2.a) Está INACTIVO → solo informo, no permito modificar
+        if ("INA".equals(encontrado.getEstado())) {
+            mostrarPopup(
+                    CargadorProperties.obtenerMessages("PV_A_018"), // "Este proveedor fue eliminado previamente."
+                    CargadorProperties.obtenerMessages("FC_C_006"), // "Info"
+                    JOptionPane.INFORMATION_MESSAGE
+            );
             return;
         }
 
-        Proveedor prv = new Proveedor();
-        Proveedor encontrado = prv.verificarDP(cedula);
+        // 2.b) Está ACTIVO → cargo datos y habilito campos
+        txtNombreMod.setText(encontrado.getNombre());
+        txtTelefonoMod.setText(encontrado.getTelefono());
+        txtCelularMod.setText(encontrado.getCelular());
+        txtEmailMod.setText(encontrado.getEmail());
+        txtDireccionMod.setText(encontrado.getDireccion());
 
-        if (encontrado != null) {
-            if ("INA".equals(encontrado.getEstado())) {
-                JOptionPane.showMessageDialog(this,
-                        CargadorProperties.obtenerMessages("PV_A_002"),
-                        CargadorProperties.obtenerMessages("FC_C_006"),
-                        JOptionPane.INFORMATION_MESSAGE);
-                return;
+        for (int i = 0; i < comboCiudadMod.getItemCount(); i++) {
+            ItemCombo item = comboCiudadMod.getItemAt(i);
+            if (item.getId().equals(encontrado.getIdCiudad())) {
+                comboCiudadMod.setSelectedIndex(i);
+                break;
             }
-
-            txtNombreMod.setText(encontrado.getNombre());
-            txtTelefonoMod.setText(encontrado.getTelefono());
-            txtCelularMod.setText(encontrado.getCelular());
-            txtEmailMod.setText(encontrado.getEmail());
-            txtDireccionMod.setText(encontrado.getDireccion());
-
-            for (int i = 0; i < comboCiudadMod.getItemCount(); i++) {
-                ItemCombo item = comboCiudadMod.getItemAt(i);
-                if (item.getId().equals(encontrado.getIdCiudad())) {
-                    comboCiudadMod.setSelectedIndex(i);
-                    break;
-                }
-            }
-
-            txtNombreMod.setEnabled(true);
-            txtTelefonoMod.setEnabled(true);
-            txtCelularMod.setEnabled(true);
-            txtEmailMod.setEnabled(true);
-            comboCiudadMod.setEnabled(true);
-            txtDireccionMod.setEnabled(true);
-
-            txtCedulaMod.setEnabled(false);
-            btnGuardarMod.setEnabled(true);
-            lblErrorCedulaMod.setText(" ");
-        } else {
-            JOptionPane.showMessageDialog(this,
-                    CargadorProperties.obtenerMessages("PV_A_003"),
-                    CargadorProperties.obtenerMessages("FC_C_006"),
-                    JOptionPane.INFORMATION_MESSAGE);
         }
+
+        txtNombreMod.setEnabled(true);
+        txtTelefonoMod.setEnabled(true);
+        txtCelularMod.setEnabled(true);
+        txtEmailMod.setEnabled(true);
+        comboCiudadMod.setEnabled(true);
+        txtDireccionMod.setEnabled(true);
+
+        txtCedulaMod.setEnabled(false);
+        btnGuardarMod.setEnabled(true);
+
+        lblErrorCedulaMod.setText(" ");
+
+    } else {
+        // 3) No encontró ningún proveedor con esa cédula
+        mostrarPopup(
+                CargadorProperties.obtenerMessages("PV_A_003"),   // "No se encontraron proveedores con los criterios ingresados."
+                CargadorProperties.obtenerMessages("FC_C_006"),   // "Info"
+                JOptionPane.INFORMATION_MESSAGE
+        );
     }
+}
+
 
     private void modificarProveedor() {
         ItemCombo ciudadSel = (ItemCombo) comboCiudadMod.getSelectedItem();
@@ -1309,10 +1475,11 @@ public class VentanaProveedor extends JFrame {
                 errorEmail != null || errorCiudad != null || errorDireccion != null;
 
         if (hayErrores) {
-            JOptionPane.showMessageDialog(this,
+            mostrarPopup(
                     CargadorProperties.obtenerMessages("CL_A_015"),
                     CargadorProperties.obtenerMessages("FC_C_005"),
-                    JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.WARNING_MESSAGE
+            );
             return;
         }
 
@@ -1326,85 +1493,99 @@ public class VentanaProveedor extends JFrame {
         prv.setDireccion(txtDireccionMod.getText().trim());
 
         if (prv.grabarDP()) {
-            JOptionPane.showMessageDialog(this,
+            mostrarPopup(
                     CargadorProperties.obtenerMessages("PV_I_002"),
                     CargadorProperties.obtenerMessages("FC_C_003"),
-                    JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.INFORMATION_MESSAGE
+            );
             limpiarCamposModificar();
         } else {
-            JOptionPane.showMessageDialog(this,
+            mostrarPopup(
                     CargadorProperties.obtenerMessages("PV_E_004"),
                     CargadorProperties.obtenerMessages("FC_C_004"),
-                    JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.ERROR_MESSAGE
+            );
         }
     }
 
     private void buscarProveedorEliminar() {
-        String cedula = txtCedulaElim.getText().trim();
-        if (cedula.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    CargadorProperties.obtenerMessages("CL_A_013"),
-                    CargadorProperties.obtenerMessages("FC_C_005"),
-                    JOptionPane.WARNING_MESSAGE);
+    String cedula = txtCedulaElim.getText().trim();
+
+    // 1) Validar que haya cédula para buscar
+    if (cedula.isEmpty()) {
+        mostrarPopup(
+                CargadorProperties.obtenerMessages("CL_A_013"),   // "Ingrese una cédula para buscar"
+                CargadorProperties.obtenerMessages("FC_C_005"),   // "Advertencia"
+                JOptionPane.WARNING_MESSAGE
+        );
+        return;
+    }
+
+    Proveedor prv = new Proveedor();
+    Proveedor encontrado = prv.verificarDP(cedula);
+
+    if (encontrado != null) {
+
+        // 2) Si está INACTIVO, solo informo y no dejo eliminar otra vez
+        if ("INA".equals(encontrado.getEstado())) {
+            mostrarPopup(
+                    CargadorProperties.obtenerMessages("PV_A_018"), // "Este proveedor fue eliminado previamente."
+                    CargadorProperties.obtenerMessages("FC_C_006"), // "Info"
+                    JOptionPane.INFORMATION_MESSAGE
+            );
             return;
         }
 
-        Proveedor prv = new Proveedor();
-        Proveedor encontrado = prv.verificarDP(cedula);
+        // 3) Si está ACTIVO, cargo los datos y habilito el botón Eliminar
+        txtNombreElim.setText(encontrado.getNombre());
+        txtTelefonoElim.setText(encontrado.getTelefono());
+        txtCelularElim.setText(encontrado.getCelular());
+        txtEmailElim.setText(encontrado.getEmail());
+        txtDireccionElim.setText(encontrado.getDireccion());
 
-        if (encontrado != null) {
-            if ("INA".equals(encontrado.getEstado())) {
-                JOptionPane.showMessageDialog(this,
-                        CargadorProperties.obtenerMessages("PV_A_002"),
-                        CargadorProperties.obtenerMessages("FC_C_006"),
-                        JOptionPane.INFORMATION_MESSAGE);
-                return;
+        for (int i = 0; i < comboCiudadElim.getItemCount(); i++) {
+            ItemCombo item = comboCiudadElim.getItemAt(i);
+            if (item.getId().equals(encontrado.getIdCiudad())) {
+                comboCiudadElim.setSelectedIndex(i);
+                break;
             }
-
-            txtNombreElim.setText(encontrado.getNombre());
-            txtTelefonoElim.setText(encontrado.getTelefono());
-            txtCelularElim.setText(encontrado.getCelular());
-            txtEmailElim.setText(encontrado.getEmail());
-            txtDireccionElim.setText(encontrado.getDireccion());
-
-            for (int i = 0; i < comboCiudadElim.getItemCount(); i++) {
-                ItemCombo item = comboCiudadElim.getItemAt(i);
-                if (item.getId().equals(encontrado.getIdCiudad())) {
-                    comboCiudadElim.setSelectedIndex(i);
-                    break;
-                }
-            }
-
-            btnEliminar.setEnabled(true);
-        } else {
-            JOptionPane.showMessageDialog(this,
-                    CargadorProperties.obtenerMessages("PV_A_003"),
-                    CargadorProperties.obtenerMessages("FC_C_006"),
-                    JOptionPane.INFORMATION_MESSAGE);
         }
+
+        btnEliminar.setEnabled(true);
+
+    } else {
+        // 4) No se encontró proveedor con esa cédula
+        mostrarPopup(
+                CargadorProperties.obtenerMessages("PV_A_003"),   // "No se encontraron proveedores con los criterios ingresados."
+                CargadorProperties.obtenerMessages("FC_C_006"),   // "Info"
+                JOptionPane.INFORMATION_MESSAGE
+        );
     }
+}
 
     private void eliminarProveedor() {
-        int confirm = JOptionPane.showConfirmDialog(this,
+        int confirm = mostrarPopupConfirmacion(
                 CargadorProperties.obtenerMessages("PV_C_001"),
-                CargadorProperties.obtenerMessages("FC_A_008"),
-                JOptionPane.YES_NO_OPTION);
+                CargadorProperties.obtenerMessages("FC_A_008")
+        );
 
         if (confirm == JOptionPane.YES_OPTION) {
             Proveedor prv = new Proveedor();
             prv.setCedRuc(txtCedulaElim.getText().trim());
 
             if (prv.eliminarDP()) {
-                JOptionPane.showMessageDialog(this,
+                mostrarPopup(
                         CargadorProperties.obtenerMessages("PV_I_003"),
                         CargadorProperties.obtenerMessages("FC_C_003"),
-                        JOptionPane.INFORMATION_MESSAGE);
+                        JOptionPane.INFORMATION_MESSAGE
+                );
                 limpiarCamposEliminar();
             } else {
-                JOptionPane.showMessageDialog(this,
+                mostrarPopup(
                         CargadorProperties.obtenerMessages("PV_E_005"),
                         CargadorProperties.obtenerMessages("FC_C_004"),
-                        JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.ERROR_MESSAGE
+                );
             }
         }
     }
@@ -1413,27 +1594,23 @@ public class VentanaProveedor extends JFrame {
         Proveedor prv = new Proveedor();
         ArrayList<Proveedor> proveedores = prv.consultarTodos();
 
-        modeloTabla.setRowCount(0);
-
         if (proveedores.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
+            mostrarPopup(
                     CargadorProperties.obtenerMessages("PV_A_002"),
                     CargadorProperties.obtenerMessages("FC_C_006"),
-                    JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+            proveedoresPaginadosTotal = new ArrayList<>();
+            paginaActual = 0;
+            actualizarTablaPaginada();
+            panelPaginacion.setVisible(false);
             return;
         }
 
-        for (Proveedor p : proveedores) {
-            modeloTabla.addRow(new Object[] {
-                    p.getCedRuc(),
-                    p.getNombre(),
-                    p.getTelefono(),
-                    p.getCelular(),
-                    p.getEmail(),
-                    p.getCiudad(),
-                    p.getDireccion()
-            });
-        }
+        proveedoresPaginadosTotal = proveedores;
+        paginaActual = 0;
+        actualizarTablaPaginada();
+        panelPaginacion.setVisible(true);
     }
 
     private void configurarBusquedaTiempoReal() {
@@ -1457,7 +1634,10 @@ public class VentanaProveedor extends JFrame {
         String texto = txtBusqueda.getText().trim();
 
         if (texto.isEmpty()) {
-            modeloTabla.setRowCount(0);
+            proveedoresPaginadosTotal = new ArrayList<>();
+            paginaActual = 0;
+            actualizarTablaPaginada();
+            panelPaginacion.setVisible(false);
             return;
         }
 
@@ -1481,17 +1661,151 @@ public class VentanaProveedor extends JFrame {
             resultados = prv.buscarPorDireccionDP(texto);
         }
 
-        modeloTabla.setRowCount(0);
-
         if (resultados.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
+            mostrarPopup(
                     CargadorProperties.obtenerMessages("PV_A_003"),
                     CargadorProperties.obtenerMessages("FC_C_006"),
-                    JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+            proveedoresPaginadosTotal = new ArrayList<>();
+            paginaActual = 0;
+            actualizarTablaPaginada();
+            panelPaginacion.setVisible(false);
             return;
         }
 
-        for (Proveedor p :resultados) { // corrige el nombre si copias
+        proveedoresPaginadosTotal = resultados;
+        paginaActual = 0;
+        actualizarTablaPaginada();
+        panelPaginacion.setVisible(true);
+    }
+
+    private JPanel crearPanelPaginacion() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        panel.setBackground(COLOR_FONDO_CENTRAL);
+
+        btnPrimero = crearBotonPaginacion("primero.png");
+        btnAnterior = crearBotonPaginacion("anterior.png");
+        btnSiguiente = crearBotonPaginacion("siguiente.png");
+        btnUltimo = crearBotonPaginacion("ultimo.png");
+
+        btnPrimero.addActionListener(e -> {
+            paginaActual = 0;
+            actualizarTablaPaginada();
+        });
+
+        btnAnterior.addActionListener(e -> {
+            if (paginaActual > 0) {
+                paginaActual--;
+                actualizarTablaPaginada();
+            }
+        });
+
+        btnSiguiente.addActionListener(e -> {
+            int filasPorPagina = obtenerFilasPorPagina();
+            if (proveedoresPaginadosTotal != null
+                    && (paginaActual + 1) * filasPorPagina < proveedoresPaginadosTotal.size()) {
+                paginaActual++;
+                actualizarTablaPaginada();
+            }
+        });
+
+        btnUltimo.addActionListener(e -> {
+            if (proveedoresPaginadosTotal != null && !proveedoresPaginadosTotal.isEmpty()) {
+                int filasPorPagina = obtenerFilasPorPagina();
+                paginaActual = (int) Math.ceil((double) proveedoresPaginadosTotal.size() / filasPorPagina) - 1;
+                if (paginaActual < 0) paginaActual = 0;
+                actualizarTablaPaginada();
+            }
+        });
+
+        panel.add(btnPrimero);
+        panel.add(btnAnterior);
+        panel.add(btnSiguiente);
+        panel.add(btnUltimo);
+
+        return panel;
+    }
+
+    private JButton crearBotonPaginacion(String iconName) {
+        JButton btn = new JButton();
+        btn.setPreferredSize(new Dimension(50, 35));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBackground(COLOR_TEXTO);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createEmptyBorder());
+        btn.setContentAreaFilled(false);
+
+        try {
+            java.net.URL url = getClass().getResource("/resources/img/" + iconName);
+            if (url != null) {
+                ImageIcon icon = new ImageIcon(url);
+                Image img = icon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+                btn.setIcon(new ImageIcon(img));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        btn.setUI(new javax.swing.plaf.basic.BasicButtonUI() {
+            @Override
+            public void paint(Graphics g, JComponent c) {
+                JButton button = (JButton) c;
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                if (!button.isEnabled()) {
+                    g2.setColor(new Color(200, 200, 200));
+                } else if (button.getModel().isRollover()) {
+                    g2.setColor(button.getBackground().brighter());
+                } else {
+                    g2.setColor(button.getBackground());
+                }
+
+                g2.fillRoundRect(0, 0, button.getWidth(), button.getHeight(), 10, 10);
+                g2.dispose();
+                super.paint(g, c);
+            }
+        });
+
+        return btn;
+    }
+
+    private int obtenerFilasPorPagina() {
+        if (panelBusqueda != null && panelBusqueda.isVisible()) {
+            return 15;
+        }
+        return 17;
+    }
+
+    private void actualizarTablaPaginada() {
+        modeloTabla.setRowCount(0);
+
+        if (proveedoresPaginadosTotal == null || proveedoresPaginadosTotal.isEmpty()) {
+            panelTabla.setVisible(false);
+            if (btnPrimero != null) {
+                btnPrimero.setEnabled(false);
+                btnAnterior.setEnabled(false);
+                btnSiguiente.setEnabled(false);
+                btnUltimo.setEnabled(false);
+            }
+            return;
+        }
+
+        panelTabla.setVisible(true);
+
+        int filasPorPagina = obtenerFilasPorPagina();
+        int totalRegistros = proveedoresPaginadosTotal.size();
+        int totalPaginas = (int) Math.ceil((double) totalRegistros / filasPorPagina);
+
+        if (paginaActual >= totalPaginas) paginaActual = totalPaginas - 1;
+        if (paginaActual < 0) paginaActual = 0;
+
+        int inicio = paginaActual * filasPorPagina;
+        int fin = Math.min(inicio + filasPorPagina, totalRegistros);
+
+        for (int i = inicio; i < fin; i++) {
+            Proveedor p = proveedoresPaginadosTotal.get(i);
             modeloTabla.addRow(new Object[] {
                     p.getCedRuc(),
                     p.getNombre(),
@@ -1502,9 +1816,37 @@ public class VentanaProveedor extends JFrame {
                     p.getDireccion()
             });
         }
+
+        int filasActuales = fin - inicio;
+        int alturaFila = 25;
+        int alturaHeader = 35;
+        int alturaBorde = 2;
+        int alturaTotal = (filasActuales * alturaFila) + alturaHeader + alturaBorde;
+
+        scrollTabla.setPreferredSize(new Dimension(1300, alturaTotal));
+        scrollTabla.setMinimumSize(new Dimension(1300, alturaTotal));
+        scrollTabla.setMaximumSize(new Dimension(1300, alturaTotal));
+
+        panelTabla.setPreferredSize(new Dimension(1300, alturaTotal));
+        panelTabla.setMinimumSize(new Dimension(1300, alturaTotal));
+        panelTabla.setMaximumSize(new Dimension(1300, alturaTotal));
+
+        scrollTabla.revalidate();
+        scrollTabla.repaint();
+        panelTabla.revalidate();
+        panelTabla.repaint();
+
+        if (btnPrimero != null) {
+            btnPrimero.setEnabled(paginaActual > 0);
+            btnAnterior.setEnabled(paginaActual > 0);
+            btnSiguiente.setEnabled(paginaActual < totalPaginas - 1);
+            btnUltimo.setEnabled(paginaActual < totalPaginas - 1);
+        }
     }
 
     private void limpiarCamposIngresar() {
+        validandoCedulaIna = false;
+
         txtCedulaIng.setText("");
         txtCedulaIng.setEnabled(true);
         txtNombreIng.setText("");
@@ -1555,5 +1897,34 @@ public class VentanaProveedor extends JFrame {
         txtDireccionElim.setText("");
 
         btnEliminar.setEnabled(false);
+    }
+
+    private void configurarEstiloPopups() {
+        UIManager.put("OptionPane.background", COLOR_FONDO_CENTRAL);
+        UIManager.put("Panel.background", COLOR_FONDO_CENTRAL);
+
+        UIManager.put("OptionPane.messageForeground", COLOR_TEXTO);
+        UIManager.put("OptionPane.messageFont", FUENTE_BASE);
+
+        UIManager.put("Button.font", FUENTE_BOTON);
+        UIManager.put("Button.background", COLOR_SECUNDARIO);
+        UIManager.put("Button.foreground", COLOR_BLANCO);
+        UIManager.put("Button.focus", COLOR_BLANCO);
+    }
+
+    private void mostrarPopup(String mensaje, String titulo, int tipo) {
+        configurarEstiloPopups();
+        JOptionPane.showMessageDialog(this, mensaje, titulo, tipo);
+    }
+
+    private int mostrarPopupConfirmacion(String mensaje, String titulo) {
+        configurarEstiloPopups();
+        return JOptionPane.showConfirmDialog(
+                this,
+                mensaje,
+                titulo,
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+        );
     }
 }
