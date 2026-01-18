@@ -540,7 +540,7 @@ public class VentanaCompra extends JFrame {
         gbc.gridx = 0; gbc.gridy = fila;
         gbc.gridwidth = 8;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        JLabel lblTabla = new JLabel("Seleccione una compra para eliminar:");
+        JLabel lblTabla = new JLabel(CargadorProperties.obtenerComponentes("CP_SELECCIONAR_COMPRA"));
         estilizarLabel(lblTabla);
         panel.add(lblTabla, gbc);
 
@@ -1050,6 +1050,11 @@ public class VentanaCompra extends JFrame {
     private void modificarCompra(String estado) {
         if (compraSeleccionada == null) return;
 
+        if ("APR".equals(estado) && modeloProductosMod.getRowCount() == 0) {
+            mostrarMensaje(CargadorProperties.obtenerMessages("CP_A_005"), "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         // 1. Actualizar objeto compraSeleccionada con datos de la tabla
         ArrayList<ProxOc> nuevosItems = new ArrayList<>();
         for (int i=0; i<modeloProductosMod.getRowCount(); i++) {
@@ -1086,9 +1091,7 @@ public class VentanaCompra extends JFrame {
         }
     }
 
-    private JPanel crearPanelPaginacion() {
-        return new JPanel();
-    }
+
 
     private JButton crearBotonPaginacion(String iconName) {
         JButton btn = new JButton();
@@ -1135,9 +1138,117 @@ public class VentanaCompra extends JFrame {
         return btn;
     }
 
+    // Actualiza la tabla con los datos de la página actual
     private void actualizarTablaPaginada() {
-        // Stubbed
+        modeloTablaResultados.setRowCount(0);
+
+        if (comprasPaginadasTotal == null || comprasPaginadasTotal.isEmpty()) {
+            if (btnPrimero != null) {
+                btnPrimero.setEnabled(false);
+                btnAnterior.setEnabled(false);
+                btnSiguiente.setEnabled(false);
+                btnUltimo.setEnabled(false);
+            }
+            return;
+        }
+
+        // Determinar filas por página según el tipo de consulta
+        int filasPorPagina = 18; // Default (General)
+        // Si el panel de búsqueda por proveedor es visible, es Específica -> 16 filas
+        if (panelBusqueda != null && panelBusqueda.isVisible()) {
+            filasPorPagina = 16;
+        }
+
+        int totalRegistros = comprasPaginadasTotal.size();
+        int totalPaginas = (int) Math.ceil((double) totalRegistros / filasPorPagina);
+
+        if (paginaActual >= totalPaginas)
+            paginaActual = totalPaginas - 1;
+        if (paginaActual < 0)
+            paginaActual = 0;
+
+        int inicio = paginaActual * filasPorPagina;
+        int fin = Math.min(inicio + filasPorPagina, totalRegistros);
+
+        Proveedor pAux = new Proveedor(); // Helper para buscar nombres
+
+        for (int i = inicio; i < fin; i++) {
+            Compra cp = comprasPaginadasTotal.get(i);
+            
+            String nombreProv = "N/A";
+            if (cp.getCodigoProveedor() != null) {
+                Proveedor pEnc = pAux.verificarPorIdDP(cp.getCodigoProveedor());
+                if (pEnc != null) nombreProv = pEnc.getNombre();
+            }
+
+            modeloTablaResultados.addRow(new Object[]{
+                    cp.getCodigo(),
+                    nombreProv,
+                    cp.getFechaHora().format(FMT_FECHA),
+                    String.format("%.2f", cp.getSubtotal()),
+                    String.format("%.2f", cp.getIva()),
+                    String.format("%.2f", cp.getTotal()),
+                    cp.getEstado()
+            });
+        }
+
+        // Actualizar estado botones
+        if (btnPrimero != null) {
+            btnPrimero.setEnabled(paginaActual > 0);
+            btnAnterior.setEnabled(paginaActual > 0);
+            btnSiguiente.setEnabled(paginaActual < totalPaginas - 1);
+            btnUltimo.setEnabled(paginaActual < totalPaginas - 1);
+        }
     }
+
+    // Método para crear el panel de paginación
+    private JPanel crearPanelPaginacion() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        panel.setBackground(COLOR_FONDO_CENTRAL);
+
+        btnPrimero = crearBotonPaginacion("primero.png");
+        btnAnterior = crearBotonPaginacion("anterior.png");
+        btnSiguiente = crearBotonPaginacion("siguiente.png");
+        btnUltimo = crearBotonPaginacion("ultimo.png");
+
+        btnPrimero.addActionListener(e -> {
+            paginaActual = 0;
+            actualizarTablaPaginada();
+        });
+        btnAnterior.addActionListener(e -> {
+            if (paginaActual > 0) {
+                paginaActual--;
+                actualizarTablaPaginada();
+            }
+        });
+        btnSiguiente.addActionListener(e -> {
+             // Usa FILAS_POR_PAGINA base o logica dinamica? 
+             // Mejor usar logica dinamica consistente
+            int filas = (panelBusqueda != null && panelBusqueda.isVisible()) ? 16 : 18;
+            if (comprasPaginadasTotal != null
+                    && (paginaActual + 1) * filas < comprasPaginadasTotal.size()) {
+                paginaActual++;
+                actualizarTablaPaginada();
+            }
+        });
+        btnUltimo.addActionListener(e -> {
+            if (comprasPaginadasTotal != null && !comprasPaginadasTotal.isEmpty()) {
+                int filas = (panelBusqueda != null && panelBusqueda.isVisible()) ? 16 : 18;
+                paginaActual = (int) Math.ceil((double) comprasPaginadasTotal.size() / filas) - 1;
+                if (paginaActual < 0)
+                    paginaActual = 0;
+                actualizarTablaPaginada();
+            }
+        });
+
+        panel.add(btnPrimero);
+        panel.add(btnAnterior);
+        panel.add(btnSiguiente);
+        panel.add(btnUltimo);
+
+        return panel;
+    }
+
 
     // **MÉTODOS CONSULTAR**
     
@@ -1146,18 +1257,22 @@ public class VentanaCompra extends JFrame {
         String tipo = (String) comboTipoConsulta.getSelectedItem();
         
         modeloTablaResultados.setRowCount(0); // Limpiar tabla
+        comprasPaginadasTotal.clear(); // Limpiar lista paginacion
         
         if ("Consulta General".equals(tipo)) {
             panelBusqueda.setVisible(false);
             // Cargar todas las compras (General)
             buscarYCargarCompras(null, modeloTablaResultados, true); 
+            panelPaginacion.setVisible(true);
         } else {
             panelBusqueda.setVisible(true);
+            panelPaginacion.setVisible(true); // Mostrar paginacion tambien aqui
             // Cargar proveedores si está vacío
             if (cmbProveedorConsulta.getItemCount() == 0) {
                  cargarProveedores(cmbProveedorConsulta);
             }
         }
+        actualizarTablaPaginada(); // Actualizar (vaciara si no hay datos)
         
         // Revalidar layout
         if (panelContenedor != null) {
@@ -1270,6 +1385,14 @@ public class VentanaCompra extends JFrame {
         gbcC.weighty = 0.7;
         gbcC.fill = GridBagConstraints.BOTH;
         panelCentral.add(panelDetalleConsulta, gbcC);
+
+        // Inicializar panel paginación (se agregará debajo de la tabla)
+        panelPaginacion = crearPanelPaginacion();
+        panelPaginacion.setVisible(false); // Oculto inicialmente
+        gbcC.gridy = 2; // Entre tabla (1) y detalle (3)
+        gbcC.weighty = 0.0;
+        gbcC.fill = GridBagConstraints.HORIZONTAL;
+        panelCentral.add(panelPaginacion, gbcC);
         
         panel.add(panelCentral, BorderLayout.CENTER);
         
@@ -1281,8 +1404,7 @@ public class VentanaCompra extends JFrame {
 
         return panelConScroll;
     }
-    
-    // Método unificado para buscar y cargar compras
+
     private void buscarYCargarCompras(Proveedor proveedorFiltro, DefaultTableModel modelo, boolean incluirTodosEstados) {
        modelo.setRowCount(0);
        Compra c = new Compra();
@@ -1297,28 +1419,12 @@ public class VentanaCompra extends JFrame {
         }
        
        if (lista != null) {
-           Proveedor pAux = new Proveedor();
-           for (Compra cp : lista) {
-               String nombreProv = "N/A";
-               if (cp.getCodigoProveedor() != null) {
-                   Proveedor pEnc = pAux.verificarPorIdDP(cp.getCodigoProveedor());
-                   if (pEnc != null) nombreProv = pEnc.getNombre();
-               }
-
-                modelo.addRow(new Object[]{
-                        cp.getCodigo(),
-                        nombreProv,
-                        cp.getFechaHora().format(FMT_FECHA),
-                        String.format("%.2f", cp.getSubtotal()),
-                        String.format("%.2f", cp.getIva()),
-                        String.format("%.2f", cp.getTotal()),
-                        cp.getEstado()
-                });
-           }
-       }
-       
-       if (modelo.getRowCount() == 0) {
-           // Mensaje opcional o vacio
+           comprasPaginadasTotal = lista;
+           paginaActual = 0;
+           actualizarTablaPaginada();
+       } else {
+           comprasPaginadasTotal.clear();
+           actualizarTablaPaginada();
        }
     }
     
@@ -1476,29 +1582,6 @@ public class VentanaCompra extends JFrame {
         }
     }
 
-    private void buscarProveedorCrear() {
-        /*
-        String ruc = txtRucCrear.getText().trim();
-        String error = ValidacionesCompra.validarRucProveedor(ruc);
-        if (error != null) {
-            lblErrorRucCrear.setText(error);;
-            return;
-        }
-
-        Proveedor p = new Proveedor();
-        p = p.verificarDP(ruc);
-        if (p != null) {
-            proveedorSeleccionado = p;
-            // Solo mostramos el valor, el label "Nombre:" ya está en la estructura del panel header
-            lblNombreProveedorCrear.setText(p.getNombre());
-            lblRucProveedorCrear.setText(p.getCedRuc());
-            lblEmailProveedorCrear.setText(p.getEmail());
-            lblTelefonoProveedorCrear.setText(p.getCelular());
-            cmbProductoCrear.setEnabled(true);
-            lblErrorRucCrear.setText("");
-        }
-        */
-    }
 
     private void agregarProducto(JComboBox<ItemProducto> cmb, JTextField txtCant, JLabel lblErr,
                                  DefaultTableModel modelo, JTextField txtSub, JTextField txtImp, JTextField txtTot) {
@@ -1598,7 +1681,7 @@ public class VentanaCompra extends JFrame {
             }
         }
         txtSub.setText(String.format("%.2f", subtotal));
-        double iva = subtotal * 0.15; // Asumimos 15%
+        double iva = subtotal * Double.parseDouble(CargadorProperties.obtenerConfigCompra("comp.iva")); // Asumimos 15%
         txtImp.setText(String.format("%.2f", iva));
         txtTot.setText(String.format("%.2f", subtotal + iva));
     }
@@ -1726,7 +1809,7 @@ public class VentanaCompra extends JFrame {
             mostrarMensaje(CargadorProperties.obtenerMessages("CP_A_004"), "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        if (modeloProductosCrear.getRowCount() == 0) {
+        if ("APR".equals(estado) && modeloProductosCrear.getRowCount() == 0) {
             mostrarMensaje(CargadorProperties.obtenerMessages("CP_A_005"), "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
