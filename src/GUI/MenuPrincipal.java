@@ -11,6 +11,7 @@ public class MenuPrincipal extends JFrame {
     private JButton btnProveedores;
     private JButton btnProductos;
     private JButton btnFacturas;
+    private JButton btnCompras;
     
     public MenuPrincipal() {
         configurarVentana();
@@ -46,6 +47,10 @@ public class MenuPrincipal extends JFrame {
         btnFacturas = new JButton("Facturas");
         btnFacturas.setFont(new Font("Arial", Font.PLAIN, 16));
         btnFacturas.setPreferredSize(new Dimension(250, 60));
+        
+        btnCompras = new JButton("Compras");
+        btnCompras.setFont(new Font("Arial", Font.PLAIN, 16));
+        btnCompras.setPreferredSize(new Dimension(250, 60));
     }
     
     private void configurarLayout() {
@@ -70,6 +75,10 @@ public class MenuPrincipal extends JFrame {
         gbc.gridy = 4;
         gbc.insets = new Insets(10, 0, 0, 0);
         add(btnFacturas, gbc);
+        
+        gbc.gridy = 5;
+        gbc.insets = new Insets(10, 0, 0, 0);
+        add(btnCompras, gbc);
     }
     
     private void configurarEventos() {
@@ -96,6 +105,12 @@ public class MenuPrincipal extends JFrame {
                 VentanaFactura();
             }
         });
+        
+        btnCompras.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                VentanaCompra();
+            }
+        });
     }
     
     private void VentanaCliente() {
@@ -119,6 +134,12 @@ public class MenuPrincipal extends JFrame {
     private void VentanaFactura() {
         VentanaFactura ventanaFactura = new VentanaFactura();
         ventanaFactura.setVisible(true);
+        this.dispose();
+    }
+    
+    private void VentanaCompra() {
+        VentanaCompra ventanaCompra = new VentanaCompra();
+        ventanaCompra.setVisible(true);
         this.dispose();
     }
     
