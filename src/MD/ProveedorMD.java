@@ -411,6 +411,7 @@ public class ProveedorMD {
         prv.setIdCiudad(rs.getString(6));     // id_ciudad
         prv.setCiudad(rs.getString(7));       // ciu_descripcion
         prv.setDireccion(rs.getString(8));    // prv_direccion
+        prv.setIdProveedor(rs.getString(9));  // id_proveedor
         return prv;
     }
     
@@ -468,3 +469,4 @@ public class ProveedorMD {
         return prv;
     }
 }
+
