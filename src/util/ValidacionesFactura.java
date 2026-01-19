@@ -4,6 +4,14 @@ import DP.Cliente;
 
 public class ValidacionesFactura {
 
+    // Valida si el cliente está activo
+    public static String validarEstadoCliente(Cliente cliente) {
+        if (cliente != null && cliente.getEstado() != null && "INA".equalsIgnoreCase(cliente.getEstado().trim())) {
+            return CargadorProperties.obtenerMessages("FC_A_031");
+        }
+        return null;
+    }
+
     // Valida la cédula o RUC del cliente (debe existir en BD)
     public static String validarCedRucCliente(String cedRuc) {
         if (cedRuc == null || cedRuc.trim().isEmpty()) {
@@ -11,7 +19,7 @@ public class ValidacionesFactura {
         }
 
         if (!cedRuc.matches("\\d{10}|\\d{13}")) {
-            return CargadorProperties.obtenerMessages("FC_E_001");
+            return CargadorProperties.obtenerMessages("FC_A_032");
         }
 
         Cliente cli = new Cliente();
@@ -65,7 +73,7 @@ public class ValidacionesFactura {
             return CargadorProperties.obtenerMessages("FC_A_011"); // "Solo números"
         }
         if (texto.length() > 13) {
-            return CargadorProperties.obtenerMessages("CL_A_005"); // "Máximo 13 dígitos"
+            return CargadorProperties.obtenerMessages("FC_A_032");
         }
         if (texto.length() == 10 || texto.length() == 13) {
             return validarCedRucCliente(texto);
