@@ -1454,12 +1454,12 @@ public class VentanaFactura extends JFrame {
         return new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return editable && column == 2; // Solo columna Cantidad si es editable
+                return editable && column == 3; // Solo columna Cantidad si es editable
             }
 
             @Override
             public Class<?> getColumnClass(int column) {
-                if (column == 2)
+                if (column == 3)
                     return String.class;
                 return String.class;
             }
@@ -1477,7 +1477,7 @@ public class VentanaFactura extends JFrame {
             modelo.addTableModelListener(new TableModelListener() {
                 @Override
                 public void tableChanged(TableModelEvent e) {
-                    if (e.getType() == TableModelEvent.UPDATE && e.getColumn() == 2) {
+                    if (e.getType() == TableModelEvent.UPDATE && e.getColumn() == 3) {
                         validarYActualizarCantidad(modelo, txtSub, txtIva, txtTotal, e.getFirstRow());
                     }
                 }
@@ -1886,7 +1886,7 @@ public class VentanaFactura extends JFrame {
     private void validarYActualizarCantidad(DefaultTableModel modelo, JTextField txtSub, JTextField txtIva,
             JTextField txtTot, int fila) {
         try {
-            Object valor = modelo.getValueAt(fila, 2);
+            Object valor = modelo.getValueAt(fila, 3);
             int cantidad = Integer.parseInt(valor.toString());
 
             if (cantidad <= 0) {
@@ -1894,7 +1894,7 @@ public class VentanaFactura extends JFrame {
                         CargadorProperties.obtenerMessages("FC_A_023"),
                         CargadorProperties.obtenerMessages("FC_C_004"),
                         JOptionPane.ERROR_MESSAGE);
-                modelo.setValueAt(productosFactura.get(fila).getCantidad(), fila, 2);
+                modelo.setValueAt(productosFactura.get(fila).getCantidad(), fila, 3);
                 return;
             }
 
@@ -1922,7 +1922,7 @@ public class VentanaFactura extends JFrame {
                             JOptionPane.ERROR_MESSAGE);
                     restaurarEstilosPopup();
 
-                    modelo.setValueAt(productosFactura.get(fila).getCantidad(), fila, 2);
+                    modelo.setValueAt(productosFactura.get(fila).getCantidad(), fila, 3);
                     return;
                 }
             }
@@ -1941,17 +1941,17 @@ public class VentanaFactura extends JFrame {
             }
             pxf.calcularSubtotal();
 
-            modelo.setValueAt(String.format("%.2f", pxf.getSubtotalProducto()), fila, 4);
+            modelo.setValueAt(String.format("%.2f", pxf.getSubtotalProducto()), fila, 5);
 
             calcularTotales(txtSub, txtIva, txtTot);
 
         } catch (NumberFormatException ex) {
-            String valStr = modelo.getValueAt(fila, 2).toString().trim();
+            String valStr = modelo.getValueAt(fila, 3).toString().trim();
 
             // Si son solo dígitos pero falla parseInt, es overflow -> Revertir
             // silenciosamente
             if (valStr.matches("\\d+")) {
-                modelo.setValueAt(productosFactura.get(fila).getCantidad(), fila, 2);
+                modelo.setValueAt(productosFactura.get(fila).getCantidad(), fila, 3);
                 return;
             }
 
@@ -1965,7 +1965,7 @@ public class VentanaFactura extends JFrame {
                     mensajeError,
                     CargadorProperties.obtenerMessages("FC_C_004"),
                     JOptionPane.ERROR_MESSAGE);
-            modelo.setValueAt(productosFactura.get(fila).getCantidad(), fila, 2);
+            modelo.setValueAt(productosFactura.get(fila).getCantidad(), fila, 3);
         }
     }
 
@@ -2193,8 +2193,8 @@ public class VentanaFactura extends JFrame {
                 }
             }
 
-            modelo.setValueAt(cantidadNueva, filaExistente, 2);
-            modelo.setValueAt(String.format("%.2f", pxfExistente.getSubtotalProducto()), filaExistente, 4);
+            modelo.setValueAt(cantidadNueva, filaExistente, 3);
+            modelo.setValueAt(String.format("%.2f", pxfExistente.getSubtotalProducto()), filaExistente, 5);
 
             mostrarMensaje(
                     CargadorProperties.obtenerMessages("FC_A_021") +
@@ -2266,6 +2266,7 @@ public class VentanaFactura extends JFrame {
             modelo.addRow(new Object[] {
                     prod.getCodigo(),
                     prod.getDescripcion(),
+                    productoCompleto.getNombreUmVenta(),
                     cantidad,
                     String.format("%.2f", prod.getPrecioVenta()),
                     String.format("%.2f", pxf.getSubtotalProducto())
@@ -2434,6 +2435,7 @@ public class VentanaFactura extends JFrame {
                 modelo.addRow(new Object[] {
                         pxf.getCodigoProd(),
                         descripcion,
+                        (prodCompleto != null) ? prodCompleto.getNombreUmVenta() : "N/A",
                         pxf.getCantidad(),
                         String.format("%.2f", pxf.getPrecioVenta()),
                         String.format("%.2f", pxf.getSubtotalProducto())
@@ -3144,7 +3146,8 @@ public class VentanaFactura extends JFrame {
 
         @Override
         public String toString() {
-            return producto.getCodigo() + " - " + producto.getDescripcion();
+            String um = (producto.getNombreUmVenta() != null) ? " (" + producto.getNombreUmVenta() + ")" : "";
+            return producto.getCodigo() + " - " + producto.getDescripcion() + um;
         }
     }
 }
