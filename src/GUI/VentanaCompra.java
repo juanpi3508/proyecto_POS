@@ -1889,13 +1889,12 @@ public class VentanaCompra extends JFrame {
             // Si el usuario pidió APROBAR, intentamos aprobar ahora
             if ("APR".equals(estado)) {
                 if (compra.aprobar()) {
-                     mostrarMensaje(CargadorProperties.obtenerMessages("CP_I_001") + " y Aprobada.", "Exito", JOptionPane.INFORMATION_MESSAGE);
+                     mostrarMensaje(CargadorProperties.obtenerMessages("CP_I_001"), "Exito", JOptionPane.INFORMATION_MESSAGE);
                 } else {
-                     mostrarMensaje("Compra guardada como ABIERTA, pero falló la aprobación.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+                     mostrarMensaje(CargadorProperties.obtenerMessages("CP_I_005"), "Advertencia", JOptionPane.WARNING_MESSAGE);
                 }
             } else {
-                // Solo guardar (ABI)
-                // mostrarMensaje(CargadorProperties.obtenerMessages("CP_I_001"), "Exito", JOptionPane.INFORMATION_MESSAGE);
+
             }
             
             limpiarPanelCrear();
