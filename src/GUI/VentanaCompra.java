@@ -115,6 +115,7 @@ public class VentanaCompra extends JFrame {
     private JLabel lblNombreProveedorConsulta, lblRucProveedorConsulta;
     private JLabel lblEmailProveedorConsulta, lblTelefonoProveedorConsulta;
     private JTable tablaProductosConsulta;
+    private JScrollPane scrollTablaResultados; // Promoted to field for resizing
     private DefaultTableModel modeloProductosConsulta;
     private JTextField txtSubtotalConsulta, txtIVAConsulta, txtTotalConsulta;
 
@@ -1391,8 +1392,8 @@ public class VentanaCompra extends JFrame {
         tablaResultados = new JTable(modeloTablaResultados);
         estilizarTabla(tablaResultados);
         
-        JScrollPane scrollTablaResultados = new JScrollPane(tablaResultados);
-        scrollTablaResultados.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER); // NUNCA SCROLL
+        scrollTablaResultados = new JScrollPane(tablaResultados);
+        // scrollTablaResultados.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER); // Permitir scroll si es necesario (al encoger)
         scrollTablaResultados.setBorder(BorderFactory.createEmptyBorder());
         scrollTablaResultados.getViewport().setBackground(COLOR_FONDO_CENTRAL);
         scrollTablaResultados.setPreferredSize(new Dimension(900, 500)); // Altura fija suficiente
@@ -1480,6 +1481,11 @@ public class VentanaCompra extends JFrame {
         estilizarBotonGris(btnCerrar);
         btnCerrar.addActionListener(e -> {
             panelDetalleConsulta.setVisible(false);
+            if (scrollTablaResultados != null) {
+                scrollTablaResultados.setPreferredSize(new Dimension(900, 500));
+                scrollTablaResultados.revalidate();
+                scrollTablaResultados.repaint();
+            }
             if (panelPaginacion != null) panelPaginacion.setVisible(true);
         });
         panel.add(btnCerrar, gbc);
@@ -1569,6 +1575,13 @@ public class VentanaCompra extends JFrame {
         }
 
         actualizarTotales(modeloProductosConsulta, txtSubtotalConsulta, txtIVAConsulta, txtTotalConsulta);
+        
+        if (scrollTablaResultados != null) {
+            scrollTablaResultados.setPreferredSize(new Dimension(900, 150));
+            scrollTablaResultados.revalidate();
+            scrollTablaResultados.repaint();
+        }
+        
         panelDetalleConsulta.setVisible(true);
         if (panelPaginacion != null) panelPaginacion.setVisible(false);
     }
@@ -1882,7 +1895,7 @@ public class VentanaCompra extends JFrame {
                 }
             } else {
                 // Solo guardar (ABI)
-                mostrarMensaje(CargadorProperties.obtenerMessages("CP_I_001"), "Exito", JOptionPane.INFORMATION_MESSAGE);
+                // mostrarMensaje(CargadorProperties.obtenerMessages("CP_I_001"), "Exito", JOptionPane.INFORMATION_MESSAGE);
             }
             
             limpiarPanelCrear();
