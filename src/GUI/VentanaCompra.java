@@ -20,6 +20,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.event.ListSelectionEvent;
 
 public class VentanaCompra extends JFrame {
 
@@ -282,7 +284,7 @@ public class VentanaCompra extends JFrame {
                 lblTelefonoProveedorCrear.setText(proveedorSeleccionado.getCelular());
 
                 cmbProductoCrear.setEnabled(true);
-                lblErrorRucCrear.setText("");
+                mostrarError(lblErrorRucCrear, null);
             } else {
                 proveedorSeleccionado = null;
                 lblNombreProveedorCrear.setText("");
@@ -404,8 +406,10 @@ public class VentanaCompra extends JFrame {
 
         gbc.gridx = 6;
         gbc.gridy = fila++;
+        gbc.gridwidth = 2; // Span under quantity and button to avoid pushing column
         gbc.insets = new Insets(0, 10, 0, 10);
         panel.add(lblErrorCantidadCrear, gbc);
+        gbc.gridwidth = 1; // Restore
         gbc.insets = new Insets(5, 10, 0, 10);
 
         // Tabla productos
@@ -458,6 +462,12 @@ public class VentanaCompra extends JFrame {
                 txtIVACrear,
                 txtTotalCrear));
         panel.add(btnQuitarCrear, gbc);
+
+        tablaProductosCrear.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                btnQuitarCrear.setEnabled(tablaProductosCrear.getSelectedRow() != -1);
+            }
+        });
 
         // Totales
         fila++;
@@ -568,9 +578,8 @@ public class VentanaCompra extends JFrame {
         });
 
         // Listener tabla para habilitar boton eliminar
-        tablaComprasElim.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
+        tablaComprasElim.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
                 btnEliminar.setEnabled(tablaComprasElim.getSelectedRow() != -1);
             }
         });
@@ -617,15 +626,17 @@ public class VentanaCompra extends JFrame {
         if (lista != null) {
             for (Compra cp : lista) {
                 // Aqui podriamos filtrar solo ABIERTAS si se requiere, pero VentanaFactura elimina cualquiera (sujeto a BD)
-                modeloComprasElim.addRow(new Object[]{
-                    cp.getCodigo(),
-                    p.getNombre(), // Nombre proveedor en columna
-                    cp.getFechaHora().format(FMT_FECHA),
-                    String.format("%.2f", cp.getSubtotal()),
-                    String.format("%.2f", cp.getIva()),
-                    String.format("%.2f", cp.getTotal()),
-                    cp.getEstado()
-                });
+                if ("ABI".equals(cp.getEstado())) {
+                    modeloComprasElim.addRow(new Object[]{
+                        cp.getCodigo(),
+                        p.getNombre(), // Nombre proveedor en columna
+                        cp.getFechaHora().format(FMT_FECHA),
+                        String.format("%.2f", cp.getSubtotal()),
+                        String.format("%.2f", cp.getIva()),
+                        String.format("%.2f", cp.getTotal()),
+                        cp.getEstado()
+                    });
+                }
             }
         }
     }
@@ -644,6 +655,12 @@ public class VentanaCompra extends JFrame {
 
         Compra c = new Compra();
         c.setCodigo(codigo);
+        // Verificar estado antes de eliminar (doble check)
+        Compra cVerif = c.consultarPorCodigoDetalle(c); 
+        if (cVerif != null && !"ABI".equals(cVerif.getEstado())) {
+            mostrarMensaje(CargadorProperties.obtenerMessages("CP_A_009"), "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
         if (c.eliminar()) {
             mostrarMensaje(CargadorProperties.obtenerMessages("CP_I_003"), "Exito", JOptionPane.INFORMATION_MESSAGE);
@@ -868,7 +885,9 @@ public class VentanaCompra extends JFrame {
 
         // Error Cantidad
         gbc.gridx = 6; gbc.gridy = fila++;
+        gbc.gridwidth = 2; // Span 2 columns
         panel.add(lblErrorCantidadMod, gbc);
+        gbc.gridwidth = 1;
 
         // Tabla Productos Detalle
         gbc.gridx = 0; gbc.gridy = fila++;
@@ -898,6 +917,12 @@ public class VentanaCompra extends JFrame {
         btnQuitarMod.addActionListener(e -> quitarProducto(
                 tablaProductosMod, modeloProductosMod, txtSubtotalMod, txtIVAMod, txtTotalMod));
         panel.add(btnQuitarMod, gbc);
+
+        tablaProductosMod.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                btnQuitarMod.setEnabled(tablaProductosMod.getSelectedRow() != -1);
+            }
+        });
 
         // Totales
         agregarSeccionTotales(panel, gbc, fila, txtSubtotalMod, txtIVAMod, txtTotalMod);
@@ -999,7 +1024,7 @@ public class VentanaCompra extends JFrame {
             // Limpiar inputs
             if (cmbProductoMod.getItemCount() > 0) cmbProductoMod.setSelectedIndex(0);
             txtCantidadMod.setText("");
-            lblErrorCantidadMod.setText("");
+            mostrarError(lblErrorCantidadMod, null);
 
             // Cargar items
             ProxOc pxo = new ProxOc();
@@ -1597,7 +1622,7 @@ public class VentanaCompra extends JFrame {
             return;
         }
 
-        lblErr.setText("");
+        mostrarError(lblErr, null);
         int cantidad = Integer.parseInt(txtCant.getText());
         Producto prod = item.producto;
 
@@ -1894,9 +1919,10 @@ public class VentanaCompra extends JFrame {
     }
 
     private JLabel crearLabelError() {
-        JLabel lbl = new JLabel("");
+        JLabel lbl = new JLabel(" "); // Space reserved
         lbl.setForeground(COLOR_ACENTO);
         lbl.setFont(FUENTE_LABEL.deriveFont(11f));
+        lbl.setPreferredSize(new Dimension(250, 20)); // Prevent horizontal expansion affecting layout
         return lbl;
     }
 
@@ -2177,6 +2203,8 @@ public class VentanaCompra extends JFrame {
         lblRucProveedorCrear.setText("");
         lblEmailProveedorCrear.setText("");
         lblTelefonoProveedorCrear.setText("");
+        mostrarError(lblErrorRucCrear, null); // Clear error properly
+        mostrarError(lblErrorCantidadCrear, null);
         modeloProductosCrear.setRowCount(0);
         txtSubtotalCrear.setText("0.00");
         txtIVACrear.setText("0.00");
