@@ -1042,10 +1042,12 @@ public class VentanaCompra extends JFrame {
                 // Pero ProxOc solo tiene codigoProducto.
                 // Debemos buscar el nombre.
                 String nomProd = obtenerNombreProducto(it.getCodigoProducto()); // Helper
+                String nomUm = obtenerUmProducto(it.getCodigoProducto());
 
                 Object[] row = {
                         it.getCodigoProducto(),
                         nomProd,
+                        nomUm,
                         it.getCantidad(),
                         String.format("%.2f", it.getPrecioCompra()),
                         String.format("%.2f", it.getSubtotalProducto())
@@ -1070,6 +1072,16 @@ public class VentanaCompra extends JFrame {
             }
         }
         return "Producto " + idProd;
+    }
+
+    private String obtenerUmProducto(String idProd) {
+        for (int i=0; i<cmbProductoMod.getItemCount(); i++) {
+            ItemProducto ip = cmbProductoMod.getItemAt(i);
+            if (ip.producto.getCodigo().equals(idProd)) {
+                return ip.producto.getNombreUmCompra();
+            }
+        }
+        return "N/A";
     }
 
     private void modificarCompra(String estado) {
@@ -1380,9 +1392,10 @@ public class VentanaCompra extends JFrame {
         estilizarTabla(tablaResultados);
         
         JScrollPane scrollTablaResultados = new JScrollPane(tablaResultados);
+        scrollTablaResultados.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER); // NUNCA SCROLL
         scrollTablaResultados.setBorder(BorderFactory.createEmptyBorder());
         scrollTablaResultados.getViewport().setBackground(COLOR_FONDO_CENTRAL);
-        scrollTablaResultados.setPreferredSize(new Dimension(900, 450));
+        scrollTablaResultados.setPreferredSize(new Dimension(900, 500)); // Altura fija suficiente
         
         gbcC.gridy = 1;
         gbcC.weighty = 0.3;
@@ -1463,9 +1476,12 @@ public class VentanaCompra extends JFrame {
         gbc.gridx = 0; gbc.gridy = 0;
         gbc.gridwidth = 8;
         gbc.anchor = GridBagConstraints.EAST;
-        JButton btnCerrar = new JButton("Cerrar Detalle"); // key?
-        estilizarBotonSecundario(btnCerrar);
-        btnCerrar.addActionListener(e -> panelDetalleConsulta.setVisible(false));
+        JButton btnCerrar = new JButton(CargadorProperties.obtenerComponentes("FC_UI_007"));
+        estilizarBotonGris(btnCerrar);
+        btnCerrar.addActionListener(e -> {
+            panelDetalleConsulta.setVisible(false);
+            if (panelPaginacion != null) panelPaginacion.setVisible(true);
+        });
         panel.add(btnCerrar, gbc);
         
         gbc.gridwidth = 1; gbc.anchor = GridBagConstraints.CENTER;
@@ -1541,9 +1557,11 @@ public class VentanaCompra extends JFrame {
 
         for (ProxOc it : items) {
             String nombre = obtenerNombreProducto(it.getCodigoProducto());
+            String nomUm = obtenerUmProducto(it.getCodigoProducto());
             modeloProductosConsulta.addRow(new Object[]{
                     it.getCodigoProducto(),
                     nombre,
+                    nomUm,
                     it.getCantidad(),
                     it.getPrecioCompra(),
                     it.getSubtotalProducto()
@@ -1552,6 +1570,7 @@ public class VentanaCompra extends JFrame {
 
         actualizarTotales(modeloProductosConsulta, txtSubtotalConsulta, txtIVAConsulta, txtTotalConsulta);
         panelDetalleConsulta.setVisible(true);
+        if (panelPaginacion != null) panelPaginacion.setVisible(false);
     }
 
     // Métodos Auxiliares
@@ -1630,10 +1649,10 @@ public class VentanaCompra extends JFrame {
         for (int i = 0; i < modelo.getRowCount(); i++) {
             if (modelo.getValueAt(i, 0).equals(prod.getCodigo())) {
                 mostrarMensaje(CargadorProperties.obtenerMessages("CP_A_016") + " " + cantidad, "Info", JOptionPane.INFORMATION_MESSAGE);
-                int cantExistente = (int) modelo.getValueAt(i, 2);
-                modelo.setValueAt(cantExistente + cantidad, i, 2);
+                int cantExistente = (int) modelo.getValueAt(i, 3);
+                modelo.setValueAt(cantExistente + cantidad, i, 3);
                 double nuevoSub = (cantExistente + cantidad) * prod.getPrecioCompra();
-                modelo.setValueAt(nuevoSub, i, 4);
+                modelo.setValueAt(nuevoSub, i, 5);
                 actualizarTotales(modelo, txtSub, txtImp, txtTot);
                 return;
             }
@@ -1653,7 +1672,7 @@ public class VentanaCompra extends JFrame {
         productosCompra.add(nuevoProxOc);
 
         // Agregar a la tabla visual
-        modelo.addRow(new Object[]{prod.getCodigo(), prod.getDescripcion(), cantidad, prod.getPrecioCompra(), subtotal});
+        modelo.addRow(new Object[]{prod.getCodigo(), prod.getDescripcion(), prod.getNombreUmCompra(), cantidad, prod.getPrecioCompra(), subtotal});
         actualizarTotales(modelo, txtSub, txtImp, txtTot);
 
         btnGuardarCrear.setEnabled(true);
@@ -1693,7 +1712,7 @@ public class VentanaCompra extends JFrame {
         double subtotal = 0;
         for (int i = 0; i < modelo.getRowCount(); i++) {
             try {
-                Object val = modelo.getValueAt(i, 4); // Columna Subtotal
+                Object val = modelo.getValueAt(i, 5); // Columna Subtotal
                 double valDouble;
                 if (val instanceof Number) {
                     valDouble = ((Number) val).doubleValue();
@@ -1722,7 +1741,7 @@ public class VentanaCompra extends JFrame {
             modelo.addTableModelListener(new TableModelListener() {
                 @Override
                 public void tableChanged(TableModelEvent e) {
-                    if (e.getType() == TableModelEvent.UPDATE && e.getColumn() == 2) {
+                    if (e.getType() == TableModelEvent.UPDATE && e.getColumn() == 3) {
                         validarYActualizarCantidad(modelo, txtSub, txtIva, txtTotal, e.getFirstRow());
                     }
                 }
@@ -1734,7 +1753,7 @@ public class VentanaCompra extends JFrame {
     private void validarYActualizarCantidad(DefaultTableModel modelo, JTextField txtSub, JTextField txtIva,
                                             JTextField txtTot, int fila) {
         try {
-            Object valor = modelo.getValueAt(fila, 2);
+            Object valor = modelo.getValueAt(fila, 3);
             int cantidad = Integer.parseInt(valor.toString());
 
             if (cantidad <= 0) {
@@ -1749,7 +1768,7 @@ public class VentanaCompra extends JFrame {
                 } else if (modelo == modeloProductosMod && compraSeleccionada != null && fila < compraSeleccionada.getProductos().size()) {
                     cantAnterior = compraSeleccionada.getProductos().get(fila).getCantidad();
                 }
-                modelo.setValueAt(cantAnterior, fila, 2);
+                modelo.setValueAt(cantAnterior, fila, 3);
                 // Asegurarse de que el listener no vuelva a dispararse o manejar reentrancia si fuera necesario
                 return;
             }
@@ -1769,7 +1788,7 @@ public class VentanaCompra extends JFrame {
                 // Deshabilitar listener temporalmente para evitar ciclo infinito?
                 // setValueAt disparara UPDATE evento en columna 4.
                 // Nuestro listener solo escucha columna 2. Asi que esta SAFE.
-                modelo.setValueAt(pxf.getSubtotalProducto(), fila, 4);
+                modelo.setValueAt(pxf.getSubtotalProducto(), fila, 5);
             }
 
             actualizarTotales(modelo, txtSub, txtIva, txtTot);
@@ -1787,7 +1806,7 @@ public class VentanaCompra extends JFrame {
                     CargadorProperties.obtenerMessages("CP_A_008"), // Solo enteros
                     CargadorProperties.obtenerMessages("CP_C_004"),
                     JOptionPane.ERROR_MESSAGE);
-            modelo.setValueAt(cantAnterior, fila, 2);
+            modelo.setValueAt(cantAnterior, fila, 3);
         }
     }
 
@@ -1900,12 +1919,17 @@ public class VentanaCompra extends JFrame {
     }
     private void estilizarBotonSecundario(JButton btn) {
         btn.setFont(FUENTE_BOTON);
-        btn.setBackground(COLOR_ENFASIS);
+        btn.setBackground(new Color(150, 150, 150));
         btn.setForeground(COLOR_BLANCO);
     }
     private void estilizarBotonEliminar(JButton btn) {
         btn.setFont(FUENTE_BOTON);
         btn.setBackground(COLOR_ACENTO);
+        btn.setForeground(COLOR_BLANCO);
+    }
+    private void estilizarBotonGris(JButton btn) {
+        btn.setFont(FUENTE_BOTON);
+        btn.setBackground(new Color(150, 150, 150)); // Gris
         btn.setForeground(COLOR_BLANCO);
     }
     private void estilizarTabla(JTable tabla) {
@@ -2154,7 +2178,7 @@ public class VentanaCompra extends JFrame {
         JPanel pCampo = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
         pCampo.setOpaque(false);
         String txtLabel = CargadorProperties.obtenerComponentes(keyLabel);
-        if (txtLabel.startsWith("!")) txtLabel = keyLabel.contains("RUC") ? "RUC:" : keyLabel; // Fallback simple
+        if (txtLabel.startsWith("!")) txtLabel = keyLabel.contains("RUC") ? "RUC:" : keyLabel;
 
         JLabel lblTit = new JLabel(txtLabel);
         lblTit.setFont(FUENTE_LABEL.deriveFont(Font.BOLD));
@@ -2162,12 +2186,12 @@ public class VentanaCompra extends JFrame {
         pCampo.add(lblTit);
 
         if (lblValor != null) {
-            // Limpiar texto previo si tenia prefijos manuales
+            estilizarLabel(lblValor);
             pCampo.add(lblValor);
         }
         pCampo.setAlignmentX(Component.CENTER_ALIGNMENT);
         panel.add(pCampo);
-        panel.add(Box.createVerticalStrut(5));
+        panel.add(Box.createVerticalStrut(8)); // Match VentanaFactura spacing
     }
 
     private void agregarCampoInfoEmpresa(JPanel panel, String keyLabel, String keyValor) {
@@ -2278,7 +2302,7 @@ public class VentanaCompra extends JFrame {
     private static class ItemProducto {
         Producto producto;
         ItemProducto(Producto p) { this.producto = p; }
-        @Override public String toString() { return producto.getCodigo() + " - " + producto.getDescripcion(); }
+        @Override public String toString() { return producto.getCodigo() + " - " + producto.getDescripcion() + " (" + producto.getNombreUmCompra() + ")"; }
     }
 
     // Clase interna item proveedor
