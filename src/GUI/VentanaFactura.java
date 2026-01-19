@@ -385,9 +385,10 @@ public class VentanaFactura extends JFrame {
         // Error cantidad
         gbc.gridx = 6;
         gbc.gridy = fila++;
-        gbc.insets = new Insets(0, 10, 0, 10);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(-5, 10, 0, 10);
         panel.add(lblErrorCantidadCrear, gbc);
-        gbc.insets = new Insets(5, 10, 0, 10);
+        gbc.insets = new Insets(5, 10, 0, 10); // Restaurar insets
 
         // Tabla productos (EDITABLE)
         modeloProductosCrear = crearModeloTablaProductos(true); // ← USA MÉTODO AUXILIAR
@@ -558,7 +559,8 @@ public class VentanaFactura extends JFrame {
         gbc.gridx = 1;
         gbc.gridy = fila;
         gbc.gridwidth = 2;
-        gbc.insets = new Insets(0, 10, 5, 10);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(-5, 10, 5, 10);
         lblErrorCedulaMod = crearLabelError();
         panel.add(lblErrorCedulaMod, gbc);
         gbc.gridwidth = 1;
@@ -690,7 +692,8 @@ public class VentanaFactura extends JFrame {
         // Error cantidad
         gbc.gridx = 6;
         gbc.gridy = fila++;
-        gbc.insets = new Insets(0, 10, 0, 10);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(-5, 10, 0, 10);
         panel.add(lblErrorCantidadMod, gbc);
         gbc.insets = new Insets(5, 10, 0, 10);
 
@@ -837,7 +840,8 @@ public class VentanaFactura extends JFrame {
         gbc.gridx = 1;
         gbc.gridy = fila;
         gbc.gridwidth = 2;
-        gbc.insets = new Insets(0, 10, 5, 10);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(-5, 10, 5, 10);
         panel.add(lblErrorCedulaElim, gbc);
         gbc.gridwidth = 1;
         gbc.insets = new Insets(5, 10, 0, 10);
@@ -1117,10 +1121,10 @@ public class VentanaFactura extends JFrame {
                 crearBotonLupa(() -> ejecutarBusquedaConValidacion(txtCedulaConsulta, modeloTablaResultados, true)),
                 gbcBusq);
 
-        // Fila 2: Error (centrado debajo del campo)
+        // Fila 2: Error (justo debajo del campo)
         gbcBusq.gridx = 1;
         gbcBusq.gridy = 1;
-        gbcBusq.insets = new Insets(0, 5, 0, 5); // Margen inferior eliminado
+        gbcBusq.insets = new Insets(-5, 5, 0, 5); // Margen inferior eliminado
         gbcBusq.anchor = GridBagConstraints.WEST;
         panelBusqueda.add(lblErrorCedulaConsulta, gbcBusq);
 
@@ -1346,13 +1350,46 @@ public class VentanaFactura extends JFrame {
 
         // Buscar cliente
         Cliente cli = new Cliente();
-        cli.setCedRuc(cedula);
+        Cliente clienteBuscado = cli.verificarDP(cedula);
+
+        if (clienteBuscado == null) {
+            personalizarPopup();
+            JOptionPane.showMessageDialog(this,
+                    CargadorProperties.obtenerMessages("FC_A_004"),
+                    CargadorProperties.obtenerMessages("FC_C_006"),
+                    JOptionPane.INFORMATION_MESSAGE);
+            restaurarEstilosPopup();
+            modelo.setRowCount(0);
+            if (modelo == modeloTablaResultados) {
+                facturasPaginadasTotal.clear();
+                actualizarTablaPaginada();
+            }
+            return;
+        }
+
+        // Validar estado del cliente (INA)
+        String errorEstado = ValidacionesFactura.validarEstadoCliente(clienteBuscado);
+        if (errorEstado != null) {
+            personalizarPopup();
+            JOptionPane.showMessageDialog(this,
+                    errorEstado,
+                    CargadorProperties.obtenerMessages("FC_C_006"),
+                    JOptionPane.INFORMATION_MESSAGE);
+            restaurarEstilosPopup();
+            modelo.setRowCount(0);
+            // Si es la tabla de consulta, limpiar paginación
+            if (modelo == modeloTablaResultados) {
+                facturasPaginadasTotal.clear();
+                actualizarTablaPaginada();
+            }
+            return;
+        }
 
         // Buscar facturas (APR o todas)
         Factura fac = new Factura();
         ArrayList<Factura> lista = incluirAnuladas
-                ? fac.consultarTodasPorParametro(cli) // APR + ANU
-                : fac.consultarPorParametro(cli); // solo APR
+                ? fac.consultarTodasPorParametro(clienteBuscado) // APR + ANU
+                : fac.consultarPorParametro(clienteBuscado); // solo APR
 
         // Limpiar tabla
         modelo.setRowCount(0);
@@ -1380,7 +1417,6 @@ public class VentanaFactura extends JFrame {
         }
 
         // Obtener nombre del cliente
-        Cliente clienteBuscado = cli.verificarDP(cedula);
         String nombreCliente = (clienteBuscado != null) ? clienteBuscado.getNombre() : "N/A";
 
         // Cargar en tabla según número de columnas (LÓGICA ORIGINAL PARA
@@ -1482,20 +1518,37 @@ public class VentanaFactura extends JFrame {
 
         // Si tiene búsqueda (panel crear)
         if (mostrarBusqueda && txtCedulaBusqueda != null && accionBusqueda != null) {
-            JPanel pCedBusqueda = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
-            pCedBusqueda.setOpaque(false);
+            JPanel pBusquedaContainer = new JPanel(new GridBagLayout());
+            pBusquedaContainer.setOpaque(false);
+            GridBagConstraints gbcB = new GridBagConstraints();
+            gbcB.insets = new Insets(0, 5, 0, 5);
+            gbcB.fill = GridBagConstraints.NONE;
+
+            // Fila 0: Label, Field, Lupa
+            gbcB.gridy = 0;
+
+            gbcB.gridx = 0;
             JLabel lblCedRucTit = new JLabel(CargadorProperties.obtenerComponentes("LBL_CEDULA_RUC"));
             estilizarLabel(lblCedRucTit);
-            pCedBusqueda.add(lblCedRucTit);
-            pCedBusqueda.add(txtCedulaBusqueda);
-            pCedBusqueda.add(crearBotonLupa(accionBusqueda));
-            panelCliente.add(pCedBusqueda);
+            pBusquedaContainer.add(lblCedRucTit, gbcB);
 
+            gbcB.gridx = 1;
+            pBusquedaContainer.add(txtCedulaBusqueda, gbcB);
+
+            gbcB.gridx = 2;
+            pBusquedaContainer.add(crearBotonLupa(accionBusqueda), gbcB);
+
+            // Fila 1: Mensaje de error (justo debajo del campo)
             if (lblErrorCedula != null) {
-                lblErrorCedula.setAlignmentX(Component.CENTER_ALIGNMENT);
-                panelCliente.add(lblErrorCedula);
+                gbcB.gridy = 1;
+                gbcB.gridx = 1;
+                gbcB.anchor = GridBagConstraints.WEST;
+                gbcB.insets = new Insets(-2, 5, 0, 5); // Un pequeño ajuste hacia arriba para pegarlo al campo
+                pBusquedaContainer.add(lblErrorCedula, gbcB);
             }
 
+            pBusquedaContainer.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panelCliente.add(pBusquedaContainer);
             panelCliente.add(Box.createVerticalStrut(3));
         }
 
@@ -1983,6 +2036,24 @@ public class VentanaFactura extends JFrame {
         clienteSeleccionado = cli.verificarDP(cedRuc);
 
         if (clienteSeleccionado != null) {
+            String errorEstado = ValidacionesFactura.validarEstadoCliente(clienteSeleccionado);
+            if (errorEstado != null) {
+                limpiarDatosCliente(lblNombreClienteCrear, lblCedulaClienteCrear, lblEmailClienteCrear,
+                        lblTelefonoClienteCrear);
+                mostrarError(lblErrorCedulaCrear, errorEstado);
+
+                personalizarPopup();
+                JOptionPane.showMessageDialog(this,
+                        errorEstado,
+                        CargadorProperties.obtenerMessages("FC_C_005"),
+                        JOptionPane.WARNING_MESSAGE);
+                restaurarEstilosPopup();
+
+                cmbProductoCrear.setEnabled(false);
+                txtCantidadCrear.setEnabled(false);
+                clienteSeleccionado = null;
+                return;
+            }
             lblNombreClienteCrear.setText(clienteSeleccionado.getNombre());
             lblCedulaClienteCrear.setText(clienteSeleccionado.getCedRuc());
             lblEmailClienteCrear.setText(clienteSeleccionado.getEmail() != null ? clienteSeleccionado.getEmail() : "");
