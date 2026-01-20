@@ -4,12 +4,7 @@ import DP.Proveedor;
 
 public class ValidacionesProveedor {
 
-    /**
-     * Devuelve:
-     *  - null                             → todo bien
-     *  - mensaje de error (PV_A_XXX)      → error de validación
-     *  - "PROVEEDOR_INACTIVO"             → existe en BD con estado INA
-     */
+
     public static String validarCedula(String cedRuc, boolean esModificar) {
     if (cedRuc == null || cedRuc.trim().isEmpty()) {
         return CargadorProperties.obtenerMessages("PV_A_004"); // obligatorio
@@ -19,20 +14,19 @@ public class ValidacionesProveedor {
         return CargadorProperties.obtenerMessages("PV_A_005"); // 10 o 13 dígitos
     }
 
-    // Si es RUC (13 dígitos), debe terminar en 001
+ 
     if (cedRuc.length() == 13 && !cedRuc.endsWith("001")) {
         return CargadorProperties.obtenerMessages("PV_A_015");
     }
 
-    // SOLO en ingreso (no modificar) revisamos si ya existe
+  
     if (!esModificar) {
         Proveedor prv = new Proveedor();
         Proveedor existe = prv.verificarDP(cedRuc);
 
         if (existe != null) {
             if ("INA".equals(existe.getEstado())) {
-                // Proveedor encontrado pero INACTIVO: devolvemos un código especial
-                // NO es mensaje para el usuario, es una "bandera" para la GUI
+            
                 return "PROVEEDOR_INACTIVO";
             } else {
                 // Ya existe y está activo
@@ -57,44 +51,33 @@ public class ValidacionesProveedor {
         return null;
     }
 
-    /**
-     * Teléfono (label) → celular ecuatoriano:
-     * - Obligatorio
-     * - Debe tener exactamente 10 dígitos numéricos
-     * - Debe iniciar con 09
-     */
-    public static String validarTelefono(String telefono) {
-        if (telefono == null || telefono.trim().isEmpty()) {
+    public static String validarCelular(String celular) {
+        if (celular == null || celular.trim().isEmpty()) {
             return CargadorProperties.obtenerMessages("PV_A_008"); // obligatorio
         }
 
-        if (!telefono.matches("\\d{10}")) {
+        if (!celular.matches("\\d{10}")) {
             return CargadorProperties.obtenerMessages("PV_A_016"); // exactamente 10 dígitos
         }
 
-        if (!telefono.startsWith("09")) {
+        if (!celular.startsWith("09")) {
             return CargadorProperties.obtenerMessages("PV_A_014"); // debe iniciar con 09
         }
 
         return null;
     }
 
-    /**
-     * Campo "celular" que usas como teléfono fijo por provincias:
-     * - Obligatorio
-     * - Debe tener exactamente 10 dígitos numéricos
-     * - Debe iniciar con 02, 03, 04, 05, 06 o 07
-     */
-    public static String validarCelular(String celular) {
-        if (celular == null || celular.trim().isEmpty()) {
+  
+    public static String validarTelefono(String telefono) {
+        if (telefono == null || telefono.trim().isEmpty()) {
             return CargadorProperties.obtenerMessages("PV_A_009"); // obligatorio
         }
 
-        if (!celular.matches("\\d{10}")) {
+        if (!telefono.matches("\\d{9}")) {
             return CargadorProperties.obtenerMessages("PV_A_017"); // exactamente 10 dígitos
         }
 
-        String prefijo = celular.substring(0, 2);
+        String prefijo = telefono.substring(0, 2);
         if (!prefijo.matches("02|03|04|05|06|07")) {
             return CargadorProperties.obtenerMessages("PV_A_013"); // código provincia inválido
         }
@@ -144,14 +127,14 @@ public class ValidacionesProveedor {
                                       String direccion,
                                       boolean esModificar) {
         String errCed = validarCedula(cedRuc, esModificar);
-        // Para no aceptar inactivos como "válidos" en este helper
+       
         if ("PROVEEDOR_INACTIVO".equals(errCed)) {
             return false;
         }
 
         return errCed == null &&
                validarNombre(nombre) == null &&
-               validarTelefono(telefono) == null &&
+               validarTelefono(celular) == null &&
                validarCelular(celular) == null &&
                validarEmail(email) == null &&
                validarCiudad(ciudad) == null &&
