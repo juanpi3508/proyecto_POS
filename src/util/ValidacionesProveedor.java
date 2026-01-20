@@ -51,16 +51,16 @@ public class ValidacionesProveedor {
         return null;
     }
 
-    public static String validarTelefono(String telefono) {
-        if (telefono == null || telefono.trim().isEmpty()) {
+    public static String validarCelular(String celular) {
+        if (celular == null || celular.trim().isEmpty()) {
             return CargadorProperties.obtenerMessages("PV_A_008"); // obligatorio
         }
 
-        if (!telefono.matches("\\d{10}")) {
+        if (!celular.matches("\\d{10}")) {
             return CargadorProperties.obtenerMessages("PV_A_016"); // exactamente 10 dígitos
         }
 
-        if (!telefono.startsWith("09")) {
+        if (!celular.startsWith("09")) {
             return CargadorProperties.obtenerMessages("PV_A_014"); // debe iniciar con 09
         }
 
@@ -68,16 +68,16 @@ public class ValidacionesProveedor {
     }
 
   
-    public static String validarCelular(String celular) {
-        if (celular == null || celular.trim().isEmpty()) {
+    public static String validarTelefono(String telefono) {
+        if (telefono == null || telefono.trim().isEmpty()) {
             return CargadorProperties.obtenerMessages("PV_A_009"); // obligatorio
         }
 
-        if (!celular.matches("\\d{10}")) {
+        if (!telefono.matches("\\d{9}")) {
             return CargadorProperties.obtenerMessages("PV_A_017"); // exactamente 10 dígitos
         }
 
-        String prefijo = celular.substring(0, 2);
+        String prefijo = telefono.substring(0, 2);
         if (!prefijo.matches("02|03|04|05|06|07")) {
             return CargadorProperties.obtenerMessages("PV_A_013"); // código provincia inválido
         }
@@ -134,7 +134,7 @@ public class ValidacionesProveedor {
 
         return errCed == null &&
                validarNombre(nombre) == null &&
-               validarTelefono(telefono) == null &&
+               validarTelefono(celular) == null &&
                validarCelular(celular) == null &&
                validarEmail(email) == null &&
                validarCiudad(ciudad) == null &&
