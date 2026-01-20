@@ -280,7 +280,7 @@ public class VentanaProveedor extends JFrame {
         fila++;
         gbc.gridx = 0;
         gbc.gridy = fila;
-        JLabel lblTelefono = new JLabel(CargadorProperties.obtenerComponentes("label.telefono"));
+        JLabel lblTelefono = new JLabel(CargadorProperties.obtenerComponentes("label.telefono1"));
         lblTelefono.setFont(FUENTE_LABEL);
         lblTelefono.setForeground(COLOR_TEXTO);
         panel.add(lblTelefono, gbc);
@@ -490,7 +490,7 @@ public class VentanaProveedor extends JFrame {
         fila++;
         gbc.gridx = 0;
         gbc.gridy = fila;
-        JLabel lblTelefonoMod = new JLabel(CargadorProperties.obtenerComponentes("label.telefono"));
+        JLabel lblTelefonoMod = new JLabel(CargadorProperties.obtenerComponentes("label.telefono1"));
         lblTelefonoMod.setFont(FUENTE_LABEL);
         lblTelefonoMod.setForeground(COLOR_TEXTO);
         panel.add(lblTelefonoMod, gbc);
@@ -678,7 +678,7 @@ public class VentanaProveedor extends JFrame {
         fila++;
         gbc.gridx = 0;
         gbc.gridy = fila;
-        JLabel lblTelefonoEli = new JLabel(CargadorProperties.obtenerComponentes("label.telefono"));
+        JLabel lblTelefonoEli = new JLabel(CargadorProperties.obtenerComponentes("label.telefono1"));
         lblTelefonoEli.setFont(FUENTE_LABEL);
         lblTelefonoEli.setForeground(COLOR_TEXTO);
         panel.add(lblTelefonoEli, gbc);
@@ -776,7 +776,7 @@ public class VentanaProveedor extends JFrame {
         comboParametroBusqueda = new JComboBox<>(new String[] {
                 CargadorProperties.obtenerComponentes("combo.param.nombre"),
                 CargadorProperties.obtenerComponentes("combo.param.cedula.ruc"),
-                CargadorProperties.obtenerComponentes("combo.param.telefono"),
+                CargadorProperties.obtenerComponentes("combo.param.telefono1"),
                 CargadorProperties.obtenerComponentes("combo.param.celular"),
                 CargadorProperties.obtenerComponentes("combo.param.email"),
                 CargadorProperties.obtenerComponentes("combo.param.ciudad.desc"),
@@ -808,7 +808,7 @@ public class VentanaProveedor extends JFrame {
         String[] columnas = {
                 CargadorProperties.obtenerComponentes("tabla.col.cedula.ruc"),
                 CargadorProperties.obtenerComponentes("label.nombre"),
-                CargadorProperties.obtenerComponentes("label.telefono"),
+                CargadorProperties.obtenerComponentes("label.telefono1"),
                 CargadorProperties.obtenerComponentes("label.celular"),
                 CargadorProperties.obtenerComponentes("label.email"),
                 CargadorProperties.obtenerComponentes("label.ciudad"),
@@ -1657,7 +1657,7 @@ public class VentanaProveedor extends JFrame {
             resultados = prv.buscarPorNombreDP(texto);
         } else if (parametro.equals(CargadorProperties.obtenerComponentes("combo.param.cedula.ruc"))) {
             resultados = prv.buscarPorCedulaDP(texto);
-        } else if (parametro.equals(CargadorProperties.obtenerComponentes("combo.param.telefono"))) {
+        } else if (parametro.equals(CargadorProperties.obtenerComponentes("combo.param.telefono1"))) {
             resultados = prv.buscarPorTelefonoDP(texto);
         } else if (parametro.equals(CargadorProperties.obtenerComponentes("combo.param.celular"))) {
             resultados = prv.buscarPorCelularDP(texto);
