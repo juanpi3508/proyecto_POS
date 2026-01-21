@@ -1911,7 +1911,7 @@ public class VentanaProveedor extends JFrame {
         UIManager.put("OptionPane.background", COLOR_FONDO_CENTRAL);
         UIManager.put("Panel.background", COLOR_FONDO_CENTRAL);
 
-        UIManager.put("OptionPane.messageForeground", COLOR_TEXTO);
+        UIManager.put("OptionPane.messageForeground", COLOR_TEXTO_CAMPO);
         UIManager.put("OptionPane.messageFont", FUENTE_BASE);
 
         UIManager.put("Button.font", FUENTE_BOTON);
@@ -1936,3 +1936,4 @@ public class VentanaProveedor extends JFrame {
         );
     }
 }
+
